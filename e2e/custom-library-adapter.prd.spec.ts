@@ -10,23 +10,15 @@ test.describe('custom-library-adapter', () => {
   let stopApp: () => Promise<void>;
   let standaloneDir: string;
 
-  test.beforeAll(async ({ mode }) => {
-    if (mode === 'DEV') {
-      return;
-    }
-    ({ port, stopApp, standaloneDir } = await startApp(mode, 'pnpm'));
+  test.beforeAll(async () => {
+    ({ port, stopApp, standaloneDir } = await startApp('PRD', 'pnpm'));
   });
 
-  test.afterAll(async ({ mode }) => {
-    if (mode === 'DEV') {
-      return;
-    }
+  test.afterAll(async () => {
     await stopApp();
   });
 
-  test('runs post build from dependency adapter', async ({ page, mode }) => {
-    test.skip(mode !== 'PRD', 'postBuild runs only in build mode');
-
+  test('runs post build from dependency adapter', async ({ page }) => {
     await page.goto(`http://localhost:${port}/`);
     await expect(page.getByTestId('custom-adapter-heading')).toHaveText(
       'Hello from custom adapter',

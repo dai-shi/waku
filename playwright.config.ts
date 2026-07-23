@@ -1,6 +1,28 @@
 import type { PlaywrightTestProject } from '@playwright/test';
 import { defineConfig, devices } from '@playwright/test';
+import {
+  CHROMIUM_ONLY_SPECS,
+  DEV_ONLY_SPECS,
+  DEV_ONLY_TAG,
+  ECOSYSTEM_CI_IGNORED_SPECS,
+  PRD_ONLY_SPECS,
+  PRD_ONLY_TAG,
+  UBUNTU_LTS_ONLY_SPECS,
+} from './e2e/suites.js';
 import type { TestOptions } from './e2e/utils.js';
+
+const e2eSuite = process.env.E2E_SUITE;
+if (e2eSuite && e2eSuite !== 'full-matrix' && e2eSuite !== 'ubuntu-lts') {
+  throw new Error(`Unknown E2E_SUITE: ${e2eSuite}`);
+}
+
+const toGlobs = (specs: readonly string[]) => specs.map((spec) => `**/${spec}`);
+
+const ubuntuLtsOnlySpecs = toGlobs(UBUNTU_LTS_ONLY_SPECS);
+const chromiumOnlySpecs = toGlobs(CHROMIUM_ONLY_SPECS);
+const prdOnlySpecs = toGlobs(PRD_ONLY_SPECS);
+const devOnlySpecs = toGlobs(DEV_ONLY_SPECS);
+const ecosystemCiIgnoredSpecs = toGlobs(ECOSYSTEM_CI_IGNORED_SPECS);
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -40,6 +62,16 @@ const config = defineConfig<TestOptions>({
     {
       ...item,
       name: `${item.name}-dev`,
+      ...(e2eSuite === 'ubuntu-lts' && {
+        testMatch: ubuntuLtsOnlySpecs,
+      }),
+      testIgnore: [
+        ...(e2eSuite === 'full-matrix' ? ubuntuLtsOnlySpecs : []),
+        ...(item.name === 'chromium' ? [] : chromiumOnlySpecs),
+        ...prdOnlySpecs,
+        ...(process.env.ECOSYSTEM_CI ? ecosystemCiIgnoredSpecs : []),
+      ],
+      grepInvert: PRD_ONLY_TAG,
       use: {
         ...item.use,
         mode: 'DEV',
@@ -48,6 +80,16 @@ const config = defineConfig<TestOptions>({
     {
       ...item,
       name: `${item.name}-prd`,
+      ...(e2eSuite === 'ubuntu-lts' && {
+        testMatch: ubuntuLtsOnlySpecs,
+      }),
+      testIgnore: [
+        ...(e2eSuite === 'full-matrix' ? ubuntuLtsOnlySpecs : []),
+        ...(item.name === 'chromium' ? [] : chromiumOnlySpecs),
+        ...devOnlySpecs,
+        ...(process.env.ECOSYSTEM_CI ? ecosystemCiIgnoredSpecs : []),
+      ],
+      grepInvert: DEV_ONLY_TAG,
       use: {
         ...item.use,
         mode: 'PRD',

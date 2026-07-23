@@ -10,23 +10,15 @@ test.describe('custom-user-adapter', () => {
   let stopApp: () => Promise<void>;
   let fixtureDir: string;
 
-  test.beforeAll(async ({ mode }) => {
-    if (mode === 'DEV') {
-      return;
-    }
-    ({ port, stopApp, fixtureDir } = await startApp(mode));
+  test.beforeAll(async () => {
+    ({ port, stopApp, fixtureDir } = await startApp('PRD'));
   });
 
-  test.afterAll(async ({ mode }) => {
-    if (mode === 'DEV') {
-      return;
-    }
+  test.afterAll(async () => {
     await stopApp();
   });
 
-  test('runs post build from in-project adapter', async ({ page, mode }) => {
-    test.skip(mode !== 'PRD', 'postBuild runs only in build mode');
-
+  test('runs post build from in-project adapter', async ({ page }) => {
     await page.goto(`http://localhost:${port}/`);
     await expect(page.getByTestId('custom-user-adapter-heading')).toHaveText(
       'Hello from custom user adapter',

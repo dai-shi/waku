@@ -37,26 +37,15 @@ test.describe('styled-components', () => {
   defineTests(() => port);
 });
 
-test.describe('styled-components: static build', () => {
-  test.skip(
-    ({ mode }) => mode !== 'PRD',
-    'Static build is only relevant in production mode.',
-  );
-
+test.describe('styled-components: static build', { tag: '@prd' }, () => {
   let port: number;
   let stopApp: () => Promise<void>;
 
-  test.beforeAll(async ({ mode }) => {
-    if (mode !== 'PRD') {
-      return;
-    }
+  test.beforeAll(async () => {
     ({ port, stopApp } = await startApp('STATIC'));
   });
 
-  test.afterAll(async ({ mode }) => {
-    if (mode !== 'PRD') {
-      return;
-    }
+  test.afterAll(async () => {
     await stopApp();
   });
 

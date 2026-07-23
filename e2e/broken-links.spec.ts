@@ -107,12 +107,7 @@ test.describe('broken-links: normal server', () => {
   });
 });
 
-test.describe('broken-links: static server', () => {
-  test.skip(
-    ({ mode }) => mode !== 'PRD',
-    'static tests are only relevant in production mode',
-  );
-
+test.describe('broken-links: static server', { tag: '@prd' }, () => {
   test.describe('client side navigation', () => {
     let port: number;
     let stopApp: () => Promise<void>;

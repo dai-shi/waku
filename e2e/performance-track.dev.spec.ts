@@ -11,8 +11,6 @@ test.describe('performance-track', () => {
   // assert the markers are present. They only appear because patch-rsdw
   // recovers React's debug info for Waku's plain-object RSC payload, so this
   // exercises that patch end to end.
-  test.skip(({ browserName }) => browserName !== 'chromium', 'Chromium only');
-  test.skip(({ mode }) => mode !== 'DEV', 'Dev only');
   // The track entries land after React's deferred performance flush, whose
   // timing varies on loaded CI runners, so retry rather than flake.
   test.describe.configure({ retries: process.env.CI ? 2 : 0 });

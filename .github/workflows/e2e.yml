@@ -7,6 +7,7 @@ on:
       - 'packages/**'
       - 'templates/**'
       - 'e2e/**'
+      - 'playwright.config.ts'
       - '.github/workflows/e2e.yml'
       - 'pnpm-lock.yaml'
   pull_request:
@@ -15,6 +16,7 @@ on:
       - 'packages/**'
       - 'templates/**'
       - 'e2e/**'
+      - 'playwright.config.ts'
       - '.github/workflows/e2e.yml'
       - 'pnpm-lock.yaml'
   workflow_call:
@@ -75,7 +77,7 @@ jobs:
           if-no-files-found: error
 
   e2e:
-    name: E2E on ${{ matrix.os }} (Node ${{ matrix.version }}) - (${{ matrix.shared }}/4)${{ inputs.react_version && format(' with react@{0}', inputs.react_version) || '' }}
+    name: E2E ${{ matrix.target.name }} - (${{ matrix.shared }}/4)${{ inputs.react_version && format(' with react@{0}', inputs.react_version) || '' }}
     needs:
       - build
     strategy:
@@ -83,19 +85,33 @@ jobs:
       matrix:
         shared: [1, 2, 3, 4]
         shardTotal: [4]
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        version: [26.0.0, 24.0.0, 22.15.0]
-        exclude:
-          - os: macos-latest
+        target:
+          - name: ubuntu-node-26
+            os: ubuntu-latest
+            version: 26.0.0
+            suite: full-matrix
+          - name: ubuntu-node-24
+            os: ubuntu-latest
             version: 24.0.0
-          - os: windows-latest
-            version: 24.0.0
-          - os: macos-latest
+            suite: full-matrix
+          - name: ubuntu-node-22
+            os: ubuntu-latest
             version: 22.15.0
-          - os: windows-latest
-            version: 22.15.0
+            suite: full-matrix
+          - name: windows-node-26
+            os: windows-latest
+            version: 26.0.0
+            suite: full-matrix
+          - name: macos-node-26
+            os: macos-latest
+            version: 26.0.0
+            suite: full-matrix
+          - name: ubuntu-node-lts
+            os: ubuntu-latest
+            version: lts/*
+            suite: ubuntu-lts
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.target.os }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -104,7 +120,7 @@ jobs:
       - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          node-version: ${{ matrix.version }}
+          node-version: ${{ matrix.target.version }}
           cache: ${{ !inputs.react_version && 'pnpm' || '' }}
       - if: runner.os == 'Windows'
         run: choco install yq -y
@@ -132,19 +148,20 @@ jobs:
         env:
           SHARD: ${{ matrix.shared }}
           SHARD_TOTAL: ${{ matrix.shardTotal }}
+          E2E_SUITE: ${{ matrix.target.suite }}
           TEMP_DIR: ${{ runner.temp }}
           VITE_EXPERIMENTAL_WAKU_ROUTER: true
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
         with:
-          name: playwright-report-${{ matrix.os }}-${{ matrix.version }}-${{ matrix.shared }}
+          name: playwright-report-${{ matrix.target.name }}-${{ matrix.shared }}
           path: test-results/
           retention-days: 30
           if-no-files-found: ignore
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
         with:
-          name: output-${{ matrix.os }}-${{ matrix.version }}-${{ matrix.shared }}
+          name: output-${{ matrix.target.name }}-${{ matrix.shared }}
           path: |
             **/dist
             **/node_modules/.vite

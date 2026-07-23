@@ -3,11 +3,6 @@ import { prepareNormalSetup, test, waitForHydration } from './utils.js';
 
 const startApp = prepareNormalSetup('cache-tag');
 
-test.skip(
-  ({ browserName }) => browserName !== 'chromium',
-  'One browser is enough for this server-behavior test.',
-);
-
 test.describe('cache-tag', () => {
   let port: number;
   let stopApp: () => Promise<void>;

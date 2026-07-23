@@ -3,15 +3,6 @@ import { prepareNormalSetup, test, waitForHydration } from './utils.js';
 
 const startApp = prepareNormalSetup('render-type');
 
-test.skip(
-  ({ browserName }) => browserName !== 'chromium',
-  'Browsers are not relevant for this test. One is enough.',
-);
-test.skip(
-  ({ mode }) => mode !== 'PRD',
-  'This test is only relevant in production mode.',
-);
-
 test.describe('render type', () => {
   test.describe('static', () => {
     let port: number;

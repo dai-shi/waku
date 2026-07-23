@@ -136,11 +136,6 @@ const ensureServerEntryWithAdapter = (file: string, adapter: string) => {
 
 test.describe.configure({ mode: 'parallel' });
 
-test.skip(
-  ({ mode }) => mode !== 'PRD',
-  'Build tests are only relevant in production mode.',
-);
-
 test.describe(`multi platform builds`, () => {
   for (const { cwd, project } of dryRunList) {
     for (const {

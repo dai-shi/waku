@@ -82,11 +82,6 @@ test.afterAll(() => {
   }
 });
 
-test.skip(
-  ({ mode }) => mode !== 'DEV',
-  'HMR is only available in development mode',
-);
-
 test.describe('hot reload', () => {
   let port: number;
   let stopApp: () => Promise<void>;

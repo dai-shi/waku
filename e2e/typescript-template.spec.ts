@@ -40,28 +40,26 @@ test.describe('typescript template', () => {
     ).toBeVisible();
   });
 
-  test('redirects trailing slashes via managed middleware in dev', async ({
-    mode,
-    request,
-  }) => {
-    test.skip(mode !== 'DEV', 'DEV only middleware redirect assertion');
+  test(
+    'redirects trailing slashes via managed middleware in dev',
+    { tag: '@dev' },
+    async ({ request }) => {
+      const response = await request.get(`http://localhost:${port}/about/`, {
+        maxRedirects: 0,
+      });
+      expect(response.status()).toBe(301);
+      expect(response.headers().location).toMatch(/\/about$/);
+    },
+  );
 
-    const response = await request.get(`http://localhost:${port}/about/`, {
-      maxRedirects: 0,
-    });
-    expect(response.status()).toBe(301);
-    expect(response.headers().location).toMatch(/\/about$/);
-  });
-
-  test('serves the static trailing-slash page in production', async ({
-    mode,
-    request,
-  }) => {
-    test.skip(mode !== 'PRD', 'PRD only static output assertion');
-
-    const response = await request.get(`http://localhost:${port}/about/`, {
-      maxRedirects: 0,
-    });
-    expect(response.status()).toBe(200);
-  });
+  test(
+    'serves the static trailing-slash page in production',
+    { tag: '@prd' },
+    async ({ request }) => {
+      const response = await request.get(`http://localhost:${port}/about/`, {
+        maxRedirects: 0,
+      });
+      expect(response.status()).toBe(200);
+    },
+  );
 });

@@ -32,8 +32,8 @@ test.describe('fs-router build split', () => {
   let standaloneDir: string;
   let stopApp: (() => Promise<void>) | undefined;
 
-  test.beforeAll(async ({ mode }) => {
-    ({ port, stopApp, standaloneDir } = await startApp(mode));
+  test.beforeAll(async () => {
+    ({ port, stopApp, standaloneDir } = await startApp('PRD'));
   });
 
   test.afterAll(async () => {
@@ -43,11 +43,8 @@ test.describe('fs-router build split', () => {
   });
 
   test('runtime bundle excludes fully static routes while SSG still emits them', async ({
-    mode,
     page,
   }) => {
-    test.skip(mode !== 'PRD');
-
     const distDir = join(standaloneDir, 'dist');
 
     expect(existsSync(distDir)).toBe(true);

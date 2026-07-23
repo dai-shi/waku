@@ -307,21 +307,16 @@ const startHmrApp = prepareNormalSetup('instant-nav', {
   fixtureDir: hmrFixtureDir,
 });
 
-test.describe('instant-nav hmr', () => {
-  test.skip(
-    ({ mode }) => mode !== 'DEV',
-    'HMR is only available in development mode',
-  );
-
+test.describe('instant-nav hmr', { tag: '@dev' }, () => {
   let port: number;
   let stopApp: (() => Promise<void>) | undefined;
 
-  test.beforeAll(async ({ mode }) => {
+  test.beforeAll(async () => {
     cpSync(fixtureSrc, hmrFixtureDir, {
       recursive: true,
       filter: (src) => src !== distDir && !src.startsWith(distDir + sep),
     });
-    ({ port, stopApp } = await startHmrApp(mode));
+    ({ port, stopApp } = await startHmrApp('DEV'));
   });
 
   test.afterAll(async () => {

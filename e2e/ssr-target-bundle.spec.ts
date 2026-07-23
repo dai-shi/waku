@@ -18,9 +18,7 @@ test.describe(`ssr-target-bundle`, () => {
     await stopApp();
   });
 
-  test.describe('PRD only tests', () => {
-    test.skip(({ mode }) => mode !== 'PRD', 'PRD only tests');
-
+  test.describe('PRD only tests', { tag: '@prd' }, () => {
     test('image exists in folder public/assets', async () => {
       const imagePath = path.join(fixtureDir, 'dist', 'public', 'assets');
       const files = readdirSync(imagePath);

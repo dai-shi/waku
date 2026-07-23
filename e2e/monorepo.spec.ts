@@ -3,9 +3,6 @@ import { prepareStandaloneSetup, test } from './utils.js';
 
 const startApp = prepareStandaloneSetup('monorepo');
 
-// TODO: skip since ecosystem ci overrides setup tends to break package managers
-test.skip(!!process.env.ECOSYSTEM_CI);
-
 for (const packageManager of ['npm', 'pnpm', 'yarn'] as const) {
   test.describe(`${packageManager} monorepo`, () => {
     let port: number;

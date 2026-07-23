@@ -386,26 +386,26 @@ test.describe('fs-router', () => {
     );
   });
 
-  test('static slug slice is served from build-time cache', async ({
-    page,
-    mode,
-  }) => {
-    test.skip(mode !== 'PRD');
-    // `_slices/cache-time/[id].tsx` is a static slug slice with
-    // `staticPaths: ['foo']`. With build-time pre-rendering its
-    // `Date.now()` is baked at build (before this test started), so
-    // it must be older than `curr`. Without it, the slice would
-    // render on the first PRD request — after `curr`. The route is
-    // dedicated so this test is the first request to that slice.
-    const curr = Date.now();
-    await page.goto(`http://localhost:${port}/cache-time`);
-    await waitForHydration(page);
-    const text = (await page
-      .getByTestId('cache-time-foo')
-      .textContent()) as string;
-    const time = Number(text.split(':')[1]);
-    expect(time).toBeLessThan(curr);
-  });
+  test(
+    'static slug slice is served from build-time cache',
+    { tag: '@prd' },
+    async ({ page }) => {
+      // `_slices/cache-time/[id].tsx` is a static slug slice with
+      // `staticPaths: ['foo']`. With build-time pre-rendering its
+      // `Date.now()` is baked at build (before this test started), so
+      // it must be older than `curr`. Without it, the slice would
+      // render on the first PRD request — after `curr`. The route is
+      // dedicated so this test is the first request to that slice.
+      const curr = Date.now();
+      await page.goto(`http://localhost:${port}/cache-time`);
+      await waitForHydration(page);
+      const text = (await page
+        .getByTestId('cache-time-foo')
+        .textContent()) as string;
+      const time = Number(text.split(':')[1]);
+      expect(time).toBeLessThan(curr);
+    },
+  );
 
   test('static slug slice renders on the page', async ({ page }) => {
     await page.goto(`http://localhost:${port}/page-with-slices`);
@@ -415,23 +415,23 @@ test.describe('fs-router', () => {
     );
   });
 
-  test('static layout inside a dynamic-path route is served from build-time cache', async ({
-    page,
-    mode,
-  }) => {
-    test.skip(mode !== 'PRD');
-    // `/cache-check/[name]` is a dynamic-path route whose layout is
-    // static and renders `Date.now()`. With build-time caching the
-    // value was baked at build (before this test even started), so
-    // it must be older than `curr`. Without it, the layout would
-    // render at runtime on this first request, after `curr`.
-    const curr = Date.now();
-    await page.goto(`http://localhost:${port}/cache-check/foo`);
-    const rendered = Number(
-      (await page.getByTestId('cache-check-time').textContent()) ?? '',
-    );
-    expect(rendered).toBeLessThan(curr);
-  });
+  test(
+    'static layout inside a dynamic-path route is served from build-time cache',
+    { tag: '@prd' },
+    async ({ page }) => {
+      // `/cache-check/[name]` is a dynamic-path route whose layout is
+      // static and renders `Date.now()`. With build-time caching the
+      // value was baked at build (before this test even started), so
+      // it must be older than `curr`. Without it, the layout would
+      // render at runtime on this first request, after `curr`.
+      const curr = Date.now();
+      await page.goto(`http://localhost:${port}/cache-check/foo`);
+      const rendered = Number(
+        (await page.getByTestId('cache-check-time').textContent()) ?? '',
+      );
+      expect(rendered).toBeLessThan(curr);
+    },
+  );
 
   test('segment route in group route', async ({ page }) => {
     await page.goto(

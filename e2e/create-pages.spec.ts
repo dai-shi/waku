@@ -494,22 +494,23 @@ test.describe(`create-pages`, () => {
     expect(await res.text()).toBe('');
   });
 
-  test('static api is served from build-time pre-generation', async ({
-    mode,
-  }) => {
-    test.skip(mode !== 'PRD', 'PRD only test');
-    // `/api/cache-time` is a static API whose handler returns
-    // `Date.now()`. With build-time pre-generation it was emitted at
-    // build (before this test started), so the returned timestamp is
-    // older than `curr`. Without pre-generation the handler would run
-    // at request time, after `curr`. The route is dedicated so this
-    // test is the first request to it in the process.
-    const curr = Date.now();
-    const res = await fetch(`http://localhost:${port}/api/cache-time`);
-    expect(res.status).toBe(200);
-    const time = Number(await res.text());
-    expect(time).toBeLessThan(curr);
-  });
+  test(
+    'static api is served from build-time pre-generation',
+    { tag: '@prd' },
+    async () => {
+      // `/api/cache-time` is a static API whose handler returns
+      // `Date.now()`. With build-time pre-generation it was emitted at
+      // build (before this test started), so the returned timestamp is
+      // older than `curr`. Without pre-generation the handler would run
+      // at request time, after `curr`. The route is dedicated so this
+      // test is the first request to it in the process.
+      const curr = Date.now();
+      const res = await fetch(`http://localhost:${port}/api/cache-time`);
+      expect(res.status).toBe(200);
+      const time = Number(await res.text());
+      expect(time).toBeLessThan(curr);
+    },
+  );
 
   test('api hi with POST', async () => {
     const res = await fetch(`http://localhost:${port}/api/hi`, {
@@ -786,35 +787,35 @@ test.describe(`create-pages`, () => {
     ).toHaveText('docs');
   });
 
-  test('static layout under dynamic layout is pre-cached at build time', async ({
-    browser,
-    mode,
-  }) => {
-    test.skip(mode !== 'PRD', 'Only relevant in production mode');
-    const getStaticTime = async (port: number) => {
-      const context = await browser.newContext();
-      const page = await context.newPage();
-      await page.goto(`http://localhost:${port}/nested-layouts`);
-      const text = await page
-        .getByRole('heading', { name: 'Static Layout' })
-        .textContent();
-      await context.close();
-      return text!.replace('Static Layout ', '');
-    };
-    // Stop the shared server, start two fresh instances and compare.
-    // If the static layout is pre-cached at build time, both runs see
-    // the same timestamp. If rendered at runtime, they differ.
-    await stopApp();
-    const run1 = await startApp(mode);
-    const time1 = await getStaticTime(run1.port);
-    await run1.stopApp();
-    const run2 = await startApp(mode);
-    const time2 = await getStaticTime(run2.port);
-    await run2.stopApp();
-    // Restart the shared server for remaining tests
-    ({ port, stopApp } = await startApp(mode));
-    expect(time1).toBe(time2);
-  });
+  test(
+    'static layout under dynamic layout is pre-cached at build time',
+    { tag: '@prd' },
+    async ({ browser }) => {
+      const getStaticTime = async (port: number) => {
+        const context = await browser.newContext();
+        const page = await context.newPage();
+        await page.goto(`http://localhost:${port}/nested-layouts`);
+        const text = await page
+          .getByRole('heading', { name: 'Static Layout' })
+          .textContent();
+        await context.close();
+        return text!.replace('Static Layout ', '');
+      };
+      // Stop the shared server, start two fresh instances and compare.
+      // If the static layout is pre-cached at build time, both runs see
+      // the same timestamp. If rendered at runtime, they differ.
+      await stopApp();
+      const run1 = await startApp('PRD');
+      const time1 = await getStaticTime(run1.port);
+      await run1.stopApp();
+      const run2 = await startApp('PRD');
+      const time2 = await getStaticTime(run2.port);
+      await run2.stopApp();
+      // Restart the shared server for remaining tests
+      ({ port, stopApp } = await startApp('PRD'));
+      expect(time1).toBe(time2);
+    },
+  );
 
   test('no ssr', async ({ page }) => {
     await page.goto(`http://localhost:${port}/no-ssr`);
@@ -886,26 +887,15 @@ test.describe(`create-pages`, () => {
   });
 });
 
-test.describe(`create-pages STATIC`, () => {
-  test.skip(
-    ({ mode }) => mode !== 'PRD',
-    'static tests are only relevant in production mode',
-  );
-
+test.describe(`create-pages STATIC`, { tag: '@prd' }, () => {
   let port: number;
   let stopApp: () => Promise<void>;
 
-  test.beforeAll(async ({ mode }) => {
-    if (mode !== 'PRD') {
-      return;
-    }
+  test.beforeAll(async () => {
     ({ port, stopApp } = await startApp('STATIC'));
   });
 
-  test.afterAll(async ({ mode }) => {
-    if (mode !== 'PRD') {
-      return;
-    }
+  test.afterAll(async () => {
     await stopApp();
   });
 

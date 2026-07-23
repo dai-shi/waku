@@ -103,17 +103,6 @@ export default defineConfig(
     files: ['e2e/**'],
   },
   {
-    files: ['e2e/**'],
-    rules: {
-      'playwright/no-skipped-test': [
-        'error',
-        {
-          allowConditional: true,
-        },
-      ],
-    },
-  },
-  {
     files: [
       'packages/waku/cli.js',
       'packages/waku/src/lib/vite-entries/*',

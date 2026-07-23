@@ -1,0 +1,95 @@
+// Specs run in the full OS, Node, browser, and mode matrix by default.
+// These lists only declare intentional restrictions.
+export const UBUNTU_LTS_ONLY_SPECS = [
+  'base-path.spec.ts',
+  'broken-links.spec.ts',
+  'cache-tag.spec.ts',
+  'cloudflare-adapter.prd.spec.ts',
+  'css-plugin-integrations.spec.ts',
+  'custom-library-adapter.prd.spec.ts',
+  'custom-user-adapter.prd.spec.ts',
+  'fs-router-build-split.prd.spec.ts',
+  'instant-nav.spec.ts',
+  'minimal-examples.spec.ts',
+  'multi-platform.prd.spec.ts',
+  'partial-build.prd.spec.ts',
+  'performance-track.dev.spec.ts',
+  'react-compiler.spec.ts',
+  'react-tweet.spec.ts',
+  'render-type.prd.spec.ts',
+  'router-client-no-404.spec.ts',
+  'router-client.spec.ts',
+  'rsc-asset.spec.ts',
+  'rsc-css-modules.spec.ts',
+  'spa-example.spec.ts',
+  'ssg-performance.prd.spec.ts',
+  'ssg-wildcard.spec.ts',
+  'ssr-catch-error.spec.ts',
+  'ssr-context-provider.spec.ts',
+  'ssr-nonce-middleware.spec.ts',
+  'ssr-nonce.spec.ts',
+  'ssr-redirect.spec.ts',
+  'ssr-swr.spec.ts',
+  'ssr-target-bundle.spec.ts',
+  'styled-components.spec.ts',
+  'tailwindcss.spec.ts',
+  'tanstack-router.spec.ts',
+  'use-router.spec.ts',
+  'waku-jotai-integration.spec.ts',
+  'website-smoke.spec.ts',
+  'wildcard-api-routes.spec.ts',
+] as const;
+
+export const CHROMIUM_ONLY_SPECS = [
+  'cache-tag.spec.ts',
+  'cloudflare-adapter.prd.spec.ts',
+  'css-plugin-integrations.spec.ts',
+  'custom-library-adapter.prd.spec.ts',
+  'custom-user-adapter.prd.spec.ts',
+  'define-router.spec.ts',
+  'fs-router-build-split.prd.spec.ts',
+  'hot-reload.dev.spec.ts',
+  'javascript-template.spec.ts',
+  'minimal-examples.spec.ts',
+  'monorepo.spec.ts',
+  'multi-platform.prd.spec.ts',
+  'partial-build.prd.spec.ts',
+  'performance-track.dev.spec.ts',
+  'react-compiler.spec.ts',
+  'react-tweet.spec.ts',
+  'render-type.prd.spec.ts',
+  'rsc-asset.spec.ts',
+  'rsc-css-modules.spec.ts',
+  'spa-example.spec.ts',
+  'ssg-performance.prd.spec.ts',
+  'ssg-wildcard.spec.ts',
+  'ssr-context-provider.spec.ts',
+  'ssr-target-bundle.spec.ts',
+  'styled-components.spec.ts',
+  'tailwindcss.spec.ts',
+  'tanstack-router.spec.ts',
+  'waku-jotai-integration.spec.ts',
+  'website-smoke.spec.ts',
+  'wildcard-api-routes.spec.ts',
+] as const;
+
+export const PRD_ONLY_SPECS = [
+  'cloudflare-adapter.prd.spec.ts',
+  'custom-library-adapter.prd.spec.ts',
+  'custom-user-adapter.prd.spec.ts',
+  'fs-router-build-split.prd.spec.ts',
+  'multi-platform.prd.spec.ts',
+  'partial-build.prd.spec.ts',
+  'render-type.prd.spec.ts',
+  'ssg-performance.prd.spec.ts',
+] as const;
+
+export const DEV_ONLY_SPECS = [
+  'hot-reload.dev.spec.ts',
+  'performance-track.dev.spec.ts',
+] as const;
+
+export const ECOSYSTEM_CI_IGNORED_SPECS = ['monorepo.spec.ts'] as const;
+
+export const DEV_ONLY_TAG = /@dev/;
+export const PRD_ONLY_TAG = /@prd/;

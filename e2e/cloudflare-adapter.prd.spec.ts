@@ -3,18 +3,13 @@ import { prepareNormalSetup, test } from './utils.js';
 
 const startApp = prepareNormalSetup('cloudflare-adapter');
 
-// The cloudflare adapter behavior is browser-agnostic, so chromium is enough.
-test.skip(({ browserName }) => browserName !== 'chromium');
-// This spec runs `wrangler dev` against the built output, which requires the PRD build step.
-test.skip(({ mode }) => mode !== 'PRD');
-
 test.describe('cloudflare adapter', () => {
   let port: number;
   let stopApp: () => Promise<void>;
   let buildResult: { stdout: string; stderr: string } | undefined;
 
-  test.beforeAll(async ({ mode }) => {
-    ({ port, stopApp, buildResult } = await startApp(mode, {
+  test.beforeAll(async () => {
+    ({ port, stopApp, buildResult } = await startApp('PRD', {
       cmd: 'npx wrangler dev',
       portFlag: '--port',
     }));
