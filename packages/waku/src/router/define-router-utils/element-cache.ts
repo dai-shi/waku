@@ -2,12 +2,14 @@ import type { ReactNode } from 'react';
 import { unstable_bytesToBase64 as bytesToBase64 } from '../../minimal/server.js';
 import { deserializeRsc, serializeRsc } from '../../server.js';
 import type { PathSpec } from '../isomorphic-utils/path-spec.js';
+import {
+  isRouteSlotId,
+  isSliceSlotId,
+} from '../isomorphic-utils/route-path.js';
 import { pathSpecKey } from './config-serialization.js';
 import type { SlotId } from './config-types.js';
 
 export const ROOT_SLOT_ID = 'root';
-export const ROUTE_SLOT_ID_PREFIX = 'route:';
-export const SLICE_SLOT_ID_PREFIX = 'slice:';
 
 export type CacheId = string;
 
@@ -52,8 +54,8 @@ export const getPathSpecCacheId = (pathSpec: PathSpec): CacheId =>
 export const assertNonReservedSlotId = (slotId: SlotId) => {
   if (
     slotId === ROOT_SLOT_ID ||
-    slotId.startsWith(ROUTE_SLOT_ID_PREFIX) ||
-    slotId.startsWith(SLICE_SLOT_ID_PREFIX) ||
+    isRouteSlotId(slotId) ||
+    isSliceSlotId(slotId) ||
     // Capitalized ids are reserved for define-router such as ROUTE_ID, IS_STATIC_ID, HAS404_ID
     /^[A-Z]/.test(slotId)
   ) {

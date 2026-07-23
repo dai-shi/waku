@@ -9,6 +9,8 @@ import {
   IS_STATIC_ID,
   ROUTE_ID,
   decodeRoutePath,
+  getRouteSlotId,
+  getSliceSlotId,
 } from '../isomorphic-utils/route-path.js';
 import type { ConfigRegistry } from './config-registry.js';
 import type {
@@ -19,8 +21,6 @@ import type {
 } from './config-types.js';
 import {
   ROOT_SLOT_ID,
-  ROUTE_SLOT_ID_PREFIX,
-  SLICE_SLOT_ID_PREFIX,
   getPathSpecCacheId,
   getSlotCacheId,
 } from './element-cache.js';
@@ -67,7 +67,7 @@ export const createRouteEntries = (configRegistry: ConfigRegistry) => {
     concreteId?: string,
     params?: Record<string, string | string[]>,
   ): Promise<ReactNode> => {
-    const slotId = SLICE_SLOT_ID_PREFIX + (concreteId ?? sliceConfig.id);
+    const slotId = getSliceSlotId(concreteId ?? sliceConfig.id);
     const cacheId = getSlotCacheId(slotId);
     const cached = elementCache.get(cacheId);
     if (cached) {
@@ -95,7 +95,7 @@ export const createRouteEntries = (configRegistry: ConfigRegistry) => {
       return null;
     }
     const { query } = parseRscParams(rscParams);
-    const routeId = ROUTE_SLOT_ID_PREFIX + routePath;
+    const routeId = getRouteSlotId(routePath);
     const routeTemplateCacheId = getPathSpecCacheId(pathConfigItem.path);
     const option: RendererOption = {
       routePath,
@@ -167,9 +167,9 @@ export const createRouteEntries = (configRegistry: ConfigRegistry) => {
       if (!sliceConfig) {
         throw new Error(`Slice not found: ${sliceId}`);
       }
-      elementSources[SLICE_SLOT_ID_PREFIX + sliceId] = makeElementSource(
+      elementSources[getSliceSlotId(sliceId)] = makeElementSource(
         sliceConfig.isStatic,
-        getSlotCacheId(SLICE_SLOT_ID_PREFIX + sliceId),
+        getSlotCacheId(getSliceSlotId(sliceId)),
         () => sliceConfig.renderer(sliceConfig.params),
         bindEtag(sliceConfig.getEtagFromParams, sliceConfig.params),
       );
@@ -204,7 +204,7 @@ export const createRouteEntries = (configRegistry: ConfigRegistry) => {
       return null;
     }
     const { sliceConfig, params: sliceParams } = found;
-    const sliceSlotId = SLICE_SLOT_ID_PREFIX + sliceId;
+    const sliceSlotId = getSliceSlotId(sliceId);
     return buildElements(
       {},
       {

@@ -1,11 +1,16 @@
 /** @vitest-environment happy-dom */
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { createCustomError } from '../src/lib/utils/custom-errors.js';
+import { ETAG_ID_PREFIX, IMMUTABLE_ETAG } from '../src/lib/utils/etags.js';
 import {
+  applyServerRedirect,
+  canCommitInstantly,
   deriveCommitted,
+  pinForSwr,
   resolveFollowingErrors,
 } from '../src/router/client-utils/navigate.js';
 import type { ResolveDeps } from '../src/router/client-utils/navigate.js';
+import { ROUTE_ID } from '../src/router/isomorphic-utils/route-path.js';
 
 beforeEach(() => {
   vi.stubEnv('WAKU_CONFIG_BASE_PATH', '/');
@@ -191,5 +196,76 @@ describe('deriveCommitted', () => {
     expect(committed.route.path).toBe('/404');
     expect(committed.history).toBeNull();
     expect(committed.scroll).toBeNull();
+  });
+});
+
+describe('canCommitInstantly', () => {
+  const immutable = (slotId: string) => ({
+    [ETAG_ID_PREFIX + slotId]: IMMUTABLE_ETAG,
+  });
+
+  test('true when the resolved elements hold an immutable route slot', () => {
+    expect(
+      canCommitInstantly('route:/a', immutable('route:/a'), undefined),
+    ).toBe(true);
+  });
+
+  test('true when only the prefetched elements hold it', () => {
+    expect(canCommitInstantly('route:/a', {}, immutable('route:/a'))).toBe(
+      true,
+    );
+  });
+
+  test('false without an immutable etag for the slot', () => {
+    expect(
+      canCommitInstantly(
+        'route:/a',
+        { [ETAG_ID_PREFIX + 'route:/a']: 'W/"mutable"' },
+        null,
+      ),
+    ).toBe(false);
+  });
+});
+
+describe('pinForSwr', () => {
+  const immutable = (slotId: string) => ({
+    [ETAG_ID_PREFIX + slotId]: IMMUTABLE_ETAG,
+  });
+
+  test('pins meta keys and immutable slots, not mutable ones', () => {
+    const pin = pinForSwr(() => immutable('layout:/'));
+    expect(pin(ROUTE_ID)).toBe(true);
+    expect(pin('layout:/')).toBe(true);
+    expect(pin('page:/a')).toBe(false);
+  });
+
+  test('reads the resolved elements at call time', () => {
+    let resolved: Record<string, unknown> = {};
+    const pin = pinForSwr(() => resolved);
+    expect(pin('layout:/')).toBe(false);
+    resolved = immutable('layout:/');
+    expect(pin('layout:/')).toBe(true);
+  });
+});
+
+describe('applyServerRedirect', () => {
+  const prev = {
+    route: route('/a'),
+    history: { mode: 'push', url: undefined },
+    scroll: { pathChanged: true },
+  } as const;
+
+  test('patches the route and replaces history with the redirect url', () => {
+    const next = applyServerRedirect(prev, route('/b'));
+    expect(next.route.path).toBe('/b');
+    expect(next.history?.mode).toBe('replace');
+    expect(next.history?.url?.pathname).toBe('/b');
+    expect(next.scroll).toEqual({ pathChanged: true });
+  });
+
+  test('drops the history write for the 404 route', () => {
+    const next = applyServerRedirect(prev, route('/404'));
+    expect(next.route.path).toBe('/404');
+    expect(next.history).toBeNull();
   });
 });

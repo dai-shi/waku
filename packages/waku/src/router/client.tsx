@@ -40,16 +40,18 @@ import {
   getRouteFromElements,
   getServerRedirect,
   has404FromElements,
-  isMetaKey,
   isStaticFromElements,
 } from './client-utils/elements-meta.js';
 import {
+  applyServerRedirect,
+  canCommitInstantly,
   deriveCommitted,
   getRouteUrl,
   isSameRoute,
   parseRedirectUrl,
   parseRoute,
   pathnameToCurrentRoutePath,
+  pinForSwr,
   resolveFollowingErrors,
   writeUrlToHistory,
 } from './client-utils/navigate.js';
@@ -71,6 +73,8 @@ import {
   ROUTE_ID,
   encodeRoutePath,
   encodeSliceId,
+  getRouteSlotId,
+  getSliceSlotId,
 } from './isomorphic-utils/route-path.js';
 import type { RouteProps } from './isomorphic-utils/route-path.js';
 import {
@@ -815,9 +819,6 @@ const ThrowError = ({ error }: { error: unknown }) => {
   throw error;
 };
 
-const getRouteSlotId = (path: string) => 'route:' + path;
-const getSliceSlotId = (id: SliceId) => 'slice:' + id;
-
 const preloadRouteModules = (path: string) => {
   globalThis.__WAKU_ROUTER_PREFETCH__?.(path, (id) => {
     preloadModule(id, { as: 'script' });
@@ -1107,14 +1108,14 @@ const InnerRouter = ({
         const prefetchedElements =
           prefetchedElementsStoreRef.current.get(rscPath);
         const routeSlotId = getRouteSlotId(nextRoute.path);
-        const isStaticSlot = (key: string) =>
-          isImmutableElement(resolvedElementsRef.current, key);
         if (
-          isStaticSlot(routeSlotId) ||
-          (prefetchedElements &&
-            isImmutableElement(prefetchedElements, routeSlotId))
+          canCommitInstantly(
+            routeSlotId,
+            resolvedElementsRef.current,
+            prefetchedElements,
+          )
         ) {
-          const pin = (key: string) => isMetaKey(key) || isStaticSlot(key);
+          const pin = pinForSwr(() => resolvedElementsRef.current);
           const cached = getPrefetch(
             prefetchCacheRef.current,
             prefetchCacheKey(rscPath, nextRoute.query),
@@ -1137,13 +1138,17 @@ const InnerRouter = ({
             },
           );
           routeRef.current = nextRoute;
-          setCommitted({
-            route: nextRoute,
-            history: mode ? { mode, url: options.url } : null,
-            scroll: options.shouldScroll
-              ? { pathChanged: nextRoute.path !== routeBefore.path }
-              : null,
-          });
+          setCommitted(
+            deriveCommitted({
+              destination: { route: nextRoute, routeUrl: targetUrl },
+              attempted: nextRoute,
+              routeBefore,
+              history: mode,
+              historyUrl: options.url,
+              shouldScroll: options.shouldScroll,
+              getServerRedirect,
+            }),
+          );
           setErr(null);
           try {
             const elements = await dataPromise;
@@ -1153,14 +1158,7 @@ const InnerRouter = ({
             const redirect = getServerRedirect(elements, nextRoute);
             if (redirect) {
               routeRef.current = redirect;
-              setCommitted((prev) => ({
-                ...prev,
-                route: redirect,
-                history:
-                  redirect.path === '/404'
-                    ? null
-                    : { mode: 'replace', url: getRouteUrl(redirect) },
-              }));
+              setCommitted((prev) => applyServerRedirect(prev, redirect));
             }
             abortRef.current = null;
             emitRouteChangeEvent('complete', redirect ?? nextRoute);

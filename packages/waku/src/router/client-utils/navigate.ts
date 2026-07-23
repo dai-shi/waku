@@ -1,9 +1,11 @@
 import {
   unstable_getErrorInfo as getErrorInfo,
+  unstable_isImmutableElement as isImmutableElement,
   unstable_removeBase as removeBase,
 } from '../../minimal/client.js';
 import { pathnameToRoutePath } from '../isomorphic-utils/route-path.js';
 import type { RouteProps } from '../isomorphic-utils/route-path.js';
+import { isMetaKey } from './elements-meta.js';
 
 // --- pure route and url helpers ---
 
@@ -167,3 +169,29 @@ export const deriveCommitted = (outcome: {
       : null,
   };
 };
+
+export const applyServerRedirect = (
+  prev: Committed,
+  redirect: RouteProps,
+): Committed => ({
+  ...prev,
+  route: redirect,
+  history:
+    redirect.path === '/404'
+      ? null
+      : { mode: 'replace', url: getRouteUrl(redirect) },
+});
+
+// --- instant navigation ---
+
+export const canCommitInstantly = (
+  routeSlotId: string,
+  resolvedElements: Record<string, unknown>,
+  prefetchedElements: Record<string, unknown> | null | undefined,
+) =>
+  isImmutableElement(resolvedElements, routeSlotId) ||
+  !!(prefetchedElements && isImmutableElement(prefetchedElements, routeSlotId));
+
+export const pinForSwr =
+  (getResolvedElements: () => Record<string, unknown>) => (key: string) =>
+    isMetaKey(key) || isImmutableElement(getResolvedElements(), key);

@@ -8,6 +8,10 @@ import {
 import {
   decodeRoutePath,
   encodeRoutePath,
+  getRouteSlotId,
+  getSliceSlotId,
+  isRouteSlotId,
+  isSliceSlotId,
   pathnameToRoutePath,
 } from '../src/router/isomorphic-utils/route-path.js';
 
@@ -127,5 +131,22 @@ describe('decodeRoutePath', () => {
 describe('encodeRoutePath & decodeRoutePath', () => {
   test('escape _ prefix', () => {
     expect(decodeRoutePath(encodeRoutePath('/_root'))).toBe('/_root');
+  });
+});
+
+describe('slot ids', () => {
+  test('slot ids are part of the RSC payload format', () => {
+    expect(getRouteSlotId('/')).toBe('route:/');
+    expect(getRouteSlotId('/foo/bar')).toBe('route:/foo/bar');
+    expect(getSliceSlotId('slice001')).toBe('slice:slice001');
+  });
+
+  test('predicates only match ids from their own constructor', () => {
+    expect(isRouteSlotId(getRouteSlotId('/foo'))).toBe(true);
+    expect(isSliceSlotId(getRouteSlotId('/foo'))).toBe(false);
+    expect(isSliceSlotId(getSliceSlotId('foo'))).toBe(true);
+    expect(isRouteSlotId(getSliceSlotId('foo'))).toBe(false);
+    expect(isRouteSlotId('root')).toBe(false);
+    expect(isSliceSlotId('root')).toBe(false);
   });
 });

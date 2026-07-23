@@ -31,6 +31,19 @@ export function getComponentIds(routePath: string): readonly string[] {
   return ['root', ...Array.from(idSet)];
 }
 
+const ROUTE_SLOT_ID_PREFIX = 'route:';
+const SLICE_SLOT_ID_PREFIX = 'slice:';
+
+export const getRouteSlotId = (path: string) => ROUTE_SLOT_ID_PREFIX + path;
+
+export const getSliceSlotId = (id: string) => SLICE_SLOT_ID_PREFIX + id;
+
+export const isRouteSlotId = (slotId: string) =>
+  slotId.startsWith(ROUTE_SLOT_ID_PREFIX);
+
+export const isSliceSlotId = (slotId: string) =>
+  slotId.startsWith(SLICE_SLOT_ID_PREFIX);
+
 const ROUTE_PREFIX = 'R';
 const SLICE_PREFIX = 'S/';
 
