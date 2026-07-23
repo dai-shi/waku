@@ -124,6 +124,7 @@ const swrElementsPromise = (
   b: Promise<Elements>,
   pin: (key: string) => boolean,
   base?: Elements,
+  overlay?: Elements,
 ): Promise<Elements> => {
   const getResult = () => {
     const result: Promise<Elements> = Promise.resolve(a).then((aRes) => {
@@ -153,6 +154,9 @@ const swrElementsPromise = (
           }
         }
       }
+      if (overlay) {
+        Object.assign(nextElements, overlay);
+      }
       resolvedMergeResults.set(result, nextElements);
       return nextElements;
     });
@@ -169,13 +173,18 @@ const swrNewKeysElementsPromise = (
   prev: Promise<Elements>,
   b: Promise<Elements>,
   bRes: Elements,
+  overlay?: Elements,
 ): Promise<Elements> => {
   if (swrMergeSources.get(prev) !== b) {
     return prev;
   }
+  const overlayKeys = overlay
+    ? Object.keys(overlay).filter((key) => key in bRes)
+    : [];
   const prevRes = resolvedMergeResults.get(prev);
   if (
     prevRes &&
+    !overlayKeys.length &&
     !Object.keys(bRes).some((key) => key !== '_value' && !(key in prevRes))
   ) {
     return prev;
@@ -185,11 +194,14 @@ const swrNewKeysElementsPromise = (
       const newKeys = Object.keys(bRes).filter(
         (key) => key !== '_value' && !(key in prevRes),
       );
-      if (!newKeys.length) {
+      if (!newKeys.length && !overlayKeys.length) {
         return prevRes;
       }
       const nextElements = { ...prevRes };
       for (const key of newKeys) {
+        nextElements[key] = bRes[key];
+      }
+      for (const key of overlayKeys) {
         nextElements[key] = bRes[key];
       }
       return nextElements;
@@ -211,6 +223,7 @@ type Refetch = (
     unstable_swr?: {
       pin: (key: string) => boolean;
       base?: Elements;
+      overlay?: Elements;
     };
   },
 ) => Promise<Elements>;
@@ -507,6 +520,10 @@ export const unstable_prefetchRsc = (
 const RefetchContext = createContext<Refetch>(() => {
   throw new Error('Missing Root component');
 });
+type MergeElements = (partial: Elements) => void;
+const MergeElementsContext = createContext<MergeElements>(() => {
+  throw new Error('Missing Root component');
+});
 const ElementsContext = createContext<Promise<Elements> | null>(null);
 
 /**
@@ -554,11 +571,22 @@ export const Root = ({
     const dataWithoutErrors = Promise.resolve(data).catch(() => ({}));
     if (swr) {
       setElements((prev) =>
-        swrElementsPromise(prev, dataWithoutErrors, swr.pin, swr.base),
+        swrElementsPromise(
+          prev,
+          dataWithoutErrors,
+          swr.pin,
+          swr.base,
+          swr.overlay,
+        ),
       );
       return Promise.resolve(data).then((resolved) => {
         setElements((prev) =>
-          swrNewKeysElementsPromise(prev, dataWithoutErrors, resolved),
+          swrNewKeysElementsPromise(
+            prev,
+            dataWithoutErrors,
+            resolved,
+            swr.overlay,
+          ),
         );
         return resolved;
       });
@@ -566,12 +594,17 @@ export const Root = ({
     setElements((prev) => mergeElementsPromise(prev, dataWithoutErrors));
     return data;
   }, []);
+  const mergeElements = useCallback<MergeElements>((partial) => {
+    setElements((prev) => mergeElementsPromise(prev, partial));
+  }, []);
   return (
     <RefetchContext value={refetch}>
-      <ElementsContext value={elements}>
-        {DEFAULT_HTML_HEAD}
-        {children}
-      </ElementsContext>
+      <MergeElementsContext value={mergeElements}>
+        <ElementsContext value={elements}>
+          {DEFAULT_HTML_HEAD}
+          {children}
+        </ElementsContext>
+      </MergeElementsContext>
     </RefetchContext>
   );
 };
@@ -581,6 +614,8 @@ export const Root = ({
  * even though it does not carry the `unstable_` prefix.
  */
 export const useRefetch = () => use(RefetchContext);
+
+export const useMergeElements_UNSTABLE = () => use(MergeElementsContext);
 
 const ChildrenContext = createContext<ReactNode>(undefined);
 const ChildrenContextProvider = memo(ChildrenContext);
@@ -652,10 +687,12 @@ export const INTERNAL_ServerRoot = ({
   children: ReactNode;
 }) => (
   <RefetchContext value={async () => ({})}>
-    <ElementsContext value={elementsPromise}>
-      {DEFAULT_HTML_HEAD}
-      {children}
-    </ElementsContext>
+    <MergeElementsContext value={() => {}}>
+      <ElementsContext value={elementsPromise}>
+        {DEFAULT_HTML_HEAD}
+        {children}
+      </ElementsContext>
+    </MergeElementsContext>
   </RefetchContext>
 );
 

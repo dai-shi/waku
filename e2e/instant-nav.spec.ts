@@ -229,8 +229,6 @@ test.describe('instant-nav', () => {
     expect(bodies[0]).toContain('hover-body');
   });
 
-  // The optimistic commit happens before the response, so it reconciles a
-  // server redirect once the response lands.
   test('a redirected instant navigation reconciles to the target', async ({
     page,
   }) => {

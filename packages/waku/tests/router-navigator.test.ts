@@ -5,7 +5,7 @@ import { ETAG_ID_PREFIX, IMMUTABLE_ETAG } from '../src/lib/utils/etags.js';
 import {
   applyServerRedirect,
   canCommitInstantly,
-  deriveCommitted,
+  deriveNav,
   pinForSwr,
   resolveFollowingErrors,
 } from '../src/router/client-utils/navigate.js';
@@ -139,11 +139,11 @@ describe('navigator', () => {
   });
 });
 
-describe('deriveCommitted', () => {
+describe('deriveNav', () => {
   const getServerRedirect = () => undefined;
 
   test('a plain navigation keeps its history and scroll intent', () => {
-    const committed = deriveCommitted({
+    const { route: derived, nav } = deriveNav({
       destination: {
         route: route('/next'),
         routeUrl: urlOf('/next'),
@@ -155,16 +155,16 @@ describe('deriveCommitted', () => {
       shouldScroll: true,
       getServerRedirect,
     });
-    expect(committed.route.path).toBe('/next');
-    expect(committed.history).toEqual({
+    expect(derived.path).toBe('/next');
+    expect(nav.history).toEqual({
       mode: 'push',
       url: urlOf('/next'),
     });
-    expect(committed.scroll).toEqual({ pathChanged: true });
+    expect(nav.scroll).toEqual({ pathChanged: true });
   });
 
   test('a followed navigation replaces the history url', () => {
-    const committed = deriveCommitted({
+    const { nav } = deriveNav({
       destination: {
         route: route('/login'),
         routeUrl: urlOf('/login'),
@@ -176,11 +176,11 @@ describe('deriveCommitted', () => {
       shouldScroll: true,
       getServerRedirect,
     });
-    expect(committed.history?.url?.pathname).toBe('/login');
+    expect(nav.history?.url?.pathname).toBe('/login');
   });
 
   test('a server side redirect to the 404 route drops the history write', () => {
-    const committed = deriveCommitted({
+    const { route: derived, nav } = deriveNav({
       destination: {
         route: route('/somewhere'),
         routeUrl: urlOf('/somewhere'),
@@ -193,9 +193,9 @@ describe('deriveCommitted', () => {
       shouldScroll: false,
       getServerRedirect: () => route('/404'),
     });
-    expect(committed.route.path).toBe('/404');
-    expect(committed.history).toBeNull();
-    expect(committed.scroll).toBeNull();
+    expect(derived.path).toBe('/404');
+    expect(nav.history).toBeNull();
+    expect(nav.scroll).toBeNull();
   });
 });
 
@@ -250,14 +250,15 @@ describe('pinForSwr', () => {
 
 describe('applyServerRedirect', () => {
   const prev = {
-    route: route('/a'),
+    query: '',
+    hash: '',
     history: { mode: 'push', url: undefined },
     scroll: { pathChanged: true },
   } as const;
 
-  test('patches the route and replaces history with the redirect url', () => {
-    const next = applyServerRedirect(prev, route('/b'));
-    expect(next.route.path).toBe('/b');
+  test('replaces history with the redirect url and keeps the scroll intent', () => {
+    const next = applyServerRedirect(prev, route('/b', 'x=1'));
+    expect(next.query).toBe('x=1');
     expect(next.history?.mode).toBe('replace');
     expect(next.history?.url?.pathname).toBe('/b');
     expect(next.scroll).toEqual({ pathChanged: true });
@@ -265,7 +266,6 @@ describe('applyServerRedirect', () => {
 
   test('drops the history write for the 404 route', () => {
     const next = applyServerRedirect(prev, route('/404'));
-    expect(next.route.path).toBe('/404');
     expect(next.history).toBeNull();
   });
 });

@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
 import { StrictMode, act, use, useState } from 'react';
-import type { ReactElement } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import { preloadModule } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import { expectType } from 'ts-expect';
@@ -47,6 +47,7 @@ import {
   HAS404_ID,
   IS_STATIC_ID,
   ROUTE_ID,
+  decodeRoutePath,
 } from '../src/router/isomorphic-utils/route-path.js';
 import { PREFETCH_LIMIT } from '../src/router/prefetch-cache.js';
 
@@ -75,10 +76,14 @@ type IntersectionObserverMockInstance = IntersectionObserver & {
   callback: IntersectionObserverCallback;
 };
 
-// Elements the mocked `Root` provides for the current render. Hoisted so the
-// `vi.mock` factory can read it.
+// Hoisted so the `vi.mock` factory can read it. `elements` is the initial
+// elements a mocked Root seeds; `inner` is the shared, configurable refetch
+// mock tests observe. Each mocked Root keeps its OWN elements state (see the
+// factory), so independent Roots behave independently like the real client.
 const testHoisted = vi.hoisted(() => ({
   elements: {} as Record<string, unknown>,
+  inner: null as
+    ((...args: unknown[]) => Promise<Record<string, unknown>>) | null,
 }));
 
 const createDeferred = <T,>() => {
@@ -97,18 +102,50 @@ const resolvedThenable = <T,>(value: T): Promise<T> =>
     value,
   });
 
-const createRefetchMock = () =>
-  vi.fn<ReturnType<typeof useRefetch>>(async () => ({}));
-
-const getRefetchMock = () => {
-  const results = vi.mocked(useRefetch).mock.results;
-  for (let index = results.length - 1; index >= 0; index -= 1) {
-    const result = results[index];
-    if (result?.type === 'return') {
-      return result.value as ReturnType<typeof createRefetchMock>;
-    }
+// A real route response carries its ROUTE_ID and route slot; tests that only
+// configure content (or nothing) get those defaulted from the request so the
+// derived route can follow the navigation.
+const withRouteMeta = (
+  result: unknown,
+  rscPath: string,
+  rscParams: unknown,
+): Record<string, unknown> => {
+  if (!result || typeof result !== 'object') {
+    return {};
   }
-  throw new Error('useRefetch was not called');
+  const data = result as Record<string, unknown>;
+  if (ROUTE_ID in data || !rscPath.startsWith('R/')) {
+    return data;
+  }
+  const routePath = decodeRoutePath(rscPath);
+  const query =
+    rscParams instanceof URLSearchParams ? (rscParams.get('query') ?? '') : '';
+  // Inject only the route metadata; the route slot itself comes from the
+  // initial elements or the configured response.
+  return { ...data, [ROUTE_ID]: [routePath, query] };
+};
+
+// Per-root elements state, wired to each mocked Root through context so a
+// refetch or merge targets the Root that made it (see the factory).
+type RootStore = {
+  applySync: (data: Record<string, unknown>) => void;
+  applyAsync: (data: Promise<Record<string, unknown>>) => void;
+};
+type RefetchInner = ReturnType<typeof useRefetch>;
+type MockedRefetch = ReturnType<typeof vi.fn<RefetchInner>>;
+
+// Install a test-provided refetch as the shared inner mock the mocked Roots
+// wrap. Returns it so the test keeps configuring/inspecting it.
+const installRefetch = (inner: MockedRefetch) => {
+  testHoisted.inner = inner as unknown as typeof testHoisted.inner;
+  return inner;
+};
+
+const getRefetchMock = (): MockedRefetch => {
+  if (!testHoisted.inner) {
+    throw new Error('refetch mock not initialized');
+  }
+  return testHoisted.inner as unknown as MockedRefetch;
 };
 
 const getIntersectionObserverMockInstance = () => {
@@ -156,20 +193,99 @@ vi.mock('../src/minimal/client.js', async () => {
   const actual = await vi.importActual<
     typeof import('../src/minimal/client.js')
   >('../src/minimal/client.js');
+  const React = await vi.importActual<typeof import('react')>('react');
+
+  const makeThenable = (value: Record<string, unknown>) =>
+    Object.assign(Promise.resolve(value), {
+      status: 'fulfilled' as const,
+      value,
+    });
+
+  // Each mocked Root provides its own store through this context, so a refetch
+  // or merge from within a Root targets that Root's elements state.
+  const StoreContext = React.createContext<RootStore | null>(null);
+
+  const StatefulRoot = (props: { children?: ReactNode }) => {
+    const valueRef = React.useRef<Record<string, unknown>>(undefined);
+    if (!valueRef.current) {
+      valueRef.current = {
+        root: React.createElement(actual.Children),
+        ...testHoisted.elements,
+      };
+    }
+    const [elements, setElements] = React.useState<
+      Promise<Record<string, unknown>>
+    >(() => makeThenable(valueRef.current!));
+    const storeRef = React.useRef<RootStore>(undefined);
+    if (!storeRef.current) {
+      storeRef.current = {
+        // synchronous merge of a value (route metadata with no fetch)
+        applySync: (data) => {
+          valueRef.current = { ...valueRef.current, ...data };
+          setElements(makeThenable(valueRef.current));
+        },
+        // eager merge of a pending fetch: elements suspend until it resolves,
+        // like the real client, so a transition stays pending across the fetch
+        applyAsync: (dataPromise) => {
+          setElements(
+            dataPromise.then((data) => {
+              valueRef.current = { ...valueRef.current, ...data };
+              return valueRef.current!;
+            }),
+          );
+        },
+      };
+    }
+    // A boundary so a merge that suspends (pending fetch) shows a fallback
+    // instead of crashing on a non-transition update; the real app supplies its
+    // own boundaries.
+    return React.createElement(
+      StoreContext.Provider,
+      { value: storeRef.current },
+      React.createElement(
+        React.Suspense,
+        { fallback: null },
+        actual.INTERNAL_ServerRoot({
+          elementsPromise: elements,
+          children: props.children,
+        }),
+      ),
+    );
+  };
+
+  // Per-root refetch: calls the shared inner mock, then merges the response into
+  // this Root's own store.
+  const useMockRefetch = () => {
+    const store = React.use(StoreContext);
+    return React.useMemo(
+      () =>
+        (
+          rscPath: string,
+          ...rest: [rscParams?: unknown, options?: unknown]
+        ) => {
+          const dataPromise = Promise.resolve(
+            testHoisted.inner!(rscPath, ...rest),
+          ).then((result) => withRouteMeta(result, rscPath, rest[0]));
+          store?.applyAsync(dataPromise.catch(() => ({})));
+          return dataPromise;
+        },
+      [store],
+    );
+  };
 
   return {
     ...actual,
     Root: vi.fn((props: Parameters<typeof actual.Root>[0]) =>
-      actual.INTERNAL_ServerRoot({
-        elementsPromise: resolvedThenable({
-          root: <Children />,
-          ...testHoisted.elements,
-        }),
-        children: props.children,
-      }),
+      React.createElement(StatefulRoot, props),
     ),
+    // The router writes route metadata here when no fetch carries it; route it
+    // to the calling Root's own store.
+    useMergeElements_UNSTABLE: () => {
+      const store = React.use(StoreContext);
+      return store ? store.applySync : () => {};
+    },
     unstable_prefetchRsc: vi.fn(),
-    useRefetch: vi.fn(),
+    useRefetch: vi.fn(useMockRefetch),
   };
 });
 
@@ -245,9 +361,10 @@ beforeEach(() => {
 
   delete (globalThis as Record<string, unknown>).__WAKU_PREFETCHED__;
   testHoisted.elements = {};
-
-  vi.mocked(useRefetch).mockReset();
-  vi.mocked(useRefetch).mockReturnValue(createRefetchMock());
+  // Fresh shared refetch mock per test; the mocked useRefetch (a per-root hook)
+  // wraps it, so its implementation must stay intact (do not mockReset it).
+  testHoisted.inner = vi.fn(async () => ({}));
+  vi.mocked(useRefetch).mockClear();
   vi.mocked(preloadModule).mockClear();
   vi.mocked(prefetchRsc).mockReset();
   // prefetchRsc returns the decoded Promise<Elements>; default to an empty
@@ -1321,7 +1438,7 @@ describe('Slice', () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const refetch = vi.fn<ReturnType<typeof useRefetch>>(async () => ({}));
     refetch.mockRejectedValueOnce(new Error('slice failed'));
-    vi.mocked(useRefetch).mockReturnValue(refetch);
+    installRefetch(refetch);
 
     const view = await renderWithMinimalRoot(
       <RouterContext
@@ -1485,40 +1602,11 @@ describe('Router integration', () => {
     view.unmount();
   });
 
-  test('committing a route whose slot has not arrived renders nothing instead of crashing', async () => {
-    const capture = { router: null as RouterApi | null };
-    const Probe = makeProbe(capture);
-
-    // The target route slot is intentionally absent: the mocked refetch never
-    // updates the elements context, simulating a route commit that lands
-    // before the fetched elements do.
-    const elements = {
-      [unstable_getRouteSlotId('/start')]: <Probe />,
-      [ROUTE_ID]: ['/start', ''],
-      [IS_STATIC_ID]: false,
-    };
-
-    const view = await renderRouter(
-      {
-        initialRoute: { path: '/start', query: '', hash: '' },
-      },
-      elements,
-    );
-
-    if (!capture.router) {
-      throw new Error('router not initialized');
-    }
-
-    await act(async () => {
-      await capture.router!.push('/next');
-    });
-
-    // Previously this threw 'Invalid element: route:/next' from Slot and
-    // poisoned the error boundaries.
-    expect(view.container.textContent).toBe('');
-
-    view.unmount();
-  });
+  // (Removed) The old test 'committing a route whose slot has not arrived
+  // renders nothing instead of crashing' covered the missing-slot guard. The
+  // route now derives from the elements' ROUTE_ID, which the server always ships
+  // with the matching route slot, so a route ahead of its slot is unrepresentable
+  // and the guard is gone.
 
   test('push accepts a structured target and builds the href', async () => {
     const capture = { router: null as RouterApi | null };
@@ -1574,7 +1662,7 @@ describe('Router integration', () => {
       .mockImplementationOnce(() => firstNavigation.promise)
       .mockImplementationOnce(() => secondNavigation.promise)
       .mockImplementationOnce(() => thirdNavigation.promise);
-    vi.mocked(useRefetch).mockReturnValue(refetch);
+    installRefetch(refetch);
     window.history.replaceState({}, '', '/one');
 
     const view = await renderRouterInStrictMode(
@@ -2180,7 +2268,7 @@ describe('Router integration', () => {
     const Probe = makeProbe(capture);
     const refetch = vi.fn<ReturnType<typeof useRefetch>>(async () => ({}));
     refetch.mockRejectedValueOnce(new Error('refetch failed'));
-    vi.mocked(useRefetch).mockReturnValue(refetch);
+    installRefetch(refetch);
     const historyPushSpy = vi.spyOn(window.history, 'pushState');
 
     const elements = {
@@ -2343,7 +2431,7 @@ describe('Router integration', () => {
       [ROUTE_ID]: ['/next', ''],
       [IS_STATIC_ID]: true,
     }));
-    vi.mocked(useRefetch).mockReturnValue(refetch);
+    installRefetch(refetch);
 
     const shell = {
       [unstable_getRouteSlotId('/next')]: <div>next-shell</div>,
@@ -2383,7 +2471,11 @@ describe('Router integration', () => {
       expect.any(URLSearchParams),
       expect.objectContaining({
         unstable_prefetched: shellPromise,
-        unstable_swr: { pin: expect.any(Function), base: shell },
+        unstable_swr: {
+          pin: expect.any(Function),
+          base: shell,
+          overlay: { [ROUTE_ID]: ['/next', ''] },
+        },
       }),
     );
 
@@ -2395,7 +2487,7 @@ describe('Router integration', () => {
       [ROUTE_ID]: ['/next', ''],
       [IS_STATIC_ID]: true,
     }));
-    vi.mocked(useRefetch).mockReturnValue(refetch);
+    installRefetch(refetch);
 
     // Still in flight at navigation time: it started earlier than a fresh
     // request could, so the navigation adopts it instead of duplicating it.
@@ -2442,7 +2534,7 @@ describe('Router integration', () => {
       [ROUTE_ID]: ['/next', ''],
       [IS_STATIC_ID]: true,
     }));
-    vi.mocked(useRefetch).mockReturnValue(refetch);
+    installRefetch(refetch);
 
     const shell = {
       [unstable_getRouteSlotId('/next')]: <div>next-shell</div>,
@@ -2492,7 +2584,7 @@ describe('Router integration', () => {
       [ROUTE_ID]: ['/next', ''],
       [IS_STATIC_ID]: true,
     }));
-    vi.mocked(useRefetch).mockReturnValue(refetch);
+    installRefetch(refetch);
 
     const pending = createDeferred<Record<string, unknown>>();
     vi.mocked(prefetchRsc).mockReturnValue(pending.promise);
@@ -2771,7 +2863,7 @@ describe('Router integration', () => {
       [ROUTE_ID]: ['/fresh', ''],
       [IS_STATIC_ID]: false,
     }));
-    vi.mocked(useRefetch).mockReturnValue(refetch);
+    installRefetch(refetch);
 
     const freshSlotId = unstable_getRouteSlotId('/fresh');
     const shell = {
@@ -3057,7 +3149,7 @@ describe('Router integration', () => {
     const capture = { router: null as RouterApi | null };
     const Probe = makeProbe(capture);
     const refetch = vi.fn<ReturnType<typeof useRefetch>>(async () => ({}));
-    vi.mocked(useRefetch).mockReturnValue(refetch);
+    installRefetch(refetch);
 
     const elements = {
       [unstable_getRouteSlotId('/start')]: <Probe />,
@@ -3125,9 +3217,7 @@ describe('Router integration', () => {
         return {};
       },
     );
-    vi.mocked(useRefetch).mockReturnValue(
-      refetch as ReturnType<typeof useRefetch>,
-    );
+    installRefetch(refetch as unknown as MockedRefetch);
 
     const elements = {
       [unstable_getRouteSlotId('/start')]: <Probe />,
@@ -3170,7 +3260,7 @@ describe('Router integration', () => {
       [ROUTE_ID]: ['/streamed', 'x=1'],
       [IS_STATIC_ID]: false,
     }));
-    vi.mocked(useRefetch).mockReturnValue(refetch);
+    installRefetch(refetch);
 
     const capture = { router: null as RouterApi | null };
     const Probe = makeProbe(capture);
@@ -3239,7 +3329,7 @@ describe('Router integration', () => {
         refetch.mockResolvedValueOnce(response.resolve);
       }
     }
-    vi.mocked(useRefetch).mockReturnValue(refetch);
+    installRefetch(refetch);
     const capture = { router: null as RouterApi | null };
     const Probe = makeProbe(capture);
     const elements = {
@@ -3293,7 +3383,7 @@ describe('Router integration', () => {
         [ROUTE_ID]: ['/account/login', ''],
         [IS_STATIC_ID]: false,
       });
-    vi.mocked(useRefetch).mockReturnValue(refetch);
+    installRefetch(refetch);
 
     const capture = { router: null as RouterApi | null };
     const Probe = makeProbe(capture);
@@ -3357,7 +3447,7 @@ describe('Router integration', () => {
         [ROUTE_ID]: ['/account/login', ''],
         [IS_STATIC_ID]: false,
       });
-    vi.mocked(useRefetch).mockReturnValue(refetch);
+    installRefetch(refetch);
 
     const capture = { router: null as RouterApi | null };
     const Probe = makeProbe(capture);
@@ -3405,7 +3495,7 @@ describe('Router integration', () => {
         [ROUTE_ID]: ['/404', ''],
         [IS_STATIC_ID]: false,
       });
-    vi.mocked(useRefetch).mockReturnValue(refetch);
+    installRefetch(refetch);
 
     const capture = { router: null as RouterApi | null };
     const Probe = makeProbe(capture);
@@ -3462,7 +3552,7 @@ describe('Router integration', () => {
         [ROUTE_ID]: ['/account/profile', 'login=1'],
         [IS_STATIC_ID]: false,
       });
-    vi.mocked(useRefetch).mockReturnValue(refetch);
+    installRefetch(refetch);
 
     const capture = { router: null as RouterApi | null };
     const Probe = makeProbe(capture);
@@ -3507,7 +3597,7 @@ describe('Router integration', () => {
         [ROUTE_ID]: ['/login', ''],
         [IS_STATIC_ID]: false,
       });
-    vi.mocked(useRefetch).mockReturnValue(refetch);
+    installRefetch(refetch);
 
     const capture = { router: null as RouterApi | null };
     const Probe = makeProbe(capture);
@@ -3556,7 +3646,7 @@ describe('Router integration', () => {
             resolveSecond = resolve;
           }),
       );
-    vi.mocked(useRefetch).mockReturnValue(refetch);
+    installRefetch(refetch);
 
     const capture = { router: null as RouterApi | null };
     const Probe = makeProbe(capture);
@@ -3642,7 +3732,7 @@ describe('Router integration', () => {
         [ROUTE_ID]: ['/products', 'page=3'],
         [IS_STATIC_ID]: false,
       });
-    vi.mocked(useRefetch).mockReturnValue(refetch);
+    installRefetch(refetch);
 
     const capture = { router: null as RouterApi | null };
     const Probe = makeProbe(capture);
@@ -3688,7 +3778,7 @@ describe('Router integration', () => {
         [ROUTE_ID]: ['/next', ''],
         [IS_STATIC_ID]: false,
       });
-    vi.mocked(useRefetch).mockReturnValue(refetch);
+    installRefetch(refetch);
 
     const capture = { router: null as RouterApi | null };
     const Probe = makeProbe(capture);
@@ -3764,7 +3854,7 @@ describe('Router integration', () => {
         createCustomError('moved', { status: 307, location: '/a' }),
       ),
     );
-    vi.mocked(useRefetch).mockReturnValue(refetch);
+    installRefetch(refetch);
 
     const capture = { router: null as RouterApi | null };
     const Probe = makeProbe(capture);
@@ -3822,7 +3912,7 @@ describe('Router integration', () => {
         [ROUTE_ID]: ['/account/profile', 'login=1'],
         [IS_STATIC_ID]: false,
       });
-    vi.mocked(useRefetch).mockReturnValue(refetch);
+    installRefetch(refetch);
 
     const capture = { router: null as RouterApi | null };
     const Probe = makeProbe(capture);
@@ -3898,7 +3988,7 @@ describe('Router integration', () => {
         [ROUTE_ID]: ['/other', ''],
         [IS_STATIC_ID]: false,
       });
-    vi.mocked(useRefetch).mockReturnValue(refetch);
+    installRefetch(refetch);
 
     const capture = { router: null as RouterApi | null };
     const Probe = makeProbe(capture);
@@ -4077,6 +4167,7 @@ describe('Router integration', () => {
       </StrictMode>,
     );
     await flush();
+    await flush();
 
     // each boundary follows independently and both recover
     expect(captureA.router?.path).toBe('/404');
@@ -4187,6 +4278,8 @@ describe('Router integration', () => {
       },
       elements,
     );
+    // the follow fetches and its elements suspend, so let them settle
+    await flush();
     await flush();
 
     expect(getRefetchMock()).toHaveBeenCalledWith(
@@ -4199,6 +4292,177 @@ describe('Router integration', () => {
     expect(replaceStateSpy).toHaveBeenCalled();
 
     view.unmount();
+  });
+
+  test('a render-time redirect whose target also redirects reconciles the url to the final route', async () => {
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const ThrowRedirect = () => {
+      throw createCustomError('redirect', { status: 307, location: '/login' });
+    };
+
+    const replaceStateSpy = vi.spyOn(window.history, 'replaceState');
+
+    getRefetchMock().mockImplementation(((rscPath: string) =>
+      rscPath === unstable_encodeRoutePath('/login')
+        ? Promise.reject(
+            createCustomError('redirect', {
+              status: 307,
+              location: '/dashboard',
+            }),
+          )
+        : Promise.resolve({})) as never);
+
+    const elements = {
+      [unstable_getRouteSlotId('/start')]: <ThrowRedirect />,
+      [unstable_getRouteSlotId('/dashboard')]: <Probe />,
+      [ROUTE_ID]: ['/start', ''],
+      [IS_STATIC_ID]: false,
+    };
+
+    const view = await renderRouter(
+      {
+        initialRoute: { path: '/start', query: '', hash: '' },
+      },
+      elements,
+    );
+    // the first follow redirects again, so let both follows settle
+    await flush();
+    await flush();
+    await flush();
+
+    expect(capture.router?.path).toBe('/dashboard');
+    expect(window.location.pathname).toBe('/dashboard');
+    expect(replaceStateSpy).toHaveBeenCalled();
+
+    view.unmount();
+  });
+
+  test('a followed redirect keeps the base path in the url', async () => {
+    vi.stubEnv('WAKU_CONFIG_BASE_PATH', '/docs/');
+    try {
+      window.history.replaceState({}, '', '/docs/start');
+      const capture = { router: null as RouterApi | null };
+      const Probe = makeProbe(capture);
+      const ThrowRedirect = () => {
+        throw createCustomError('redirect', {
+          status: 307,
+          location: '/docs/login',
+        });
+      };
+
+      const elements = {
+        [unstable_getRouteSlotId('/start')]: <ThrowRedirect />,
+        [unstable_getRouteSlotId('/login')]: <Probe />,
+        [ROUTE_ID]: ['/start', ''],
+        [IS_STATIC_ID]: false,
+      };
+
+      const view = await renderRouter(
+        {
+          initialRoute: { path: '/start', query: '', hash: '' },
+        },
+        elements,
+      );
+      await flush();
+      await flush();
+
+      expect(capture.router?.path).toBe('/login');
+      expect(window.location.pathname).toBe('/docs/login');
+
+      view.unmount();
+    } finally {
+      vi.stubEnv('WAKU_CONFIG_BASE_PATH', '/');
+    }
+  });
+
+  test('a followed redirect whose response redirects again replaces instead of pushing', async () => {
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const ThrowRedirect = () => {
+      throw createCustomError('redirect', { status: 307, location: '/login' });
+    };
+
+    const pushStateSpy = vi.spyOn(window.history, 'pushState');
+    const replaceStateSpy = vi.spyOn(window.history, 'replaceState');
+
+    getRefetchMock().mockImplementation(((rscPath: string) =>
+      Promise.resolve(
+        rscPath === unstable_encodeRoutePath('/login')
+          ? { [ROUTE_ID]: ['/dashboard', ''] }
+          : {},
+      )) as never);
+
+    const elements = {
+      [unstable_getRouteSlotId('/start')]: <ThrowRedirect />,
+      [unstable_getRouteSlotId('/dashboard')]: <Probe />,
+      [ROUTE_ID]: ['/start', ''],
+      [IS_STATIC_ID]: false,
+    };
+
+    const view = await renderRouter(
+      {
+        initialRoute: { path: '/start', query: '', hash: '' },
+      },
+      elements,
+    );
+    await flush();
+    await flush();
+
+    expect(capture.router?.path).toBe('/dashboard');
+    expect(window.location.pathname).toBe('/dashboard');
+    expect(pushStateSpy).not.toHaveBeenCalled();
+    expect(replaceStateSpy).toHaveBeenCalled();
+
+    view.unmount();
+  });
+
+  test('a followed redirect that redirects again keeps the base path', async () => {
+    vi.stubEnv('WAKU_CONFIG_BASE_PATH', '/docs/');
+    try {
+      window.history.replaceState({}, '', '/docs/start');
+      const capture = { router: null as RouterApi | null };
+      const Probe = makeProbe(capture);
+      const ThrowRedirect = () => {
+        throw createCustomError('redirect', {
+          status: 307,
+          location: '/docs/login',
+        });
+      };
+
+      const pushStateSpy = vi.spyOn(window.history, 'pushState');
+
+      getRefetchMock().mockImplementation(((rscPath: string) =>
+        Promise.resolve(
+          rscPath === unstable_encodeRoutePath('/login')
+            ? { [ROUTE_ID]: ['/dashboard', ''] }
+            : {},
+        )) as never);
+
+      const elements = {
+        [unstable_getRouteSlotId('/start')]: <ThrowRedirect />,
+        [unstable_getRouteSlotId('/dashboard')]: <Probe />,
+        [ROUTE_ID]: ['/start', ''],
+        [IS_STATIC_ID]: false,
+      };
+
+      const view = await renderRouter(
+        {
+          initialRoute: { path: '/start', query: '', hash: '' },
+        },
+        elements,
+      );
+      await flush();
+      await flush();
+
+      expect(capture.router?.path).toBe('/dashboard');
+      expect(window.location.pathname).toBe('/docs/dashboard');
+      expect(pushStateSpy).not.toHaveBeenCalled();
+
+      view.unmount();
+    } finally {
+      vi.stubEnv('WAKU_CONFIG_BASE_PATH', '/');
+    }
   });
 
   test('redirect error with cross-origin location uses window.location.replace', async () => {
@@ -4350,7 +4614,7 @@ describe('Router integration', () => {
       [ROUTE_ID]: ['/two', ''],
       [IS_STATIC_ID]: false,
     }));
-    vi.mocked(useRefetch).mockReturnValue(refetch);
+    installRefetch(refetch);
     window.history.replaceState({}, '', '/one');
 
     const view = await renderRouter(
@@ -4423,7 +4687,7 @@ describe('Router integration', () => {
     const refetch = vi.fn<ReturnType<typeof useRefetch>>(
       () => navigation.promise,
     );
-    vi.mocked(useRefetch).mockReturnValue(refetch);
+    installRefetch(refetch);
     window.history.replaceState({}, '', '/one');
 
     const PendingProbe = () => {

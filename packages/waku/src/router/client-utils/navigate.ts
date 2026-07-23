@@ -1,4 +1,5 @@
 import {
+  unstable_addBase as addBase,
   unstable_getErrorInfo as getErrorInfo,
   unstable_isImmutableElement as isImmutableElement,
   unstable_removeBase as removeBase,
@@ -25,7 +26,7 @@ export const parseRoute = (url: URL): RouteProps => {
 
 export const getRouteUrl = (route: RouteProps): URL => {
   const nextUrl = new URL(window.location.href);
-  nextUrl.pathname = route.path;
+  nextUrl.pathname = addBase(route.path, import.meta.env.WAKU_CONFIG_BASE_PATH);
   nextUrl.search = route.query;
   nextUrl.hash = route.hash;
   return nextUrl;
@@ -125,15 +126,19 @@ export const writeUrlToHistory = (mode: 'push' | 'replace', url: URL) => {
   }
 };
 
-// --- the committed value ---
+// --- client-only navigation state ---
 
-export type Committed = {
-  route: RouteProps;
+// The route path is derived from the elements' ROUTE_ID. The query and hash are
+// kept here because they are client-owned: a static route does not echo the URL
+// query, and the server never sees the hash.
+export type Nav = {
+  query: string;
+  hash: string;
   history: { mode: 'push' | 'replace'; url: URL | undefined } | null;
   scroll: { pathChanged: boolean } | null;
 };
 
-export const deriveCommitted = (outcome: {
+export const deriveNav = (outcome: {
   destination: Destination;
   attempted: RouteProps;
   routeBefore: RouteProps;
@@ -144,7 +149,7 @@ export const deriveCommitted = (outcome: {
     elements: Record<string, unknown>,
     route: RouteProps,
   ) => RouteProps | undefined;
-}): Committed => {
+}): { route: RouteProps; nav: Nav } => {
   const { destination, attempted, routeBefore } = outcome;
   const followed = !isSameRoute(destination.route, attempted);
   const redirect =
@@ -163,19 +168,21 @@ export const deriveCommitted = (outcome: {
       : outcome.historyUrl;
   return {
     route,
-    history: mode ? { mode, url } : null,
-    scroll: outcome.shouldScroll
-      ? { pathChanged: route.path !== routeBefore.path }
-      : null,
+    nav: {
+      query: route.query,
+      hash: route.hash,
+      history: mode ? { mode, url } : null,
+      scroll: outcome.shouldScroll
+        ? { pathChanged: route.path !== routeBefore.path }
+        : null,
+    },
   };
 };
 
-export const applyServerRedirect = (
-  prev: Committed,
-  redirect: RouteProps,
-): Committed => ({
+export const applyServerRedirect = (prev: Nav, redirect: RouteProps): Nav => ({
   ...prev,
-  route: redirect,
+  query: redirect.query,
+  hash: redirect.hash,
   history:
     redirect.path === '/404'
       ? null
