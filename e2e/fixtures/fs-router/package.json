@@ -10,7 +10,7 @@
     "typegen": "waku router typegen"
   },
   "dependencies": {
-    "nuqs": "^2.9.0",
+    "nuqs": "^2.9.1",
     "react": "~19.2.8",
     "react-dom": "~19.2.8",
     "react-server-dom-webpack": "~19.2.8",

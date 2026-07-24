@@ -14,7 +14,7 @@
     "react-dom": "~19.2.8",
     "react-server-dom-webpack": "~19.2.8",
     "serve": "^14.2.6",
-    "styled-components": "^6.4.3",
+    "styled-components": "^6.4.4",
     "waku": "latest"
   },
   "devDependencies": {

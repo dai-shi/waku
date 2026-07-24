@@ -93,7 +93,7 @@
     "node": "^26.0.0 || ^24.0.0 || ^22.15.0"
   },
   "dependencies": {
-    "@hono/node-server": "^2.0.10",
+    "@hono/node-server": "^2.0.11",
     "@vitejs/plugin-react": "^6.0.1",
     "@vitejs/plugin-rsc": "^0.5.30",
     "dotenv": "^17.4.2",
@@ -105,7 +105,7 @@
   },
   "devDependencies": {
     "@swc/cli": "^0.8.1",
-    "happy-dom": "^20.10.6",
+    "happy-dom": "^20.11.1",
     "react": "~19.2.8",
     "react-dom": "~19.2.8",
     "react-server-dom-webpack": "~19.2.8",

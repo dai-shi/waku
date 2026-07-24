@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import type { Options, ResultPromise, SyncOptions, SyncResult } from 'execa';
-import { execaCommand, execaCommandSync } from 'execa';
+import type { Options, SyncOptions } from 'execa';
+import { execa, execaSync } from 'execa';
 import {
   afterEach,
   beforeAll,
@@ -31,23 +31,16 @@ const printErrors = (command: string, stdout: any, stderr: any) => {
   console.error('=======');
 };
 
-const run = <SO extends SyncOptions>(
-  args: string[],
-  options?: SO,
-): SyncResult<SO> => {
+const run = <SO extends SyncOptions>(args: string[], options?: SO) => {
   const command = `node ${CLI_PATH} ${args.join(' ')}`;
-  const result = execaCommandSync(command, options);
+  const result = execaSync('node', [CLI_PATH, ...args], options);
   onTestFailed(() => printErrors(command, result.stdout, result.stderr));
-  // @ts-expect-error relies on exactOptionalPropertyTypes being false
   return result;
 };
 
-const runAsync = <Opts extends Options>(
-  args: string[],
-  options?: Opts,
-): ResultPromise<Opts> => {
+const runAsync = <Opts extends Options>(args: string[], options?: Opts) => {
   const command = `node ${CLI_PATH} ${args.join(' ')}`;
-  const childProcess = execaCommand(command, options);
+  const childProcess = execa('node', [CLI_PATH, ...args], options);
   const stdoutLines: string[] = [];
   const stderrLines: string[] = [];
   childProcess.stdout?.on('data', (chunk) =>
@@ -59,7 +52,6 @@ const runAsync = <Opts extends Options>(
   onTestFailed(() =>
     printErrors(command, stdoutLines.join('\n'), stderrLines.join('\n')),
   );
-  // @ts-expect-error relies on exactOptionalPropertyTypes being false
   return childProcess;
 };
 
