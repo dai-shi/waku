@@ -869,12 +869,17 @@ class CustomErrorHandler extends Component<
     return { error };
   }
   reset() {
-    this.followHops = 0;
     this.setState({ error: null });
   }
   countHop() {
     this.followHops += 1;
     return this.followHops;
+  }
+  // a clean commit settles the chain; a rendering cycle would keep the count
+  componentDidUpdate() {
+    if (this.state.error === null) {
+      this.followHops = 0;
+    }
   }
   fail(original: unknown, error: unknown) {
     this.setState((state) => (state.error === original ? { error } : null));
