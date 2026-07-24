@@ -59,10 +59,16 @@ const checkStatus = async (
   responsePromise: Promise<Response>,
 ): Promise<Response> => {
   const response = await responsePromise;
-  if (response.redirected && typeof window !== 'undefined') {
-    // a redirected rsc request becomes a browser navigation
-    window.location.assign(response.url);
-    return new Promise<never>(() => {}); // stay pending until unload
+  if (
+    response.redirected &&
+    typeof window !== 'undefined' &&
+    !new URL(response.url).pathname.startsWith(BASE_RSC_PATH)
+  ) {
+    // redirected off the rsc endpoint; the navigation layer follows it
+    throw createCustomError('redirected rsc request', {
+      status: 307,
+      location: response.url,
+    });
   }
   if (!response.ok) {
     const location = response.headers.get('location');
