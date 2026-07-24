@@ -154,6 +154,12 @@ const swrElementsPromise = (
           }
         }
       }
+      // symbol keys are client owned; they are carried, never fetched
+      for (const sym of Object.getOwnPropertySymbols(aRes)) {
+        (nextElements as Record<symbol, unknown>)[sym] = (
+          aRes as Record<symbol, unknown>
+        )[sym];
+      }
       if (overlay) {
         Object.assign(nextElements, overlay);
       }
@@ -220,10 +226,10 @@ type Refetch = (
   rscParams?: unknown,
   options?: FetchRscOptions & {
     unstable_prefetched?: Elements | Promise<Elements>;
+    unstable_overlay?: Elements;
     unstable_swr?: {
       pin: (key: string) => boolean;
       base?: Elements;
-      overlay?: Elements;
     };
   },
 ) => Promise<Elements>;
@@ -552,8 +558,11 @@ export const Root = ({
     elements.then(updateCachedEtags, () => {});
   }, [elements]);
   const refetch = useCallback<Refetch>(async (rscPath, rscParams, options) => {
-    const { unstable_prefetched: prefetched, unstable_swr: swr } =
-      options ?? {};
+    const {
+      unstable_prefetched: prefetched,
+      unstable_overlay: overlay,
+      unstable_swr: swr,
+    } = options ?? {};
     delete fetchRscStore[ENTRY];
     let data: Promise<Elements>;
     if (prefetched) {
@@ -571,27 +580,23 @@ export const Root = ({
     const dataWithoutErrors = Promise.resolve(data).catch(() => ({}));
     if (swr) {
       setElements((prev) =>
-        swrElementsPromise(
-          prev,
-          dataWithoutErrors,
-          swr.pin,
-          swr.base,
-          swr.overlay,
-        ),
+        swrElementsPromise(prev, dataWithoutErrors, swr.pin, swr.base, overlay),
       );
       return Promise.resolve(data).then((resolved) => {
         setElements((prev) =>
-          swrNewKeysElementsPromise(
-            prev,
-            dataWithoutErrors,
-            resolved,
-            swr.overlay,
-          ),
+          swrNewKeysElementsPromise(prev, dataWithoutErrors, resolved, overlay),
         );
         return resolved;
       });
     }
-    setElements((prev) => mergeElementsPromise(prev, dataWithoutErrors));
+    setElements((prev) =>
+      mergeElementsPromise(
+        prev,
+        overlay
+          ? dataWithoutErrors.then((data) => ({ ...data, ...overlay }))
+          : dataWithoutErrors,
+      ),
+    );
     return data;
   }, []);
   const mergeElements = useCallback<MergeElements>((partial) => {

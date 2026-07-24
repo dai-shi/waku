@@ -1117,10 +1117,12 @@ const InnerRouter = ({
             createRscParams(nextRoute.query),
             {
               signal: abortController.signal,
+              unstable_overlay: {
+                [ROUTE_ID]: [nextRoute.path, nextRoute.query],
+              },
               unstable_swr: {
                 pin,
                 ...(prefetchedElements ? { base: prefetchedElements } : {}),
-                overlay: { [ROUTE_ID]: [nextRoute.path, nextRoute.query] },
               },
               onBuildIdMismatch: () => reloadWithUrl(targetUrl),
               ...(cached ? { unstable_prefetched: cached.promise } : {}),

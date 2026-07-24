@@ -2507,10 +2507,10 @@ describe('Router integration', () => {
       expect.any(URLSearchParams),
       expect.objectContaining({
         unstable_prefetched: shellPromise,
+        unstable_overlay: { [ROUTE_ID]: ['/next', ''] },
         unstable_swr: {
           pin: expect.any(Function),
           base: shell,
-          overlay: { [ROUTE_ID]: ['/next', ''] },
         },
       }),
     );
