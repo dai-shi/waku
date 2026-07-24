@@ -126,6 +126,27 @@ const mergeElementsPromise = (
   return getCached(getResult, cache2, b);
 };
 
+const replaceCache = new WeakMap();
+const replaceElementsPromise = (
+  a: Promise<Elements>,
+  b: Promise<Elements>,
+): Promise<Elements> => {
+  const getResult = () =>
+    Promise.all([a, b]).then(([aRes, bRes]) => {
+      const nextElements = { ...bRes };
+      delete nextElements._value;
+      // symbol keys are client owned; they are carried, never fetched
+      for (const sym of Object.getOwnPropertySymbols(aRes)) {
+        (nextElements as Record<symbol, unknown>)[sym] = (
+          aRes as Record<symbol, unknown>
+        )[sym];
+      }
+      return nextElements;
+    });
+  const cache2 = getCached(() => new WeakMap(), replaceCache, a);
+  return getCached(getResult, cache2, b);
+};
+
 const slotIdOf = (key: string) =>
   key.startsWith(ETAG_ID_PREFIX) ? key.slice(ETAG_ID_PREFIX.length) : key;
 
@@ -487,7 +508,7 @@ export const unstable_fetchRsc = (
     registerHmrRefetch(() => {
       delete fetchRscStore[ENTRY];
       const data = unstable_fetchRsc(rscPath, rscParams, options);
-      getSetElements()(() => data);
+      getSetElements()((prev) => replaceElementsPromise(prev, data));
     });
   }
   const entry = fetchRscStore[ENTRY];
