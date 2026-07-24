@@ -1099,7 +1099,12 @@ const InnerRouter = ({
         prefetchManager.clear();
         staticPathSet.clear();
         const route = routeRef.current;
-        void refetch(encodeRoutePath(route.path), createRscParams(route.query));
+        startTransition(() => {
+          void refetch(
+            encodeRoutePath(route.path),
+            createRscParams(route.query),
+          );
+        });
       };
       upsertRscReloadListener(globalThis.__WAKU_REFETCH_ROUTE__, refetchRoute);
       globalThis.__WAKU_REFETCH_ROUTE__ = refetchRoute;
