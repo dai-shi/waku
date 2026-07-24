@@ -589,12 +589,9 @@ export const Root = ({
         return resolved;
       });
     }
-    // created once so a replayed updater stays pure; overlay on success only
+    // the overlay lands only when the fetch succeeds
     const dataToMerge = overlay
-      ? Promise.resolve(data).then(
-          (resolved) => ({ ...resolved, ...overlay }),
-          () => ({}),
-        )
+      ? mergeElementsPromise(data, overlay).catch(() => ({}))
       : dataWithoutErrors;
     setElements((prev) => mergeElementsPromise(prev, dataToMerge));
     return data;
