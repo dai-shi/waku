@@ -61,7 +61,6 @@ const checkStatus = async (
   const response = await responsePromise;
   if (
     response.redirected &&
-    typeof window !== 'undefined' &&
     !new URL(response.url).pathname.startsWith(BASE_RSC_PATH)
   ) {
     // redirected off the rsc endpoint; the navigation layer follows it
