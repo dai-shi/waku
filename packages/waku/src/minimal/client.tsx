@@ -59,6 +59,11 @@ const checkStatus = async (
   responsePromise: Promise<Response>,
 ): Promise<Response> => {
   const response = await responsePromise;
+  if (response.redirected && typeof window !== 'undefined') {
+    // the server redirected the rsc request itself; leave it to the browser
+    window.location.assign(response.url);
+    return new Promise<never>(() => {}); // stay pending until unload
+  }
   if (!response.ok) {
     const location = response.headers.get('location');
     const err = createCustomError(
