@@ -57,7 +57,7 @@ export type NavState = {
   attempted: readonly [path: string, query: string];
   push: boolean; // consumed by the reconciler on the first write
   scroll: { pathChanged: boolean } | null; // consumed by the reconciler
-  scrollIntent?: boolean; // a failed attempt's intent, for a follow to inherit
+  scrollIntent: boolean; // the attempt's decision, for a follow to inherit
 };
 
 export const getNavState = (
@@ -74,6 +74,7 @@ export const makeNavState = (
   attempted: [route.path, route.query],
   push: options.push,
   scroll: options.scroll ? { pathChanged: options.pathChanged } : null,
+  scrollIntent: options.scroll,
 });
 
 // a server redirect moves route and url; the 404 route keeps the attempted url

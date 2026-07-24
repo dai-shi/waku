@@ -42,6 +42,7 @@ describe('makeNavState', () => {
     expect(nav.attempted).toEqual(['/a', 'x=1']);
     expect(nav.push).toBe(true);
     expect(nav.scroll).toEqual({ pathChanged: true });
+    expect(nav.scrollIntent).toBe(true);
   });
 
   test('no scroll intent when scrolling is off', () => {
@@ -51,6 +52,7 @@ describe('makeNavState', () => {
       pathChanged: true,
     });
     expect(nav.scroll).toBeNull();
+    expect(nav.scrollIntent).toBe(false);
   });
 });
 
