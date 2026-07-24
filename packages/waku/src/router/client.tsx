@@ -165,7 +165,7 @@ type ChangeRouteOptions = {
   instant?: boolean | undefined;
 };
 
-// resolves with a followable error instead of rejecting: a follow is a handoff
+/** Resolves with a followable error instead of rejecting: a follow is a handoff. */
 type ChangeRoute = (
   route: RouteProps,
   options: ChangeRouteOptions,
@@ -1247,7 +1247,8 @@ const InnerRouter = ({
             ...navState,
             push: false,
             scroll: null,
-            scrollIntent: options.shouldScroll,
+            // attempted mirrors routeBefore; the stale ROUTE_ID must not
+            // read as a server redirect
             attempted: [routeBefore.path, routeBefore.query],
           },
         });

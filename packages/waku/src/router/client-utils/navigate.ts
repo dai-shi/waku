@@ -52,6 +52,7 @@ export const parseRedirectUrl = (location: string, base: string | URL) => {
 // the client owned navigation state; the server's ROUTE_ID owns the path
 export const NAV_ID = Symbol('waku-router-nav');
 
+// merges carry this object by reference; the consumed flags rely on identity
 export type NavState = {
   url: string; // pathname + search + hash, with the base path
   attempted: readonly [path: string, query: string];
@@ -78,7 +79,7 @@ export const makeNavState = (
 
 // a server redirect moves route and url; the 404 route keeps the attempted url
 export const deriveCommitted = (
-  elements: Record<string, unknown>,
+  elements: Record<string | symbol, unknown>,
   fallbackRoute: RouteProps,
 ): { route: RouteProps; nav: NavState | undefined; url: URL | undefined } => {
   const nav = getNavState(elements);
