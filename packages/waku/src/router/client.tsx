@@ -1190,6 +1190,18 @@ const InnerRouter = ({
         if (isAborted()) {
           return;
         }
+        abortRef.current = null;
+        const info = getErrorInfo(e);
+        if (info?.location) {
+          // a fetch level redirect may leave waku; the browser follows it
+          const url = new URL(info.location, targetUrl);
+          if (navState.push) {
+            window.location.assign(url.href);
+          } else {
+            window.location.replace(url.href);
+          }
+          return;
+        }
         // write the url now; an unrecoverable rethrow discards the commit
         if (window.location.href !== targetUrl.href) {
           if (navState.push) {
@@ -1208,9 +1220,7 @@ const InnerRouter = ({
           },
         } as unknown as Record<string, unknown>);
         setErr(e);
-        abortRef.current = null;
-        const info = getErrorInfo(e);
-        if (info?.location || (info?.status === 404 && has404)) {
+        if (info?.status === 404 && has404) {
           // a followable outcome; the boundary takes it from here
           return e;
         }

@@ -3391,6 +3391,7 @@ describe('Router integration', () => {
   }: {
     responses: (
       | { reject: { status: number; location?: string } }
+      | { redirect: { from: string; fromQuery?: string; location: string } }
       | { resolve: Record<string, unknown> }
     )[];
     slots?: string[];
@@ -3398,7 +3399,23 @@ describe('Router integration', () => {
   }) => {
     const refetch = vi.fn<ReturnType<typeof useRefetch>>();
     for (const response of responses) {
-      if ('reject' in response) {
+      if ('redirect' in response) {
+        const err = createCustomError('redirect', {
+          status: 307,
+          location: response.redirect.location,
+        });
+        const Thrower = () => {
+          throw err;
+        };
+        refetch.mockResolvedValueOnce({
+          [unstable_getRouteSlotId(response.redirect.from)]: <Thrower />,
+          [ROUTE_ID]: [
+            response.redirect.from,
+            response.redirect.fromQuery ?? '',
+          ],
+          [IS_STATIC_ID]: false,
+        });
+      } else if ('reject' in response) {
         refetch.mockImplementationOnce(() =>
           Promise.reject(createCustomError('follow-error', response.reject)),
         );
@@ -3431,36 +3448,39 @@ describe('Router integration', () => {
     return { view, refetch, capture, router: capture.router };
   };
 
-  test('a navigation follows a redirect error inline', async () => {
+  test('a rejected fetch redirect hard navigates with a new entry', async () => {
+    const assignSpy = vi
+      .spyOn(window.location, 'assign')
+      .mockImplementation(() => {});
     const { view, refetch, capture, router } = await renderFollowRouter({
-      responses: [
-        { reject: { status: 307, location: '/next' } },
-        { resolve: { [ROUTE_ID]: ['/next', ''], [IS_STATIC_ID]: false } },
-      ],
-      slots: ['/next'],
+      responses: [{ reject: { status: 307, location: '/next' } }],
     });
     await act(async () => {
       await router.push('/moved').catch(() => {});
       await flush();
       await flush();
     });
-    expect(refetch).toHaveBeenCalledTimes(2);
-    expect(capture.router!.path).toBe('/next');
+    expect(refetch).toHaveBeenCalledTimes(1);
+    expect(assignSpy).toHaveBeenCalledTimes(1);
+    expect(assignSpy.mock.calls[0]![0]).toContain('/next');
+    expect(capture.router!.path).toBe('/start');
+    assignSpy.mockRestore();
     view.unmount();
   });
 
-  test('an instant navigation resolves a relative redirect against the attempted url', async () => {
+  test('a rejected redirect resolves a relative location against the attempted url', async () => {
+    const assignSpy = vi
+      .spyOn(window.location, 'assign')
+      .mockImplementation(() => {});
+    const replaceLocationSpy = vi
+      .spyOn(window.location, 'replace')
+      .mockImplementation(() => {});
     const refetch = vi.fn<ReturnType<typeof useRefetch>>();
-    refetch
-      .mockImplementationOnce(() =>
-        Promise.reject(
-          createCustomError('moved', { status: 307, location: 'login' }),
-        ),
-      )
-      .mockResolvedValueOnce({
-        [ROUTE_ID]: ['/account/login', ''],
-        [IS_STATIC_ID]: false,
-      });
+    refetch.mockImplementationOnce(() =>
+      Promise.reject(
+        createCustomError('moved', { status: 307, location: 'login' }),
+      ),
+    );
     installRefetch(refetch);
 
     const capture = { router: null as RouterApi | null };
@@ -3469,74 +3489,6 @@ describe('Router integration', () => {
     const elements = {
       [unstable_getRouteSlotId('/start')]: <Probe />,
       [profileSlotId]: <div>profile</div>,
-      [unstable_getRouteSlotId('/account/login')]: <Probe />,
-      [ROUTE_ID]: ['/start', ''],
-      [IS_STATIC_ID]: false,
-      // mark the attempted route static so the instant branch engages
-      [`${ETAG_ID_PREFIX}${profileSlotId}`]: IMMUTABLE_ETAG,
-    };
-
-    const view = await renderRouter(
-      { initialRoute: { path: '/start', query: '', hash: '' } },
-      elements,
-    );
-    if (!capture.router) {
-      throw new Error('router not initialized');
-    }
-
-    // the rejection can arrive before the history effect writes the
-    // attempted url, so the previous url must not be the base
-    const pushStateSpy = vi
-      .spyOn(window.history, 'pushState')
-      .mockImplementation(() => {});
-    const replaceStateSpy = vi
-      .spyOn(window.history, 'replaceState')
-      .mockImplementation(() => {});
-    try {
-      await act(async () => {
-        await capture
-          .router!.push('/account/profile', {
-            unstable_instant: true,
-          })
-          .catch(() => {});
-        await flush();
-        await flush();
-      });
-    } finally {
-      pushStateSpy.mockRestore();
-      replaceStateSpy.mockRestore();
-    }
-
-    // "login" resolves against /account/profile, not the previous url
-    expect(refetch.mock.calls[1]?.[0]).toBe(
-      unstable_encodeRoutePath('/account/login'),
-    );
-    expect(capture.router.path).toBe('/account/login');
-
-    view.unmount();
-  });
-
-  test('an instant redirect keeps the attempted history entry', async () => {
-    const refetch = vi.fn<ReturnType<typeof useRefetch>>();
-    refetch
-      .mockImplementationOnce(() =>
-        Promise.reject(
-          createCustomError('moved', { status: 307, location: 'login' }),
-        ),
-      )
-      .mockResolvedValueOnce({
-        [ROUTE_ID]: ['/account/login', ''],
-        [IS_STATIC_ID]: false,
-      });
-    installRefetch(refetch);
-
-    const capture = { router: null as RouterApi | null };
-    const Probe = makeProbe(capture);
-    const profileSlotId = unstable_getRouteSlotId('/account/profile');
-    const elements = {
-      [unstable_getRouteSlotId('/start')]: <Probe />,
-      [profileSlotId]: <div>profile</div>,
-      [unstable_getRouteSlotId('/account/login')]: <Probe />,
       [ROUTE_ID]: ['/start', ''],
       [IS_STATIC_ID]: false,
       [`${ETAG_ID_PREFIX}${profileSlotId}`]: IMMUTABLE_ETAG,
@@ -3550,22 +3502,67 @@ describe('Router integration', () => {
       throw new Error('router not initialized');
     }
 
-    const lengthBefore = window.history.length;
     await act(async () => {
       await capture
-        .router!.push('/account/profile', {
-          unstable_instant: true,
-        })
+        .router!.push('/account/profile', { unstable_instant: true })
         .catch(() => {});
       await flush();
       await flush();
     });
 
-    // the attempted entry is pushed, then replaced by the redirect
-    expect(window.location.pathname).toBe('/account/login');
-    expect(window.history.length).toBe(lengthBefore + 1);
-    expect(capture.router.path).toBe('/account/login');
+    // the commit races the rejection, so either write style can happen
+    const calls = [...assignSpy.mock.calls, ...replaceLocationSpy.mock.calls];
+    expect(calls).toHaveLength(1);
+    expect(calls[0]![0]).toContain('/account/login');
 
+    assignSpy.mockRestore();
+    replaceLocationSpy.mockRestore();
+    view.unmount();
+  });
+
+  test('a rejected redirect on replace navigates without a new entry', async () => {
+    const assignSpy = vi
+      .spyOn(window.location, 'assign')
+      .mockImplementation(() => {});
+    const replaceLocationSpy = vi
+      .spyOn(window.location, 'replace')
+      .mockImplementation(() => {});
+    const refetch = vi.fn<ReturnType<typeof useRefetch>>();
+    refetch.mockImplementationOnce(() =>
+      Promise.reject(
+        createCustomError('moved', { status: 307, location: 'login' }),
+      ),
+    );
+    installRefetch(refetch);
+
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const elements = {
+      [unstable_getRouteSlotId('/start')]: <Probe />,
+      [ROUTE_ID]: ['/start', ''],
+      [IS_STATIC_ID]: false,
+    };
+
+    const view = await renderRouter(
+      { initialRoute: { path: '/start', query: '', hash: '' } },
+      elements,
+    );
+    if (!capture.router) {
+      throw new Error('router not initialized');
+    }
+
+    await act(async () => {
+      await capture.router!.replace('/account/profile').catch(() => {});
+      await flush();
+      await flush();
+    });
+
+    expect(replaceLocationSpy).toHaveBeenCalledTimes(1);
+    expect(replaceLocationSpy.mock.calls[0]![0]).toContain('/account/login');
+    expect(assignSpy).not.toHaveBeenCalled();
+
+    assignSpy.mockRestore();
+    replaceLocationSpy.mockRestore();
     view.unmount();
   });
 
@@ -3625,27 +3622,31 @@ describe('Router integration', () => {
     const scrollToSpy = vi
       .spyOn(window, 'scrollTo')
       .mockImplementation(() => {});
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const RedirectErrorObject = createCustomError('moved', {
+      status: 307,
+      location: '/account/profile?login=1',
+    });
+    const ThrowRedirect = () => {
+      throw RedirectErrorObject;
+    };
     const refetch = vi.fn<ReturnType<typeof useRefetch>>();
     refetch
-      .mockImplementationOnce(() =>
-        Promise.reject(
-          createCustomError('moved', {
-            status: 307,
-            location: '/account/profile?login=1',
-          }),
-        ),
-      )
       .mockResolvedValueOnce({
+        [unstable_getRouteSlotId('/account/profile')]: <ThrowRedirect />,
+        [ROUTE_ID]: ['/account/profile', ''],
+        [IS_STATIC_ID]: false,
+      })
+      .mockResolvedValueOnce({
+        [unstable_getRouteSlotId('/account/profile')]: <Probe />,
         [ROUTE_ID]: ['/account/profile', 'login=1'],
         [IS_STATIC_ID]: false,
       });
     installRefetch(refetch);
 
-    const capture = { router: null as RouterApi | null };
-    const Probe = makeProbe(capture);
     const elements = {
       [unstable_getRouteSlotId('/start')]: <Probe />,
-      [unstable_getRouteSlotId('/account/profile')]: <Probe />,
       [ROUTE_ID]: ['/start', ''],
       [IS_STATIC_ID]: false,
     };
@@ -3662,11 +3663,13 @@ describe('Router integration', () => {
       await capture.router!.push('/account/profile').catch(() => {});
       await flush();
       await flush();
+      await flush();
+      await flush();
     });
 
     // the visible navigation is from /start, so the page scrolls even
     // though the redirect keeps the attempted pathname
-    expect(capture.router.path).toBe('/account/profile');
+    expect(capture.router.query).toBe('login=1');
     expect(scrollToSpy).toHaveBeenCalled();
 
     scrollToSpy.mockRestore();
@@ -3674,21 +3677,28 @@ describe('Router integration', () => {
   });
 
   test('a query-only navigation that redirects writes one history entry', async () => {
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const RedirectErrorObject = createCustomError('moved', {
+      status: 307,
+      location: '/login',
+    });
+    const ThrowRedirect = () => {
+      throw RedirectErrorObject;
+    };
     const refetch = vi.fn<ReturnType<typeof useRefetch>>();
     refetch
-      .mockImplementationOnce(() =>
-        Promise.reject(
-          createCustomError('moved', { status: 307, location: '/login' }),
-        ),
-      )
+      .mockResolvedValueOnce({
+        [unstable_getRouteSlotId('/products')]: <ThrowRedirect />,
+        [ROUTE_ID]: ['/products', 'page=2'],
+        [IS_STATIC_ID]: false,
+      })
       .mockResolvedValueOnce({
         [ROUTE_ID]: ['/login', ''],
         [IS_STATIC_ID]: false,
       });
     installRefetch(refetch);
 
-    const capture = { router: null as RouterApi | null };
-    const Probe = makeProbe(capture);
     const elements = {
       [unstable_getRouteSlotId('/products')]: <Probe />,
       [unstable_getRouteSlotId('/login')]: <Probe />,
@@ -3710,6 +3720,8 @@ describe('Router integration', () => {
       await capture.router!.push('/products?page=2').catch(() => {});
       await flush();
       await flush();
+      await flush();
+      await flush();
     });
 
     // the attempted entry is written once, then replaced by the redirect
@@ -3721,14 +3733,21 @@ describe('Router integration', () => {
   });
 
   test('a slow redirect after an instant error writes one attempted entry', async () => {
+    const RedirectErrorObject = createCustomError('moved', {
+      status: 307,
+      location: 'login',
+    });
+    const ThrowRedirect = () => {
+      throw RedirectErrorObject;
+    };
     let resolveSecond!: (value: Record<string, unknown>) => void;
     const refetch = vi.fn<ReturnType<typeof useRefetch>>();
     refetch
-      .mockImplementationOnce(() =>
-        Promise.reject(
-          createCustomError('moved', { status: 307, location: 'login' }),
-        ),
-      )
+      .mockResolvedValueOnce({
+        [unstable_getRouteSlotId('/account/profile')]: <ThrowRedirect />,
+        [ROUTE_ID]: ['/account/profile', ''],
+        [IS_STATIC_ID]: false,
+      })
       .mockImplementationOnce(
         () =>
           new Promise((resolve) => {
@@ -3742,7 +3761,7 @@ describe('Router integration', () => {
     const profileSlotId = unstable_getRouteSlotId('/account/profile');
     const elements = {
       [unstable_getRouteSlotId('/start')]: <Probe />,
-      [profileSlotId]: <div>profile</div>,
+      [profileSlotId]: <ThrowRedirect />,
       [unstable_getRouteSlotId('/account/login')]: <Probe />,
       [ROUTE_ID]: ['/start', ''],
       [IS_STATIC_ID]: false,
@@ -3790,13 +3809,15 @@ describe('Router integration', () => {
       .mockImplementation(() => {});
     const { view, capture, router } = await renderFollowRouter({
       responses: [
-        { reject: { status: 307, location: '/next' } },
+        { redirect: { from: '/moved', location: '/next' } },
         { resolve: { [ROUTE_ID]: ['/next', ''], [IS_STATIC_ID]: false } },
       ],
       slots: ['/next'],
     });
     await act(async () => {
       await router.push('/moved', { scroll: false }).catch(() => {});
+      await flush();
+      await flush();
       await flush();
       await flush();
     });
@@ -3810,24 +3831,29 @@ describe('Router integration', () => {
     const scrollToSpy = vi
       .spyOn(window, 'scrollTo')
       .mockImplementation(() => {});
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const RedirectErrorObject = createCustomError('moved', {
+      status: 307,
+      location: '/products?page=3',
+    });
+    const ThrowRedirect = () => {
+      throw RedirectErrorObject;
+    };
     const refetch = vi.fn<ReturnType<typeof useRefetch>>();
     refetch
-      .mockImplementationOnce(() =>
-        Promise.reject(
-          createCustomError('moved', {
-            status: 307,
-            location: '/products?page=3',
-          }),
-        ),
-      )
       .mockResolvedValueOnce({
+        [unstable_getRouteSlotId('/products')]: <ThrowRedirect />,
+        [ROUTE_ID]: ['/products', 'page=2'],
+        [IS_STATIC_ID]: false,
+      })
+      .mockResolvedValueOnce({
+        [unstable_getRouteSlotId('/products')]: <Probe />,
         [ROUTE_ID]: ['/products', 'page=3'],
         [IS_STATIC_ID]: false,
       });
     installRefetch(refetch);
 
-    const capture = { router: null as RouterApi | null };
-    const Probe = makeProbe(capture);
     const elements = {
       [unstable_getRouteSlotId('/products')]: <Probe />,
       [ROUTE_ID]: ['/products', 'page=1'],
@@ -3849,6 +3875,8 @@ describe('Router integration', () => {
         .catch(() => {});
       await flush();
       await flush();
+      await flush();
+      await flush();
     });
 
     expect(capture.router.query).toBe('page=3');
@@ -3862,13 +3890,20 @@ describe('Router integration', () => {
     const scrollToSpy = vi
       .spyOn(window, 'scrollTo')
       .mockImplementation(() => {});
+    const RedirectErrorObject = createCustomError('moved', {
+      status: 307,
+      location: '/next',
+    });
+    const ThrowRedirect = () => {
+      throw RedirectErrorObject;
+    };
     const refetch = vi.fn<ReturnType<typeof useRefetch>>();
     refetch
-      .mockImplementationOnce(() =>
-        Promise.reject(
-          createCustomError('moved', { status: 307, location: '/next' }),
-        ),
-      )
+      .mockResolvedValueOnce({
+        [unstable_getRouteSlotId('/moved')]: <ThrowRedirect />,
+        [ROUTE_ID]: ['/moved', ''],
+        [IS_STATIC_ID]: false,
+      })
       .mockResolvedValueOnce({
         [ROUTE_ID]: ['/next', ''],
         [IS_STATIC_ID]: false,
@@ -3909,6 +3944,8 @@ describe('Router integration', () => {
       );
       await flush();
       await flush();
+      await flush();
+      await flush();
     });
 
     expect(capture.router.path).toBe('/next');
@@ -3924,8 +3961,8 @@ describe('Router integration', () => {
       .mockImplementation(() => {});
     const { view, capture, router } = await renderFollowRouter({
       responses: [
-        { reject: { status: 307, location: '/b' } },
-        { reject: { status: 307, location: '/c' } },
+        { redirect: { from: '/a', location: '/b' } },
+        { redirect: { from: '/b', location: '/c' } },
         { resolve: { [ROUTE_ID]: ['/c', ''], [IS_STATIC_ID]: false } },
       ],
       slots: ['/c'],
@@ -3934,10 +3971,9 @@ describe('Router integration', () => {
     const lengthBefore = window.history.length;
     await act(async () => {
       await router.push('/a', { scroll: false }).catch(() => {});
-      await flush();
-      await flush();
-      await flush();
-      await flush();
+      for (let i = 0; i < 8; i += 1) {
+        await flush();
+      }
     });
     expect(capture.router!.path).toBe('/c');
     expect(window.location.pathname).toBe('/c');
@@ -3948,10 +3984,19 @@ describe('Router integration', () => {
   });
 
   test('a redirect cycle surfaces a redirect loop error', async () => {
+    const RedirectErrorObject = createCustomError('moved', {
+      status: 307,
+      location: '/a',
+    });
+    const ThrowRedirect = () => {
+      throw RedirectErrorObject;
+    };
     const refetch = vi.fn<ReturnType<typeof useRefetch>>(() =>
-      Promise.reject(
-        createCustomError('moved', { status: 307, location: '/a' }),
-      ),
+      Promise.resolve({
+        [unstable_getRouteSlotId('/a')]: <ThrowRedirect />,
+        [ROUTE_ID]: ['/a', ''],
+        [IS_STATIC_ID]: false,
+      }),
     );
     installRefetch(refetch);
 
@@ -3993,15 +4038,23 @@ describe('Router integration', () => {
   });
 
   test('an endless redirect chain stops at the hop limit', async () => {
-    let hop = 0;
-    const refetch = vi.fn<ReturnType<typeof useRefetch>>(() =>
-      Promise.reject(
-        createCustomError('moved', {
-          status: 307,
-          location: `/hop/${(hop += 1)}`,
-        }),
-      ),
-    );
+    let calls = 0;
+    const refetch = vi.fn<ReturnType<typeof useRefetch>>(() => {
+      const path = `/hop/${calls}`;
+      calls += 1;
+      const err = createCustomError('moved', {
+        status: 307,
+        location: `/hop/${calls}`,
+      });
+      const Thrower = () => {
+        throw err;
+      };
+      return Promise.resolve({
+        [unstable_getRouteSlotId(path)]: <Thrower />,
+        [ROUTE_ID]: [path, ''],
+        [IS_STATIC_ID]: false,
+      });
+    });
     installRefetch(refetch);
 
     const capture = { router: null as RouterApi | null };
@@ -4025,7 +4078,7 @@ describe('Router integration', () => {
     try {
       await act(async () => {
         await capture.router!.push('/hop/0');
-        for (let i = 0; i < 25; i += 1) {
+        for (let i = 0; i < 120; i += 1) {
           await flush();
         }
       });
@@ -4036,34 +4089,89 @@ describe('Router integration', () => {
       consoleErrorSpy.mockRestore();
       view.unmount();
     }
-  });
+  }, 20_000);
+
+  test('a committing redirect cycle stops at the hop limit', async () => {
+    const refetch = vi.fn<ReturnType<typeof useRefetch>>(((rscPath: string) => {
+      const path = rscPath === unstable_encodeRoutePath('/a') ? '/a' : '/b';
+      const next = path === '/a' ? '/b' : '/a';
+      const err = createCustomError('moved', { status: 307, location: next });
+      const Thrower = () => {
+        throw err;
+      };
+      return Promise.resolve({
+        [unstable_getRouteSlotId(path)]: <Thrower />,
+        [ROUTE_ID]: [path, ''],
+        [IS_STATIC_ID]: false,
+      });
+    }) as never);
+    installRefetch(refetch);
+
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    testHoisted.elements = {
+      [unstable_getRouteSlotId('/start')]: <Probe />,
+      [ROUTE_ID]: ['/start', ''],
+      [IS_STATIC_ID]: false,
+    };
+
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    const view = await renderApp(
+      <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+        <ErrorBoundary>
+          <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
+        </ErrorBoundary>
+      </Unstable_SearchCodecsProvider>,
+    );
+    try {
+      await act(async () => {
+        await capture.router!.push('/a');
+        for (let i = 0; i < 120; i += 1) {
+          await flush();
+        }
+      });
+      expect(view.container.textContent).toContain(
+        'too many redirect or 404 follows',
+      );
+    } finally {
+      consoleErrorSpy.mockRestore();
+      view.unmount();
+    }
+  }, 20_000);
 
   test('an instant redirect scrolls when the visible navigation changed paths', async () => {
     const scrollToSpy = vi
       .spyOn(window, 'scrollTo')
       .mockImplementation(() => {});
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const RedirectErrorObject = createCustomError('moved', {
+      status: 307,
+      location: '/account/profile?login=1',
+    });
+    const ThrowRedirect = () => {
+      throw RedirectErrorObject;
+    };
+    const profileSlotId = unstable_getRouteSlotId('/account/profile');
     const refetch = vi.fn<ReturnType<typeof useRefetch>>();
     refetch
-      .mockImplementationOnce(() =>
-        Promise.reject(
-          createCustomError('moved', {
-            status: 307,
-            location: '/account/profile?login=1',
-          }),
-        ),
-      )
       .mockResolvedValueOnce({
+        [profileSlotId]: <ThrowRedirect />,
+        [ROUTE_ID]: ['/account/profile', ''],
+        [IS_STATIC_ID]: false,
+      })
+      .mockResolvedValueOnce({
+        [profileSlotId]: <Probe />,
         [ROUTE_ID]: ['/account/profile', 'login=1'],
         [IS_STATIC_ID]: false,
       });
     installRefetch(refetch);
 
-    const capture = { router: null as RouterApi | null };
-    const Probe = makeProbe(capture);
-    const profileSlotId = unstable_getRouteSlotId('/account/profile');
     const elements = {
       [unstable_getRouteSlotId('/start')]: <Probe />,
-      [profileSlotId]: <Probe />,
+      [profileSlotId]: <ThrowRedirect />,
       [ROUTE_ID]: ['/start', ''],
       [IS_STATIC_ID]: false,
       [`${ETAG_ID_PREFIX}${profileSlotId}`]: IMMUTABLE_ETAG,
@@ -4085,6 +4193,8 @@ describe('Router integration', () => {
         .catch(() => {});
       await flush();
       await flush();
+      await flush();
+      await flush();
     });
 
     // the visible navigation is /start -> /account/profile?login=1, so
@@ -4102,12 +4212,14 @@ describe('Router integration', () => {
       .mockImplementation(() => {});
     const { view, capture, router } = await renderFollowRouter({
       responses: [
-        { reject: { status: 307, location: '/start' } },
+        { redirect: { from: '/a', location: '/start' } },
         { resolve: { [ROUTE_ID]: ['/start', ''], [IS_STATIC_ID]: false } },
       ],
     });
     await act(async () => {
       await router.push('/a').catch(() => {});
+      await flush();
+      await flush();
       await flush();
       await flush();
     });
@@ -4118,14 +4230,21 @@ describe('Router integration', () => {
   });
 
   test('a navigation during a redirect follow aborts the chain', async () => {
+    const RedirectErrorObject = createCustomError('moved', {
+      status: 307,
+      location: '/slow',
+    });
+    const ThrowRedirect = () => {
+      throw RedirectErrorObject;
+    };
     let resolveSecond!: (value: Record<string, unknown>) => void;
     const refetch = vi.fn<ReturnType<typeof useRefetch>>();
     refetch
-      .mockImplementationOnce(() =>
-        Promise.reject(
-          createCustomError('moved', { status: 307, location: '/slow' }),
-        ),
-      )
+      .mockResolvedValueOnce({
+        [unstable_getRouteSlotId('/a')]: <ThrowRedirect />,
+        [ROUTE_ID]: ['/a', ''],
+        [IS_STATIC_ID]: false,
+      })
       .mockImplementationOnce(
         () =>
           new Promise((resolve) => {
@@ -4210,7 +4329,7 @@ describe('Router integration', () => {
   test('a redirect that lands on a missing route goes to the 404 route', async () => {
     const { view, refetch, capture, router } = await renderFollowRouter({
       responses: [
-        { reject: { status: 307, location: '/gone' } },
+        { redirect: { from: '/moved', location: '/gone' } },
         { reject: { status: 404 } },
         { resolve: { [ROUTE_ID]: ['/404', ''], [IS_STATIC_ID]: false } },
       ],
@@ -4219,10 +4338,9 @@ describe('Router integration', () => {
     });
     await act(async () => {
       await router.push('/moved').catch(() => {});
-      await flush();
-      await flush();
-      await flush();
-      await flush();
+      for (let i = 0; i < 8; i += 1) {
+        await flush();
+      }
     });
     expect(refetch).toHaveBeenCalledTimes(3);
     expect(capture.router!.path).toBe('/404');
@@ -4235,7 +4353,9 @@ describe('Router integration', () => {
       .mockImplementation(() => {});
     const { view, capture, router } = await renderFollowRouter({
       responses: [
-        { reject: { status: 307, location: '/login' } },
+        {
+          redirect: { from: '/start', fromQuery: 'page=2', location: '/login' },
+        },
         { resolve: { [ROUTE_ID]: ['/login', ''], [IS_STATIC_ID]: false } },
       ],
       slots: ['/login'],
@@ -4243,6 +4363,8 @@ describe('Router integration', () => {
     window.history.replaceState(null, '', '/start?page=1');
     await act(async () => {
       await router.push('/start?page=2').catch(() => {});
+      await flush();
+      await flush();
       await flush();
       await flush();
     });
@@ -4463,7 +4585,7 @@ describe('Router integration', () => {
     view.unmount();
   });
 
-  test('a render-time redirect whose target also redirects reconciles the url to the final route', async () => {
+  test('a follow whose fetch is redirected hard navigates', async () => {
     const capture = { router: null as RouterApi | null };
     const Probe = makeProbe(capture);
     const ThrowRedirectErrorObject = createCustomError('redirect', {
@@ -4474,7 +4596,9 @@ describe('Router integration', () => {
       throw ThrowRedirectErrorObject;
     };
 
-    const replaceStateSpy = vi.spyOn(window.history, 'replaceState');
+    const replaceLocationSpy = vi
+      .spyOn(window.location, 'replace')
+      .mockImplementation(() => {});
 
     getRefetchMock().mockImplementation(((rscPath: string) =>
       rscPath === unstable_encodeRoutePath('/login')
@@ -4499,18 +4623,18 @@ describe('Router integration', () => {
       },
       elements,
     );
-    // the first follow redirects again, so let both follows settle
-    await flush();
-    await flush();
-    await flush();
-    await flush();
-    await flush();
+    try {
+      await flush();
+      await flush();
+      await flush();
 
-    expect(capture.router?.path).toBe('/dashboard');
-    expect(window.location.pathname).toBe('/dashboard');
-    expect(replaceStateSpy).toHaveBeenCalled();
-
-    view.unmount();
+      // the follow dispatch is not a push, so the browser replaces
+      expect(replaceLocationSpy).toHaveBeenCalledTimes(1);
+      expect(replaceLocationSpy.mock.calls[0]![0]).toContain('/dashboard');
+    } finally {
+      view.unmount();
+      replaceLocationSpy.mockRestore();
+    }
   });
 
   test('a followed redirect keeps the base path in the url', async () => {
@@ -4838,15 +4962,15 @@ describe('Router integration', () => {
     view.unmount();
   });
 
-  test('a cross origin redirect on push keeps the attempted history entry', async () => {
+  test('a cross origin rejected redirect hard navigates on push', async () => {
     const { view, router } = await renderFollowRouter({
       responses: [
         { reject: { status: 307, location: 'http://elsewhere.test/login' } },
       ],
       slots: [],
     });
-    const replaceLocationSpy = vi
-      .spyOn(window.location, 'replace')
+    const assignSpy = vi
+      .spyOn(window.location, 'assign')
       .mockImplementation(() => {});
     window.history.replaceState(null, '', '/dashboard');
     const lengthBefore = window.history.length;
@@ -4855,13 +4979,11 @@ describe('Router integration', () => {
       await flush();
       await flush();
     });
-    // the attempted url is pushed first, so Back returns to /dashboard
-    expect(window.location.pathname).toBe('/protected');
-    expect(window.history.length).toBe(lengthBefore + 1);
-    expect(replaceLocationSpy).toHaveBeenCalledWith(
-      'http://elsewhere.test/login',
-    );
-    replaceLocationSpy.mockRestore();
+    // the browser follows and records the entry itself
+    expect(window.location.pathname).toBe('/dashboard');
+    expect(window.history.length).toBe(lengthBefore);
+    expect(assignSpy).toHaveBeenCalledWith('http://elsewhere.test/login');
+    assignSpy.mockRestore();
     view.unmount();
   });
 
