@@ -49,7 +49,6 @@ import {
   deriveNav,
   getRouteUrl,
   isSameRoute,
-  parseRedirectUrl,
   parseRoute,
   pathnameToCurrentRoutePath,
   pinForSwr,
@@ -57,6 +56,10 @@ import {
   writeUrlToHistory,
 } from './client-utils/navigate.js';
 import type { Destination, Nav } from './client-utils/navigate.js';
+import {
+  type PrefetchOptions,
+  createPrefetchManager,
+} from './client-utils/prefetch-cache.js';
 import type {
   RouteParams,
   RouteSearch,
@@ -83,14 +86,6 @@ import {
   getRouteSearchCodecId,
   isCodec,
 } from './isomorphic-utils/search-codec-registry.js';
-import {
-  type PrefetchCache,
-  type PrefetchOptions,
-  type PrefetchedElementsStore,
-  getPrefetch,
-  prefetchCacheKey,
-  startPrefetch,
-} from './prefetch-cache.js';
 
 type NavigateOptions = {
   /**
@@ -125,6 +120,11 @@ type Prefetch = {
 
 const parseRouteFromLocation = (): RouteProps => {
   return parseRoute(new URL(window.location.href));
+};
+
+const reloadWithUrl = (url: URL) => {
+  window.history.pushState(window.history.state, '', url);
+  window.location.reload();
 };
 
 const shouldScrollByDefault = (url: URL) =>
@@ -163,7 +163,7 @@ type ChangeRouteOptions = {
   url?: URL | undefined;
   startTransition?: ((fn: TransitionFunction) => void) | undefined;
   instant?: boolean | undefined;
-  following?: boolean | undefined; // this navigation follows a render-time error
+  errorToFollow?: unknown;
 };
 
 type ChangeRoute = (
@@ -296,8 +296,10 @@ export function useRouter() {
     [changeRoute, resolveCodec],
   ) as Navigate;
   const reload = useCallback(async () => {
-    const url = new URL(window.location.href);
-    await changeRoute(parseRoute(url), { shouldScroll: true, refetch: true });
+    await changeRoute(parseRouteFromLocation(), {
+      shouldScroll: true,
+      refetch: true,
+    });
   }, [changeRoute]);
   const back = useCallback(() => {
     // FIXME is this correct?
@@ -721,53 +723,47 @@ const FollowError = ({
   error,
   has404,
   reset,
+  fail,
   followPromiseMap,
 }: {
   error: unknown;
   has404: boolean;
   reset: () => void;
+  fail: (original: unknown, error: unknown) => void;
   followPromiseMap: WeakMap<object, Promise<unknown>>;
 }) => {
-  const { changeRoute } = useRouterOrThrow();
+  const { route, changeRoute } = useRouterOrThrow();
+  const routeAtCatchRef = useRef(route);
+  useEffect(() => {
+    // reset once the followed route commits; a revived error follows again
+    if (!isSameRoute(route, routeAtCatchRef.current)) {
+      followPromiseMap.delete(error as object);
+      reset();
+    }
+  }, [route, error, reset, followPromiseMap]);
   useEffect(() => {
     const info = getErrorInfo(error);
-    const url = info?.location
-      ? parseRedirectUrl(info.location, window.location.href)
-      : has404
-        ? new URL('/404', window.location.href)
-        : undefined;
-    if (!url) {
+    if (!info?.location && !(info?.status === 404 && has404)) {
       return;
     }
-    if (followPromiseMap.has(error as object)) {
+    if (
+      !isSameRoute(route, routeAtCatchRef.current) ||
+      followPromiseMap.has(error as object)
+    ) {
       return;
     }
-    if (url.origin !== window.location.origin) {
-      followPromiseMap.set(error as object, Promise.resolve());
-      window.location.replace(url.href);
-      return;
-    }
-    const shouldScroll = info?.location
-      ? url.pathname !== window.location.pathname
-      : true;
     followPromiseMap.set(
       error as object,
-      // following: the commit writes the url, even if the target redirects again
-      changeRoute(parseRoute(url), {
-        shouldScroll,
-        following: true,
-        ...(info?.location ? { mode: 'replace' as const, url } : {}),
-      })
-        .then(() => {
-          followPromiseMap.delete(error as object);
-          reset();
-        })
-        .catch((err) => {
-          followPromiseMap.delete(error as object);
-          console.log('Error while following the error:', err);
-        }),
+      changeRoute(parseRouteFromLocation(), {
+        shouldScroll: true,
+        errorToFollow: error,
+        ...(info?.location ? { mode: 'replace' as const } : {}),
+      }).catch((err) => {
+        followPromiseMap.delete(error as object);
+        fail(error, err);
+      }),
     );
-  }, [error, has404, reset, changeRoute, followPromiseMap]);
+  }, [route, error, has404, changeRoute, fail, followPromiseMap]);
   const info = getErrorInfo(error);
   return info?.status === 404 && !has404 ? <h1>Not Found</h1> : null;
 };
@@ -781,12 +777,16 @@ class CustomErrorHandler extends Component<
     super(props);
     this.state = { error: null };
     this.reset = this.reset.bind(this);
+    this.fail = this.fail.bind(this);
   }
   static getDerivedStateFromError(error: unknown) {
     return { error };
   }
   reset() {
     this.setState({ error: null });
+  }
+  fail(original: unknown, error: unknown) {
+    this.setState((state) => (state.error === original ? { error } : null));
   }
   render() {
     const { error } = this.state;
@@ -798,6 +798,7 @@ class CustomErrorHandler extends Component<
             error={error}
             has404={this.props.has404}
             reset={this.reset}
+            fail={this.fail}
             followPromiseMap={this.followPromiseMap}
           />
         );
@@ -912,30 +913,6 @@ const scrollToRoute = (
   });
 };
 
-const useElementsMetadata = (
-  elementsPromise: ReturnType<typeof useElementsPromise>,
-) => {
-  const [has404, setHas404] = useState(false);
-  const staticPathSetRef = useRef(new Set<string>());
-  const resolvedElementsRef = useRef<Record<string, unknown>>({});
-  useEffect(() => {
-    elementsPromise.then(
-      (elements) => {
-        resolvedElementsRef.current = elements;
-        if (has404FromElements(elements)) {
-          setHas404(true);
-        }
-        const route = getRouteFromElements(elements);
-        if (route && isStaticFromElements(elements)) {
-          staticPathSetRef.current.add(route.path);
-        }
-      },
-      () => {},
-    );
-  }, [elementsPromise]);
-  return { has404, staticPathSetRef, resolvedElementsRef };
-};
-
 const defaultRouteInterceptor = (route: RouteProps) => route;
 
 const InnerRouter = ({
@@ -952,21 +929,27 @@ const InnerRouter = ({
     routeFromElements && routeFromElements.path !== fallbackRoute.path
       ? { ...routeFromElements, hash: fallbackRoute.hash }
       : fallbackRoute;
-  const initialRouteRef = useRef(resolvedRoute);
+  const initialRoute = useRef(resolvedRoute).current;
 
-  const { has404, staticPathSetRef, resolvedElementsRef } =
-    useElementsMetadata(elementsPromise);
+  // meta keys persist across merges, so they read from the current elements
+  const has404 = has404FromElements(elements);
+  const staticPathSet = useRef(new Set<string>()).current;
+  const resolvedElementsRef = useRef(elements);
+  useEffect(() => {
+    resolvedElementsRef.current = elements;
+    const route = getRouteFromElements(elements);
+    if (route && isStaticFromElements(elements)) {
+      staticPathSet.add(route.path);
+    }
+  }, [elements, staticPathSet]);
   // FIXME this "fetchingSlices" hack feels suboptimal.
-  const fetchingSlicesRef = useRef(new Set<SliceId>());
-  const prefetchedElementsStoreRef = useRef<PrefetchedElementsStore>(new Map());
-  // A ref (not a module-level map) so it is scoped to the router instance and
-  // reset on remount.
-  const prefetchCacheRef = useRef<PrefetchCache>(new Map());
+  const fetchingSlices = useRef(new Set<SliceId>()).current;
+  const prefetchManager = useRef(createPrefetchManager()).current;
 
   const refetch = useRefetch();
   const mergeElements = useMergeElements();
   const [nav, setNav] = useState<Nav>(() => ({
-    query: initialRouteRef.current.query,
+    query: initialRoute.query,
     // hydrate without the hash the server does not know; an effect restores it
     hash: '',
     history: null,
@@ -974,15 +957,13 @@ const InnerRouter = ({
   }));
   const [err, setErr] = useState<unknown>(null);
   const currentRoute: RouteProps = {
-    path: routeFromElements
-      ? routeFromElements.path
-      : initialRouteRef.current.path,
+    path: routeFromElements ? routeFromElements.path : initialRoute.path,
     query: nav.query,
     hash: nav.hash,
   };
   const routeRef = useRef(currentRoute);
   useEffect(() => {
-    const hash = window.location.hash || initialRouteRef.current.hash;
+    const hash = window.location.hash || initialRoute.hash;
     routeRef.current = { ...routeRef.current, hash };
     setNav((prev) =>
       prev.hash === hash && !prev.history && !prev.scroll
@@ -990,7 +971,7 @@ const InnerRouter = ({
         : { ...prev, hash, history: null, scroll: null },
     );
     setErr(null);
-  }, []);
+  }, [initialRoute.hash]);
   useLayoutEffect(() => {
     const route = routeRef.current;
     if (nav.history) {
@@ -1009,18 +990,17 @@ const InnerRouter = ({
   }, [nav]);
 
   if (import.meta.hot) {
-    // The etag cache is cleared by minimal's own reload listener, which Root
-    // registers (via unstable_fetchRsc) ahead of this one, so it runs first.
-    const refetchRoute = () => {
-      prefetchCacheRef.current = new Map();
-      prefetchedElementsStoreRef.current = new Map();
-      staticPathSetRef.current.clear();
-      const route = routeRef.current;
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      refetch(encodeRoutePath(route.path), createRscParams(route.query));
-    };
-    upsertRscReloadListener(globalThis.__WAKU_REFETCH_ROUTE__, refetchRoute);
-    globalThis.__WAKU_REFETCH_ROUTE__ = refetchRoute;
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useEffect(() => {
+      const refetchRoute = () => {
+        prefetchManager.clear();
+        staticPathSet.clear();
+        const route = routeRef.current;
+        void refetch(encodeRoutePath(route.path), createRscParams(route.query));
+      };
+      upsertRscReloadListener(globalThis.__WAKU_REFETCH_ROUTE__, refetchRoute);
+      globalThis.__WAKU_REFETCH_ROUTE__ = refetchRoute;
+    }, [refetch, prefetchManager, staticPathSet]);
   }
 
   const [[routeChangeEvents, emitRouteChangeEvent]] = useState(
@@ -1047,21 +1027,14 @@ const InnerRouter = ({
       const resolveDeps = {
         fetchRoute: (route: RouteProps, routeUrl: URL) => {
           const rscPath = encodeRoutePath(route.path);
-          const cached = getPrefetch(
-            prefetchCacheRef.current,
-            prefetchCacheKey(rscPath, route.query),
-            Date.now(),
-          );
+          const cached = prefetchManager.get(rscPath, route.query);
           return refetch(rscPath, createRscParams(route.query), {
             signal: abortController.signal,
-            onBuildIdMismatch: () => {
-              window.history.pushState(window.history.state, '', routeUrl);
-              window.location.reload();
-            },
+            onBuildIdMismatch: () => reloadWithUrl(routeUrl),
             ...(cached ? { unstable_prefetched: cached.promise } : {}),
           });
         },
-        isKnownStatic: (path: string) => staticPathSetRef.current.has(path),
+        isKnownStatic: (path: string) => staticPathSet.has(path),
         has404,
         isAborted,
         leaveApp: (url: URL) => {
@@ -1082,19 +1055,27 @@ const InnerRouter = ({
           routeBefore,
           history: mode,
           historyUrl: options.url,
-          shouldScroll: options.shouldScroll,
+          shouldScroll: options.errorToFollow
+            ? destination.route.path !== routeBefore.path
+            : options.shouldScroll,
           getServerRedirect,
         });
+        if (
+          options.errorToFollow !== undefined &&
+          isSameRoute(route, routeBefore)
+        ) {
+          throw new Error('detected a redirect loop', {
+            cause: options.errorToFollow,
+          });
+        }
         const commit = () => {
           if (!destination.elements) {
             mergeElements({ [ROUTE_ID]: [route.path, route.query] });
           }
           routeRef.current = route;
-          if (options.following && nextNav.history) {
-            // A follow's render churns, so write the url now, and always
-            // replace so Back skips the redirecting route.
+          if (options.errorToFollow && nextNav.history) {
             writeUrlToHistory(
-              'replace',
+              nextNav.history.mode,
               nextNav.history.url || getRouteUrl(route),
             );
             setNav({ ...nextNav, history: null });
@@ -1111,14 +1092,16 @@ const InnerRouter = ({
           commit();
         }
       };
-      if (staticPathSetRef.current.has(nextRoute.path) || !shouldRefetch) {
+      if (
+        !options.errorToFollow &&
+        (staticPathSet.has(nextRoute.path) || !shouldRefetch)
+      ) {
         finish({ route: nextRoute, routeUrl: targetUrl });
         return;
       }
-      if (options.instant) {
+      if (!options.errorToFollow && options.instant) {
         const rscPath = encodeRoutePath(nextRoute.path);
-        const prefetchedElements =
-          prefetchedElementsStoreRef.current.get(rscPath);
+        const prefetchedElements = prefetchManager.getElements(rscPath);
         const routeSlotId = getRouteSlotId(nextRoute.path);
         if (
           canCommitInstantly(
@@ -1128,11 +1111,7 @@ const InnerRouter = ({
           )
         ) {
           const pin = pinForSwr(() => resolvedElementsRef.current);
-          const cached = getPrefetch(
-            prefetchCacheRef.current,
-            prefetchCacheKey(rscPath, nextRoute.query),
-            Date.now(),
-          );
+          const cached = prefetchManager.get(rscPath, nextRoute.query);
           const dataPromise = refetch(
             rscPath,
             createRscParams(nextRoute.query),
@@ -1143,10 +1122,7 @@ const InnerRouter = ({
                 ...(prefetchedElements ? { base: prefetchedElements } : {}),
                 overlay: { [ROUTE_ID]: [nextRoute.path, nextRoute.query] },
               },
-              onBuildIdMismatch: () => {
-                window.history.pushState(window.history.state, '', targetUrl);
-                window.location.reload();
-              },
+              onBuildIdMismatch: () => reloadWithUrl(targetUrl),
               ...(cached ? { unstable_prefetched: cached.promise } : {}),
             },
           );
@@ -1191,14 +1167,7 @@ const InnerRouter = ({
             if (isAborted()) {
               return;
             }
-            if (mode && window.location.href !== targetUrl.href) {
-              writeUrlToHistory(mode, targetUrl);
-              setNav((prev) => ({
-                ...prev,
-                history: null,
-                scroll: null,
-              }));
-            }
+            // the url was already written optimistically, so a follow replaces
             mode = mode && 'replace';
             try {
               const destination = await resolveFollowingErrors(
@@ -1229,11 +1198,12 @@ const InnerRouter = ({
           nextRoute,
           targetUrl,
           routeBefore,
-          undefined,
+          options.errorToFollow,
         );
-        if (destination) {
-          finish(destination);
+        if (!destination) {
+          return;
         }
+        finish(destination);
       } catch (e) {
         if (isAborted()) {
           return;
@@ -1253,10 +1223,9 @@ const InnerRouter = ({
       mergeElements,
       has404,
       emitRouteChangeEvent,
-      staticPathSetRef,
+      staticPathSet,
       resolvedElementsRef,
-      prefetchCacheRef,
-      prefetchedElementsStoreRef,
+      prefetchManager,
     ],
   );
 
@@ -1273,15 +1242,12 @@ const InnerRouter = ({
       ) {
         return;
       }
-      const url = new URL(window.location.href);
-      url.pathname = path;
-      url.search = query;
-      url.hash = '';
-      await changeRoute(parseRoute(url), {
+      const route = { path, query, hash: '' };
+      await changeRoute(route, {
         refetch: false,
         shouldScroll: false,
         mode: path === '/404' ? undefined : 'push',
-        url,
+        url: getRouteUrl(route),
       });
     },
     [changeRoute],
@@ -1299,13 +1265,11 @@ const InnerRouter = ({
   const prefetchRoute: PrefetchRoute = useCallback(
     (route, options) => {
       preloadRouteModules(route.path);
-      if (staticPathSetRef.current.has(route.path)) {
+      if (staticPathSet.has(route.path)) {
         return;
       }
       const rscPath = encodeRoutePath(route.path);
-      startPrefetch(
-        prefetchCacheRef.current,
-        prefetchedElementsStoreRef.current,
+      prefetchManager.prefetch(
         rscPath,
         route.query,
         (base) =>
@@ -1315,14 +1279,12 @@ const InnerRouter = ({
         options,
       );
     },
-    [staticPathSetRef, prefetchCacheRef, prefetchedElementsStoreRef],
+    [staticPathSet, prefetchManager],
   );
 
   useEffect(() => {
     const callback = () => {
-      const nextRoute = routeInterceptor(
-        parseRoute(new URL(window.location.href)),
-      );
+      const nextRoute = routeInterceptor(parseRouteFromLocation());
       if (!nextRoute) {
         return;
       }
@@ -1356,7 +1318,7 @@ const InnerRouter = ({
         changeRoute,
         prefetchRoute,
         routeChangeEvents,
-        fetchingSlices: fetchingSlicesRef.current,
+        fetchingSlices,
       }}
     >
       {rootElement}

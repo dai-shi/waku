@@ -16,23 +16,23 @@ export type PrefetchEntry = {
   expireAt: number;
 };
 
-export type PrefetchCache = Map<string, PrefetchEntry>;
+type PrefetchCache = Map<string, PrefetchEntry>;
 
 // Session store of prefetched responses, keyed by rscPath alone. Entries are
 // only served under the etag protocol: they paint immutable slots (which
 // cannot vary by query) and fall back for a dynamic slot only when the
 // server omits it, which proves the stored copy current. A null entry marks
 // a route whose first prefetch is still in flight.
-export type PrefetchedElementsStore = Map<string, Elements | null>;
+type PrefetchedElementsStore = Map<string, Elements | null>;
 
 export const PREFETCH_TTL = 1000 * 60;
 export const PREFETCH_LIMIT = 100;
 
-export const prefetchCacheKey = (rscPath: string, query: string): string =>
+const prefetchCacheKey = (rscPath: string, query: string): string =>
   rscPath + '\0' + query;
 
 /** Return a still-fresh entry for the key, evicting it if it has expired. */
-export const getPrefetch = (
+const getPrefetch = (
   cache: PrefetchCache,
   key: string,
   now: number,
@@ -46,7 +46,7 @@ export const getPrefetch = (
 };
 
 /** Insert an entry, evicting the oldest ones once the size limit is reached. */
-export const setPrefetch = (
+const setPrefetch = (
   cache: PrefetchCache,
   key: string,
   entry: PrefetchEntry,
@@ -99,8 +99,38 @@ const mergePrefetchedElements = (
   store.set(rscPath, existing ? { ...existing, ...elements } : elements);
 };
 
+/** One store for prefetched routes; the router does not see the two caches. */
+type PrefetchManager = {
+  prefetch: (
+    rscPath: string,
+    query: string,
+    fetchElements: (base: Elements | undefined) => Promise<Elements>,
+    options: PrefetchOptions | undefined,
+  ) => void;
+  get: (rscPath: string, query: string) => PrefetchEntry | undefined;
+  getElements: (rscPath: string) => Elements | undefined;
+  clear: () => void;
+};
+
+export const createPrefetchManager = (): PrefetchManager => {
+  let cache: PrefetchCache = new Map();
+  let store: PrefetchedElementsStore = new Map();
+  return {
+    prefetch: (rscPath, query, fetchElements, options) =>
+      startPrefetch(cache, store, rscPath, query, fetchElements, options),
+    get: (rscPath, query) =>
+      getPrefetch(cache, prefetchCacheKey(rscPath, query), Date.now()),
+    getElements: (rscPath) => store.get(rscPath) ?? undefined,
+    clear: () => {
+      // replace the maps so an in-flight prefetch completes into detached ones
+      cache = new Map();
+      store = new Map();
+    },
+  };
+};
+
 /** Start a prefetch unless the mode or an entry within its ttl dedupes it. */
-export const startPrefetch = (
+const startPrefetch = (
   cache: PrefetchCache,
   store: PrefetchedElementsStore,
   rscPath: string,

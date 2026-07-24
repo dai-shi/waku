@@ -84,6 +84,52 @@ describe('navigator', () => {
     expect(destination?.routeUrl.pathname).toBe('/missing');
   });
 
+  test('a followed redirect back to the current route resolves without fetching', async () => {
+    const { deps, fetchRoute } = makeDeps([]);
+    const destination = await resolveFollowingErrors(
+      deps,
+      route('/foo'),
+      urlOf('/foo'),
+      route('/foo'),
+      createCustomError('redirect', { status: 307, location: '/foo' }),
+    );
+    expect(destination?.route.path).toBe('/foo');
+    expect(destination?.elements).toBeUndefined();
+    expect(fetchRoute).not.toHaveBeenCalled();
+  });
+
+  test('a followed chain returning to the current route resolves after one fetch', async () => {
+    const { deps, fetchRoute } = makeDeps([
+      { reject: { status: 307, location: '/foo' } },
+    ]);
+    const destination = await resolveFollowingErrors(
+      deps,
+      route('/foo'),
+      urlOf('/foo'),
+      route('/foo'),
+      createCustomError('redirect', { status: 307, location: '/bar' }),
+    );
+    expect(destination?.route.path).toBe('/foo');
+    expect(destination?.elements).toBeUndefined();
+    expect(fetchRoute).toHaveBeenCalledTimes(1);
+  });
+
+  test('a plain navigation may still resolve back to the current route', async () => {
+    const { deps, fetchRoute } = makeDeps([
+      { reject: { status: 307, location: '/current' } },
+    ]);
+    const destination = await resolveFollowingErrors(
+      deps,
+      route('/next'),
+      urlOf('/next'),
+      route('/current'),
+      undefined,
+    );
+    expect(destination?.route.path).toBe('/current');
+    expect(destination?.elements).toBeUndefined();
+    expect(fetchRoute).toHaveBeenCalledTimes(1);
+  });
+
   test('a cycle stops at the hop limit with the cause attached', async () => {
     const { deps, fetchRoute } = makeDeps([]);
     fetchRoute.mockImplementation(() =>
@@ -177,6 +223,23 @@ describe('deriveNav', () => {
       getServerRedirect,
     });
     expect(nav.history?.url?.pathname).toBe('/login');
+  });
+
+  test('a server side redirect keeps a replace intent', () => {
+    const { nav } = deriveNav({
+      destination: {
+        route: route('/login'),
+        routeUrl: urlOf('/login'),
+        elements: {},
+      },
+      attempted: route('/login'),
+      routeBefore: route('/start'),
+      history: 'replace',
+      historyUrl: urlOf('/login'),
+      shouldScroll: false,
+      getServerRedirect: () => route('/dashboard'),
+    });
+    expect(nav.history?.mode).toBe('replace');
   });
 
   test('a server side redirect to the 404 route drops the history write', () => {

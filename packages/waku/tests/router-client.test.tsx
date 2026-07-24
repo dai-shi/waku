@@ -26,6 +26,7 @@ import {
   unstable_prefetchRsc as prefetchRsc,
   useRefetch,
 } from '../src/minimal/client.js';
+import { PREFETCH_LIMIT } from '../src/router/client-utils/prefetch-cache.js';
 import {
   ErrorBoundary,
   INTERNAL_ServerRouter,
@@ -49,7 +50,6 @@ import {
   ROUTE_ID,
   decodeRoutePath,
 } from '../src/router/isomorphic-utils/route-path.js';
-import { PREFETCH_LIMIT } from '../src/router/prefetch-cache.js';
 
 const postsSearchCodec = {
   id: 'posts-test',
@@ -1555,6 +1555,42 @@ describe('Router integration', () => {
 
     // Fully unregistered on unmount, so nothing leaks into later RSC requests.
     expect(size('l')).toBe(0);
+  });
+
+  test('a server function route update keeps the base path', async () => {
+    vi.stubEnv('WAKU_CONFIG_BASE_PATH', '/docs/');
+    try {
+      window.history.replaceState({}, '', '/docs/start');
+      const elements = {
+        [unstable_getRouteSlotId('/start')]: <div>start</div>,
+        [unstable_getRouteSlotId('/next')]: <div>next</div>,
+        [ROUTE_ID]: ['/start', ''],
+        [IS_STATIC_ID]: false,
+      };
+      const view = await renderRouter(
+        { initialRoute: { path: '/start', query: '', hash: '' } },
+        elements,
+      );
+
+      const store = fetchRscStore as unknown as Record<string, unknown>;
+      const listeners = store.l as Set<
+        (elements: Record<string, unknown>) => void
+      >;
+      expect(listeners.size).toBe(1);
+      await act(async () => {
+        for (const listener of listeners) {
+          listener({ [ROUTE_ID]: ['/next', ''], [IS_STATIC_ID]: false });
+        }
+        await flush();
+      });
+      await flush();
+
+      expect(window.location.pathname).toBe('/docs/next');
+
+      view.unmount();
+    } finally {
+      vi.stubEnv('WAKU_CONFIG_BASE_PATH', '/');
+    }
   });
 
   test('push performs refetch for dynamic routes and emits start/complete events', async () => {
@@ -4462,6 +4498,79 @@ describe('Router integration', () => {
       view.unmount();
     } finally {
       vi.stubEnv('WAKU_CONFIG_BASE_PATH', '/');
+    }
+  });
+
+  test('a self redirect surfaces a redirect loop error instead of a blank page', async () => {
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    const ThrowRedirect = () => {
+      throw createCustomError('redirect', { status: 307, location: '/start' });
+    };
+
+    testHoisted.elements = {
+      [unstable_getRouteSlotId('/start')]: <ThrowRedirect />,
+      [ROUTE_ID]: ['/start', ''],
+      [IS_STATIC_ID]: false,
+    };
+
+    try {
+      const view = await renderApp(
+        <ErrorBoundary>
+          <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+            <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
+          </Unstable_SearchCodecsProvider>
+        </ErrorBoundary>,
+      );
+      await flush();
+      await flush();
+
+      expect(view.container.textContent).toContain('detected a redirect loop');
+
+      view.unmount();
+    } finally {
+      consoleErrorSpy.mockRestore();
+    }
+  });
+
+  test('a fetched redirect back to the caught route surfaces a redirect loop error', async () => {
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    const ThrowRedirect = () => {
+      throw createCustomError('redirect', { status: 307, location: '/login' });
+    };
+
+    getRefetchMock().mockImplementation(((rscPath: string) =>
+      Promise.resolve(
+        rscPath === unstable_encodeRoutePath('/login')
+          ? { [ROUTE_ID]: ['/start', ''] }
+          : {},
+      )) as never);
+
+    testHoisted.elements = {
+      [unstable_getRouteSlotId('/start')]: <ThrowRedirect />,
+      [ROUTE_ID]: ['/start', ''],
+      [IS_STATIC_ID]: false,
+    };
+
+    try {
+      const view = await renderApp(
+        <ErrorBoundary>
+          <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+            <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
+          </Unstable_SearchCodecsProvider>
+        </ErrorBoundary>,
+      );
+      await flush();
+      await flush();
+
+      expect(view.container.textContent).toContain('detected a redirect loop');
+
+      view.unmount();
+    } finally {
+      consoleErrorSpy.mockRestore();
     }
   });
 

@@ -37,7 +37,7 @@ export const isSameRoute = (next: RouteProps, prev: RouteProps) =>
   next.query === prev.query &&
   next.hash === prev.hash;
 
-export const parseRedirectUrl = (location: string, base: string | URL) => {
+const parseRedirectUrl = (location: string, base: string | URL) => {
   const url = new URL(location, base);
   return url.protocol === 'http:' || url.protocol === 'https:'
     ? url
@@ -156,11 +156,7 @@ export const deriveNav = (outcome: {
     destination.elements &&
     outcome.getServerRedirect(destination.elements, destination.route);
   const route = redirect || destination.route;
-  const mode = redirect
-    ? redirect.path === '/404'
-      ? undefined
-      : outcome.history && 'push'
-    : outcome.history;
+  const mode = redirect?.path === '/404' ? undefined : outcome.history;
   const url = redirect
     ? undefined
     : followed
