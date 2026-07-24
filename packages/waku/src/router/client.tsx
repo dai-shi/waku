@@ -735,6 +735,8 @@ export class ErrorBoundary extends Component<
 
 const MAX_FOLLOW_HOPS = 20;
 
+const PROBE_TIMEOUT = 3000;
+
 const FollowError = ({
   error,
   has404,
@@ -1204,14 +1206,19 @@ const InnerRouter = ({
         }
         if (!info && e instanceof TypeError) {
           // a probe tells a dead server from a cors blocked redirect
-          const alive = await fetch(targetUrl, {
-            method: 'HEAD',
-            redirect: 'manual',
-            signal: abortController.signal,
-          }).then(
-            () => true,
-            () => false,
-          );
+          const alive = await Promise.race([
+            fetch(targetUrl, {
+              method: 'HEAD',
+              redirect: 'manual',
+              signal: abortController.signal,
+            }).then(
+              () => true,
+              () => false,
+            ),
+            new Promise<boolean>((resolve) => {
+              setTimeout(() => resolve(false), PROBE_TIMEOUT);
+            }),
+          ]);
           if (isAborted()) {
             return;
           }

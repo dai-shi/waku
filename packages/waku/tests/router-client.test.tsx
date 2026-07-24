@@ -5036,6 +5036,64 @@ describe('Router integration', () => {
     view.unmount();
   });
 
+  test('a hung probe falls back to the error path', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(() => new Promise<Response>(() => {}));
+    const assignSpy = vi
+      .spyOn(window.location, 'assign')
+      .mockImplementation(() => {});
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const refetch = vi.fn<ReturnType<typeof useRefetch>>(async () => ({}));
+    refetch.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    installRefetch(refetch);
+
+    testHoisted.elements = {
+      [unstable_getRouteSlotId('/start')]: <Probe />,
+      [ROUTE_ID]: ['/start', ''],
+      [IS_STATIC_ID]: false,
+    };
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    const view = await renderApp(
+      <ErrorBoundary>
+        <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+          <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
+        </Unstable_SearchCodecsProvider>
+      </ErrorBoundary>,
+    );
+    try {
+      if (!capture.router) {
+        throw new Error('router not initialized');
+      }
+      let rejected: unknown;
+      await act(async () => {
+        capture.router!.push('/protected').catch((e: unknown) => {
+          rejected = e;
+        });
+        await flush();
+      });
+      await act(async () => {
+        vi.advanceTimersByTime(3001);
+        await flush();
+      });
+      expect(rejected).toBeInstanceOf(TypeError);
+      expect(assignSpy).not.toHaveBeenCalled();
+      expect(view.container.textContent).toContain(
+        'Caught an unexpected error',
+      );
+    } finally {
+      consoleErrorSpy.mockRestore();
+      assignSpy.mockRestore();
+      fetchSpy.mockRestore();
+      vi.useRealTimers();
+      view.unmount();
+    }
+  });
+
   test('a superseded navigation ignores a late probe result', async () => {
     let resolveProbe!: (response: Response) => void;
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(
