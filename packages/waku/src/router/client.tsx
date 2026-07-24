@@ -1202,6 +1202,15 @@ const InnerRouter = ({
           }
           return;
         }
+        if (!info && e instanceof TypeError) {
+          // a network error can hide a cors blocked redirect; the browser retries
+          if (navState.push) {
+            window.location.assign(targetUrl.href);
+          } else {
+            window.location.replace(targetUrl.href);
+          }
+          return;
+        }
         // write the url now; an unrecoverable rethrow discards the commit
         if (window.location.href !== targetUrl.href) {
           if (navState.push) {

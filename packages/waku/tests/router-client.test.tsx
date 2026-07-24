@@ -4987,6 +4987,47 @@ describe('Router integration', () => {
     view.unmount();
   });
 
+  test('a network error on push retries as a browser navigation', async () => {
+    const assignSpy = vi
+      .spyOn(window.location, 'assign')
+      .mockImplementation(() => {});
+    const { view, refetch, capture, router } = await renderFollowRouter({
+      responses: [],
+    });
+    refetch.mockImplementationOnce(() =>
+      Promise.reject(new TypeError('Failed to fetch')),
+    );
+    await act(async () => {
+      await router.push('/protected').catch(() => {});
+      await flush();
+    });
+    expect(assignSpy).toHaveBeenCalledTimes(1);
+    expect(assignSpy.mock.calls[0]![0]).toContain('/protected');
+    expect(capture.router!.path).toBe('/start');
+    assignSpy.mockRestore();
+    view.unmount();
+  });
+
+  test('a network error on replace retries without a new entry', async () => {
+    const replaceLocationSpy = vi
+      .spyOn(window.location, 'replace')
+      .mockImplementation(() => {});
+    const { view, refetch, router } = await renderFollowRouter({
+      responses: [],
+    });
+    refetch.mockImplementationOnce(() =>
+      Promise.reject(new TypeError('Failed to fetch')),
+    );
+    await act(async () => {
+      await router.replace('/protected').catch(() => {});
+      await flush();
+    });
+    expect(replaceLocationSpy).toHaveBeenCalledTimes(1);
+    expect(replaceLocationSpy.mock.calls[0]![0]).toContain('/protected');
+    replaceLocationSpy.mockRestore();
+    view.unmount();
+  });
+
   test('redirect error with a different origin leaves the app', async () => {
     const capture = { router: null as RouterApi | null };
     const Probe = makeProbe(capture);
