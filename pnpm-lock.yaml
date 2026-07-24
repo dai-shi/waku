@@ -1408,7 +1408,7 @@ importers:
         specifier: ~19.2.8
         version: 19.2.8(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(webpack@5.99.9(esbuild@0.28.1))
       waku:
-        specifier: 1.0.0-beta.7
+        specifier: 1.0.0-beta.8
         version: link:../../packages/waku
     devDependencies:
       '@rolldown/plugin-babel':
@@ -1451,7 +1451,7 @@ importers:
         specifier: ~19.2.8
         version: 19.2.8(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(webpack@5.99.9(esbuild@0.28.1))
       waku:
-        specifier: 1.0.0-beta.7
+        specifier: 1.0.0-beta.8
         version: link:../../packages/waku
     devDependencies:
       '@rolldown/plugin-babel':
