@@ -1203,13 +1203,26 @@ const InnerRouter = ({
           return;
         }
         if (!info && e instanceof TypeError) {
-          // a network error can hide a cors blocked redirect; the browser retries
-          if (navState.push) {
-            window.location.assign(targetUrl.href);
-          } else {
-            window.location.replace(targetUrl.href);
+          // a probe tells a dead server from a cors blocked redirect
+          const alive = await fetch(targetUrl, {
+            method: 'HEAD',
+            redirect: 'manual',
+          }).then(
+            () => true,
+            () => false,
+          );
+          if (isAborted()) {
+            return;
           }
-          return;
+          if (alive) {
+            // the browser retries the url itself and follows any redirect
+            if (navState.push) {
+              window.location.assign(targetUrl.href);
+            } else {
+              window.location.replace(targetUrl.href);
+            }
+            return;
+          }
         }
         // write the url now; an unrecoverable rethrow discards the commit
         if (window.location.href !== targetUrl.href) {

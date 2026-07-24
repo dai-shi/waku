@@ -4988,6 +4988,9 @@ describe('Router integration', () => {
   });
 
   test('a network error on push retries as a browser navigation', async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response(''));
     const assignSpy = vi
       .spyOn(window.location, 'assign')
       .mockImplementation(() => {});
@@ -5005,10 +5008,14 @@ describe('Router integration', () => {
     expect(assignSpy.mock.calls[0]![0]).toContain('/protected');
     expect(capture.router!.path).toBe('/start');
     assignSpy.mockRestore();
+    fetchSpy.mockRestore();
     view.unmount();
   });
 
   test('a network error on replace retries without a new entry', async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response(''));
     const replaceLocationSpy = vi
       .spyOn(window.location, 'replace')
       .mockImplementation(() => {});
@@ -5025,7 +5032,58 @@ describe('Router integration', () => {
     expect(replaceLocationSpy).toHaveBeenCalledTimes(1);
     expect(replaceLocationSpy.mock.calls[0]![0]).toContain('/protected');
     replaceLocationSpy.mockRestore();
+    fetchSpy.mockRestore();
     view.unmount();
+  });
+
+  test('a network error with the server unreachable stays an error', async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockRejectedValue(new TypeError('Failed to fetch'));
+    const assignSpy = vi
+      .spyOn(window.location, 'assign')
+      .mockImplementation(() => {});
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const refetch = vi.fn<ReturnType<typeof useRefetch>>(async () => ({}));
+    refetch.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    installRefetch(refetch);
+
+    testHoisted.elements = {
+      [unstable_getRouteSlotId('/start')]: <Probe />,
+      [ROUTE_ID]: ['/start', ''],
+      [IS_STATIC_ID]: false,
+    };
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    const view = await renderApp(
+      <ErrorBoundary>
+        <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+          <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
+        </Unstable_SearchCodecsProvider>
+      </ErrorBoundary>,
+    );
+    try {
+      if (!capture.router) {
+        throw new Error('router not initialized');
+      }
+      await act(async () => {
+        await expect(capture.router!.push('/protected')).rejects.toThrow(
+          'Failed to fetch',
+        );
+        await flush();
+      });
+      expect(assignSpy).not.toHaveBeenCalled();
+      expect(view.container.textContent).toContain(
+        'Caught an unexpected error',
+      );
+    } finally {
+      consoleErrorSpy.mockRestore();
+      assignSpy.mockRestore();
+      fetchSpy.mockRestore();
+      view.unmount();
+    }
   });
 
   test('redirect error with a different origin leaves the app', async () => {
