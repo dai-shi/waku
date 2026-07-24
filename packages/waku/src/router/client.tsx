@@ -1190,9 +1190,9 @@ const InnerRouter = ({
         if (isAborted()) {
           return;
         }
-        abortRef.current = null;
         const info = getErrorInfo(e);
         if (info?.location) {
+          abortRef.current = null;
           // a fetch level redirect may leave waku; the browser follows it
           const url = new URL(info.location, targetUrl);
           if (navState.push) {
@@ -1207,6 +1207,7 @@ const InnerRouter = ({
           const alive = await fetch(targetUrl, {
             method: 'HEAD',
             redirect: 'manual',
+            signal: abortController.signal,
           }).then(
             () => true,
             () => false,
@@ -1215,6 +1216,7 @@ const InnerRouter = ({
             return;
           }
           if (alive) {
+            abortRef.current = null;
             // the browser retries the url itself and follows any redirect
             if (navState.push) {
               window.location.assign(targetUrl.href);
@@ -1224,6 +1226,7 @@ const InnerRouter = ({
             return;
           }
         }
+        abortRef.current = null;
         // write the url now; an unrecoverable rethrow discards the commit
         if (window.location.href !== targetUrl.href) {
           if (navState.push) {

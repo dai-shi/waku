@@ -5036,6 +5036,56 @@ describe('Router integration', () => {
     view.unmount();
   });
 
+  test('a superseded navigation ignores a late probe result', async () => {
+    let resolveProbe!: (response: Response) => void;
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(
+      () =>
+        new Promise<Response>((resolve) => {
+          resolveProbe = resolve;
+        }),
+    );
+    const assignSpy = vi
+      .spyOn(window.location, 'assign')
+      .mockImplementation(() => {});
+    const replaceLocationSpy = vi
+      .spyOn(window.location, 'replace')
+      .mockImplementation(() => {});
+    const { view, refetch, capture, router } = await renderFollowRouter({
+      responses: [],
+      slots: ['/b'],
+    });
+    refetch
+      .mockImplementationOnce(() =>
+        Promise.reject(new TypeError('Failed to fetch')),
+      )
+      .mockImplementationOnce(() =>
+        Promise.resolve({ [ROUTE_ID]: ['/b', ''], [IS_STATIC_ID]: false }),
+      );
+    let pushA: Promise<unknown> | undefined;
+    await act(async () => {
+      pushA = router.push('/a');
+      pushA.catch(() => {});
+      await flush();
+    });
+    await act(async () => {
+      await router.push('/b');
+      await flush();
+    });
+    expect(capture.router!.path).toBe('/b');
+    await act(async () => {
+      resolveProbe(new Response(''));
+      await pushA;
+      await flush();
+    });
+    expect(assignSpy).not.toHaveBeenCalled();
+    expect(replaceLocationSpy).not.toHaveBeenCalled();
+    expect(capture.router!.path).toBe('/b');
+    assignSpy.mockRestore();
+    replaceLocationSpy.mockRestore();
+    fetchSpy.mockRestore();
+    view.unmount();
+  });
+
   test('a network error with the server unreachable stays an error', async () => {
     const fetchSpy = vi
       .spyOn(globalThis, 'fetch')
