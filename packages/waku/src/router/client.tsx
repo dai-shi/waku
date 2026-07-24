@@ -816,7 +816,7 @@ const FollowError = ({
     }
     // redirecting back to the route the error came from cannot recover
     const caught = parseRoute(attemptedUrl);
-    if (target.path === caught.path && target.query === caught.query) {
+    if (isSameRoute(target, caught)) {
       fail(error, new Error('detected a redirect loop', { cause: error }));
       return;
     }
