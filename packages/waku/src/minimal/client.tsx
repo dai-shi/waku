@@ -589,14 +589,15 @@ export const Root = ({
         return resolved;
       });
     }
-    setElements((prev) =>
-      mergeElementsPromise(
-        prev,
-        overlay
-          ? dataWithoutErrors.then((data) => ({ ...data, ...overlay }))
-          : dataWithoutErrors,
-      ),
-    );
+    // built outside the updater so a replayed updater reuses the identity;
+    // the overlay only applies when the fetch succeeds
+    const dataToMerge = overlay
+      ? Promise.resolve(data).then(
+          (resolved) => ({ ...resolved, ...overlay }),
+          () => ({}),
+        )
+      : dataWithoutErrors;
+    setElements((prev) => mergeElementsPromise(prev, dataToMerge));
     return data;
   }, []);
   const mergeElements = useCallback<MergeElements>((partial) => {

@@ -1,12 +1,15 @@
 import {
   unstable_addBase as addBase,
-  unstable_getErrorInfo as getErrorInfo,
   unstable_isImmutableElement as isImmutableElement,
   unstable_removeBase as removeBase,
 } from '../../minimal/client.js';
 import { pathnameToRoutePath } from '../isomorphic-utils/route-path.js';
 import type { RouteProps } from '../isomorphic-utils/route-path.js';
-import { isMetaKey } from './elements-meta.js';
+import {
+  getRouteFromElements,
+  getServerRedirect,
+  isMetaKey,
+} from './elements-meta.js';
 
 // --- pure route and url helpers ---
 
@@ -37,153 +40,79 @@ export const isSameRoute = (next: RouteProps, prev: RouteProps) =>
   next.query === prev.query &&
   next.hash === prev.hash;
 
-const parseRedirectUrl = (location: string, base: string | URL) => {
+export const parseRedirectUrl = (location: string, base: string | URL) => {
   const url = new URL(location, base);
   return url.protocol === 'http:' || url.protocol === 'https:'
     ? url
     : undefined;
 };
 
-const MAX_ERROR_HOPS = 20;
+// --- client-only navigation state, stored in the elements record ---
 
-// --- the resolver ---
+// The record's symbol key for the client-owned navigation state. The rendered
+// path comes from the server's ROUTE_ID; NAV_ID carries what the server cannot
+// know: the browser url, the pending history intent and the scroll intent.
+export const NAV_ID = Symbol('waku-router-nav');
 
-export type Destination = {
-  route: RouteProps;
-  routeUrl: URL;
-  elements?: Record<string, unknown> | undefined;
+export type NavState = {
+  url: string; // pathname + search + hash, with the base path
+  attempted: readonly [path: string, query: string];
+  push: boolean; // consumed by the reconciler on the first write
+  scroll: { pathChanged: boolean } | null; // consumed by the reconciler
+  scrollIntent?: boolean; // a failed attempt's intent, for a follow to inherit
 };
 
-export type ResolveDeps = {
-  fetchRoute: (
-    route: RouteProps,
-    routeUrl: URL,
-  ) => Promise<Record<string, unknown>>;
-  isKnownStatic: (path: string) => boolean;
-  has404: boolean;
-  isAborted: () => boolean;
-  leaveApp: (url: URL) => void;
-};
+export const getNavState = (
+  elements: Record<string, unknown>,
+): NavState | undefined =>
+  (elements as Record<symbol, unknown>)[NAV_ID] as NavState | undefined;
 
-export const resolveFollowingErrors = async (
-  deps: ResolveDeps,
+export const makeNavState = (
   route: RouteProps,
-  routeUrl: URL,
-  routeBefore: RouteProps,
-  errorToFollow: unknown,
-): Promise<Destination | undefined> => {
-  for (let hops = errorToFollow ? 1 : 0; hops <= MAX_ERROR_HOPS; hops++) {
-    if (errorToFollow) {
-      const info = getErrorInfo(errorToFollow);
-      const redirectUrl = info?.location
-        ? parseRedirectUrl(info.location, routeUrl)
-        : undefined;
-      if (redirectUrl) {
-        if (redirectUrl.origin !== window.location.origin) {
-          deps.leaveApp(redirectUrl);
-          return undefined;
-        }
-        route = parseRoute(redirectUrl);
-        routeUrl = redirectUrl;
-      } else if (info?.status === 404 && deps.has404 && route.path !== '/404') {
-        route = parseRoute(new URL('/404', window.location.href));
-      } else {
-        throw errorToFollow;
-      }
-      errorToFollow = undefined;
-    }
-    if (
-      hops > 0 &&
-      (deps.isKnownStatic(route.path) || isSameRoute(route, routeBefore))
-    ) {
-      return { route, routeUrl };
-    }
-    try {
-      return {
-        route,
-        routeUrl,
-        elements: await deps.fetchRoute(route, routeUrl),
-      };
-    } catch (e) {
-      if (deps.isAborted()) {
-        throw e;
-      }
-      errorToFollow = e;
-    }
+  url: URL,
+  options: { push: boolean; scroll: boolean; pathChanged: boolean },
+): NavState => ({
+  url: url.pathname + url.search + url.hash,
+  attempted: [route.path, route.query],
+  push: options.push,
+  scroll: options.scroll ? { pathChanged: options.pathChanged } : null,
+});
+
+// Derive the committed route and browser url from the record. A server
+// redirect (ROUTE_ID differing from the attempted route) moves both to the
+// committed route, except the 404 route, which keeps the attempted url.
+export const deriveCommitted = (
+  elements: Record<string, unknown>,
+  fallbackRoute: RouteProps,
+): { route: RouteProps; nav: NavState | undefined; url: URL | undefined } => {
+  const nav = getNavState(elements);
+  const routeFromElements = getRouteFromElements(elements);
+  if (!nav) {
+    return { route: fallbackRoute, nav: undefined, url: undefined };
   }
-  throw new Error('too many redirect or 404 follows', {
-    cause: errorToFollow,
+  const navUrl = new URL(nav.url, window.location.href);
+  const redirect = getServerRedirect(elements, {
+    path: nav.attempted[0],
+    query: nav.attempted[1],
+    hash: '',
   });
-};
-
-// --- history, scroll ---
-
-export const writeUrlToHistory = (mode: 'push' | 'replace', url: URL) => {
-  if (mode === 'push') {
-    window.history.pushState(window.history.state, '', url);
-  } else {
-    window.history.replaceState(window.history.state, '', url);
+  if (redirect && redirect.path !== '/404') {
+    return { route: redirect, nav, url: getRouteUrl(redirect) };
   }
-};
-
-// --- client-only navigation state ---
-
-// The route path is derived from the elements' ROUTE_ID. The query and hash are
-// kept here because they are client-owned: a static route does not echo the URL
-// query, and the server never sees the hash.
-export type Nav = {
-  query: string;
-  hash: string;
-  history: { mode: 'push' | 'replace'; url: URL | undefined } | null;
-  scroll: { pathChanged: boolean } | null;
-};
-
-export const deriveNav = (outcome: {
-  destination: Destination;
-  attempted: RouteProps;
-  routeBefore: RouteProps;
-  history: 'push' | 'replace' | undefined;
-  historyUrl: URL | undefined;
-  shouldScroll: boolean;
-  getServerRedirect: (
-    elements: Record<string, unknown>,
-    route: RouteProps,
-  ) => RouteProps | undefined;
-}): { route: RouteProps; nav: Nav } => {
-  const { destination, attempted, routeBefore } = outcome;
-  const followed = !isSameRoute(destination.route, attempted);
-  const redirect =
-    destination.elements &&
-    outcome.getServerRedirect(destination.elements, destination.route);
-  const route = redirect || destination.route;
-  const mode = redirect?.path === '/404' ? undefined : outcome.history;
-  const url = redirect
-    ? undefined
-    : followed
-      ? destination.routeUrl
-      : outcome.historyUrl;
   return {
-    route,
-    nav: {
-      query: route.query,
-      hash: route.hash,
-      history: mode ? { mode, url } : null,
-      scroll: outcome.shouldScroll
-        ? { pathChanged: route.path !== routeBefore.path }
-        : null,
+    route: {
+      path: redirect
+        ? redirect.path
+        : routeFromElements
+          ? routeFromElements.path
+          : fallbackRoute.path,
+      query: navUrl.searchParams.toString(),
+      hash: navUrl.hash,
     },
+    nav,
+    url: navUrl,
   };
 };
-
-export const applyServerRedirect = (prev: Nav, redirect: RouteProps): Nav => ({
-  ...prev,
-  query: redirect.query,
-  hash: redirect.hash,
-  history:
-    redirect.path === '/404'
-      ? null
-      : { mode: 'replace', url: getRouteUrl(redirect) },
-});
 
 // --- instant navigation ---
 

@@ -1,264 +1,138 @@
 /** @vitest-environment happy-dom */
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { createCustomError } from '../src/lib/utils/custom-errors.js';
 import { ETAG_ID_PREFIX, IMMUTABLE_ETAG } from '../src/lib/utils/etags.js';
 import {
-  applyServerRedirect,
+  NAV_ID,
   canCommitInstantly,
-  deriveNav,
+  deriveCommitted,
+  getNavState,
+  makeNavState,
   pinForSwr,
-  resolveFollowingErrors,
 } from '../src/router/client-utils/navigate.js';
-import type { ResolveDeps } from '../src/router/client-utils/navigate.js';
-import { ROUTE_ID } from '../src/router/isomorphic-utils/route-path.js';
+import {
+  IS_STATIC_ID,
+  ROUTE_ID,
+} from '../src/router/isomorphic-utils/route-path.js';
 
 beforeEach(() => {
   vi.stubEnv('WAKU_CONFIG_BASE_PATH', '/');
 });
 
-const route = (path: string, query = '') => ({ path, query, hash: '' });
-
-const makeDeps = (
-  responses: (
-    | { reject: { status: number; location?: string } }
-    | { resolve: Record<string, unknown> }
-  )[],
-  overrides?: Partial<ResolveDeps>,
-) => {
-  const fetchRoute = vi.fn<ResolveDeps['fetchRoute']>();
-  for (const response of responses) {
-    if ('reject' in response) {
-      fetchRoute.mockImplementationOnce(() =>
-        Promise.reject(createCustomError('follow-error', response.reject)),
-      );
-    } else {
-      fetchRoute.mockResolvedValueOnce(response.resolve);
-    }
-  }
-  const leaveApp = vi.fn();
-  const deps: ResolveDeps = {
-    fetchRoute,
-    isKnownStatic: () => false,
-    has404: true,
-    isAborted: () => false,
-    leaveApp,
-    ...overrides,
-  };
-  return { deps, fetchRoute, leaveApp };
-};
+const route = (path: string, query = '', hash = '') => ({ path, query, hash });
 
 const urlOf = (path: string) => new URL(path, window.location.origin);
 
-describe('navigator', () => {
-  test('resolves a redirect chain to its destination', async () => {
-    const { deps, fetchRoute } = makeDeps([
-      { reject: { status: 307, location: '/b' } },
-      { reject: { status: 307, location: '/c' } },
-      { resolve: { data: 'c' } },
-    ]);
-    const destination = await resolveFollowingErrors(
-      deps,
-      route('/a'),
-      urlOf('/a'),
-      route('/start'),
-      undefined,
-    );
-    expect(fetchRoute).toHaveBeenCalledTimes(3);
-    expect(destination?.route.path).toBe('/c');
-    expect(destination?.routeUrl.pathname).toBe('/c');
-  });
+const withNav = (
+  elements: Record<string, unknown>,
+  nav: ReturnType<typeof makeNavState>,
+): Record<string, unknown> => {
+  const next: Record<string, unknown> = { ...elements };
+  (next as Record<symbol, unknown>)[NAV_ID] = nav;
+  return next;
+};
 
-  test('a 404 keeps the attempted url while resolving the 404 route', async () => {
-    const { deps } = makeDeps([
-      { reject: { status: 404 } },
-      { resolve: { data: '404' } },
-    ]);
-    const destination = await resolveFollowingErrors(
-      deps,
-      route('/missing'),
-      urlOf('/missing'),
-      route('/start'),
-      undefined,
-    );
-    expect(destination?.route.path).toBe('/404');
-    expect(destination?.routeUrl.pathname).toBe('/missing');
-  });
-
-  test('a followed redirect back to the current route resolves without fetching', async () => {
-    const { deps, fetchRoute } = makeDeps([]);
-    const destination = await resolveFollowingErrors(
-      deps,
-      route('/foo'),
-      urlOf('/foo'),
-      route('/foo'),
-      createCustomError('redirect', { status: 307, location: '/foo' }),
-    );
-    expect(destination?.route.path).toBe('/foo');
-    expect(destination?.elements).toBeUndefined();
-    expect(fetchRoute).not.toHaveBeenCalled();
-  });
-
-  test('a followed chain returning to the current route resolves after one fetch', async () => {
-    const { deps, fetchRoute } = makeDeps([
-      { reject: { status: 307, location: '/foo' } },
-    ]);
-    const destination = await resolveFollowingErrors(
-      deps,
-      route('/foo'),
-      urlOf('/foo'),
-      route('/foo'),
-      createCustomError('redirect', { status: 307, location: '/bar' }),
-    );
-    expect(destination?.route.path).toBe('/foo');
-    expect(destination?.elements).toBeUndefined();
-    expect(fetchRoute).toHaveBeenCalledTimes(1);
-  });
-
-  test('a plain navigation may still resolve back to the current route', async () => {
-    const { deps, fetchRoute } = makeDeps([
-      { reject: { status: 307, location: '/current' } },
-    ]);
-    const destination = await resolveFollowingErrors(
-      deps,
-      route('/next'),
-      urlOf('/next'),
-      route('/current'),
-      undefined,
-    );
-    expect(destination?.route.path).toBe('/current');
-    expect(destination?.elements).toBeUndefined();
-    expect(fetchRoute).toHaveBeenCalledTimes(1);
-  });
-
-  test('a cycle stops at the hop limit with the cause attached', async () => {
-    const { deps, fetchRoute } = makeDeps([]);
-    fetchRoute.mockImplementation(() =>
-      Promise.reject(
-        createCustomError('follow-error', { status: 307, location: '/a' }),
-      ),
-    );
-    await expect(
-      resolveFollowingErrors(
-        deps,
-        route('/a'),
-        urlOf('/a'),
-        route('/start'),
-        undefined,
-      ),
-    ).rejects.toThrow('too many redirect or 404 follows');
-    expect(fetchRoute).toHaveBeenCalledTimes(21);
-  });
-
-  test('a known static follow target resolves without fetching', async () => {
-    const { deps, fetchRoute } = makeDeps(
-      [{ reject: { status: 307, location: '/static-page' } }],
-      { isKnownStatic: (path: string) => path === '/static-page' },
-    );
-    const destination = await resolveFollowingErrors(
-      deps,
-      route('/a'),
-      urlOf('/a'),
-      route('/start'),
-      undefined,
-    );
-    expect(fetchRoute).toHaveBeenCalledTimes(1);
-    expect(destination?.route.path).toBe('/static-page');
-    expect(destination?.elements).toBeUndefined();
-  });
-
-  test('a cross origin redirect leaves through the app, not directly', async () => {
-    const { deps, fetchRoute, leaveApp } = makeDeps([
-      { reject: { status: 307, location: 'https://auth.example.com/login' } },
-    ]);
-    const destination = await resolveFollowingErrors(
-      deps,
-      route('/protected'),
-      urlOf('/protected'),
-      route('/dashboard'),
-      undefined,
-    );
-    expect(destination).toBeUndefined();
-    expect(fetchRoute).toHaveBeenCalledTimes(1);
-    expect(leaveApp).toHaveBeenCalledWith(
-      new URL('https://auth.example.com/login'),
-    );
-  });
-});
-
-describe('deriveNav', () => {
-  const getServerRedirect = () => undefined;
-
-  test('a plain navigation keeps its history and scroll intent', () => {
-    const { route: derived, nav } = deriveNav({
-      destination: {
-        route: route('/next'),
-        routeUrl: urlOf('/next'),
-      },
-      attempted: route('/next'),
-      routeBefore: route('/start'),
-      history: 'push',
-      historyUrl: urlOf('/next'),
-      shouldScroll: true,
-      getServerRedirect,
+describe('makeNavState', () => {
+  test('captures the url, the attempted route and the intents', () => {
+    const nav = makeNavState(route('/a', 'x=1'), urlOf('/a?x=1#top'), {
+      push: true,
+      scroll: true,
+      pathChanged: true,
     });
-    expect(derived.path).toBe('/next');
-    expect(nav.history).toEqual({
-      mode: 'push',
-      url: urlOf('/next'),
-    });
+    expect(nav.url).toBe('/a?x=1#top');
+    expect(nav.attempted).toEqual(['/a', 'x=1']);
+    expect(nav.push).toBe(true);
     expect(nav.scroll).toEqual({ pathChanged: true });
   });
 
-  test('a followed navigation replaces the history url', () => {
-    const { nav } = deriveNav({
-      destination: {
-        route: route('/login'),
-        routeUrl: urlOf('/login'),
-      },
-      attempted: route('/protected'),
-      routeBefore: route('/start'),
-      history: 'push',
-      historyUrl: urlOf('/protected'),
-      shouldScroll: true,
-      getServerRedirect,
+  test('no scroll intent when scrolling is off', () => {
+    const nav = makeNavState(route('/a'), urlOf('/a'), {
+      push: false,
+      scroll: false,
+      pathChanged: true,
     });
-    expect(nav.history?.url?.pathname).toBe('/login');
-  });
-
-  test('a server side redirect keeps a replace intent', () => {
-    const { nav } = deriveNav({
-      destination: {
-        route: route('/login'),
-        routeUrl: urlOf('/login'),
-        elements: {},
-      },
-      attempted: route('/login'),
-      routeBefore: route('/start'),
-      history: 'replace',
-      historyUrl: urlOf('/login'),
-      shouldScroll: false,
-      getServerRedirect: () => route('/dashboard'),
-    });
-    expect(nav.history?.mode).toBe('replace');
-  });
-
-  test('a server side redirect to the 404 route drops the history write', () => {
-    const { route: derived, nav } = deriveNav({
-      destination: {
-        route: route('/somewhere'),
-        routeUrl: urlOf('/somewhere'),
-        elements: {},
-      },
-      attempted: route('/somewhere'),
-      routeBefore: route('/start'),
-      history: 'push',
-      historyUrl: urlOf('/somewhere'),
-      shouldScroll: false,
-      getServerRedirect: () => route('/404'),
-    });
-    expect(derived.path).toBe('/404');
-    expect(nav.history).toBeNull();
     expect(nav.scroll).toBeNull();
+  });
+});
+
+describe('deriveCommitted', () => {
+  test('falls back to the given route without nav state', () => {
+    const {
+      route: derived,
+      nav,
+      url,
+    } = deriveCommitted({ [ROUTE_ID]: ['/a', ''] }, route('/fallback'));
+    expect(derived).toEqual(route('/fallback'));
+    expect(nav).toBeUndefined();
+    expect(url).toBeUndefined();
+  });
+
+  test('path from the elements, query and hash from the nav url', () => {
+    const nav = makeNavState(route('/a', 'x=1'), urlOf('/a?x=1#top'), {
+      push: false,
+      scroll: false,
+      pathChanged: false,
+    });
+    const elements = withNav({ [ROUTE_ID]: ['/a', 'x=1'] }, nav);
+    const { route: derived, url } = deriveCommitted(elements, route('/f'));
+    expect(derived).toEqual(route('/a', 'x=1', '#top'));
+    expect(url?.pathname).toBe('/a');
+    expect(getNavState(elements)).toBe(nav);
+  });
+
+  test('a static response does not echo the query; the nav url keeps it', () => {
+    const nav = makeNavState(route('/a', 'x=1'), urlOf('/a?x=1'), {
+      push: false,
+      scroll: false,
+      pathChanged: false,
+    });
+    const elements = withNav(
+      { [ROUTE_ID]: ['/a', ''], [IS_STATIC_ID]: true },
+      nav,
+    );
+    const { route: derived, url } = deriveCommitted(elements, route('/f'));
+    expect(derived.query).toBe('x=1');
+    expect(url?.search).toBe('?x=1');
+  });
+
+  test('a server redirect moves the route and the url', () => {
+    const nav = makeNavState(route('/a'), urlOf('/a'), {
+      push: true,
+      scroll: false,
+      pathChanged: true,
+    });
+    const elements = withNav({ [ROUTE_ID]: ['/b', 'y=2'] }, nav);
+    const { route: derived, url } = deriveCommitted(elements, route('/f'));
+    expect(derived).toEqual(route('/b', 'y=2'));
+    expect(url?.pathname).toBe('/b');
+    expect(url?.search).toBe('?y=2');
+  });
+
+  test('a server redirect keeps the base path in the url', () => {
+    vi.stubEnv('WAKU_CONFIG_BASE_PATH', '/docs/');
+    try {
+      const nav = makeNavState(route('/a'), urlOf('/docs/a'), {
+        push: false,
+        scroll: false,
+        pathChanged: false,
+      });
+      const elements = withNav({ [ROUTE_ID]: ['/b', ''] }, nav);
+      const { url } = deriveCommitted(elements, route('/f'));
+      expect(url?.pathname).toBe('/docs/b');
+    } finally {
+      vi.stubEnv('WAKU_CONFIG_BASE_PATH', '/');
+    }
+  });
+
+  test('a server redirect to the 404 route keeps the attempted url', () => {
+    const nav = makeNavState(route('/missing'), urlOf('/missing'), {
+      push: false,
+      scroll: false,
+      pathChanged: true,
+    });
+    const elements = withNav({ [ROUTE_ID]: ['/404', ''] }, nav);
+    const { route: derived, url } = deriveCommitted(elements, route('/f'));
+    expect(derived.path).toBe('/404');
+    expect(url?.pathname).toBe('/missing');
   });
 });
 
@@ -308,27 +182,5 @@ describe('pinForSwr', () => {
     expect(pin('layout:/')).toBe(false);
     resolved = immutable('layout:/');
     expect(pin('layout:/')).toBe(true);
-  });
-});
-
-describe('applyServerRedirect', () => {
-  const prev = {
-    query: '',
-    hash: '',
-    history: { mode: 'push', url: undefined },
-    scroll: { pathChanged: true },
-  } as const;
-
-  test('replaces history with the redirect url and keeps the scroll intent', () => {
-    const next = applyServerRedirect(prev, route('/b', 'x=1'));
-    expect(next.query).toBe('x=1');
-    expect(next.history?.mode).toBe('replace');
-    expect(next.history?.url?.pathname).toBe('/b');
-    expect(next.scroll).toEqual({ pathChanged: true });
-  });
-
-  test('drops the history write for the 404 route', () => {
-    const next = applyServerRedirect(prev, route('/404'));
-    expect(next.history).toBeNull();
   });
 });
