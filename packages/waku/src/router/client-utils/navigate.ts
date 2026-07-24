@@ -49,9 +49,7 @@ export const parseRedirectUrl = (location: string, base: string | URL) => {
 
 // --- client-only navigation state, stored in the elements record ---
 
-// The record's symbol key for the client-owned navigation state. The rendered
-// path comes from the server's ROUTE_ID; NAV_ID carries what the server cannot
-// know: the browser url, the pending history intent and the scroll intent.
+// the client owned navigation state; the server's ROUTE_ID owns the path
 export const NAV_ID = Symbol('waku-router-nav');
 
 export type NavState = {
@@ -78,9 +76,7 @@ export const makeNavState = (
   scroll: options.scroll ? { pathChanged: options.pathChanged } : null,
 });
 
-// Derive the committed route and browser url from the record. A server
-// redirect (ROUTE_ID differing from the attempted route) moves both to the
-// committed route, except the 404 route, which keeps the attempted url.
+// a server redirect moves route and url; the 404 route keeps the attempted url
 export const deriveCommitted = (
   elements: Record<string, unknown>,
   fallbackRoute: RouteProps,

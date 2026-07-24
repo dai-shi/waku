@@ -60,7 +60,7 @@ const checkStatus = async (
 ): Promise<Response> => {
   const response = await responsePromise;
   if (response.redirected && typeof window !== 'undefined') {
-    // the server redirected the rsc request itself; leave it to the browser
+    // a redirected rsc request becomes a browser navigation
     window.location.assign(response.url);
     return new Promise<never>(() => {}); // stay pending until unload
   }
@@ -594,8 +594,7 @@ export const Root = ({
         return resolved;
       });
     }
-    // built outside the updater so a replayed updater reuses the identity;
-    // the overlay only applies when the fetch succeeds
+    // created once so a replayed updater stays pure; overlay on success only
     const dataToMerge = overlay
       ? Promise.resolve(data).then(
           (resolved) => ({ ...resolved, ...overlay }),

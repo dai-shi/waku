@@ -165,8 +165,7 @@ type ChangeRouteOptions = {
   instant?: boolean | undefined;
 };
 
-// Resolves with a followable error (redirect or 404) instead of rejecting,
-// so awaiting callers treat a follow as a handoff, not a failure.
+// resolves with a followable error instead of rejecting: a follow is a handoff
 type ChangeRoute = (
   route: RouteProps,
   options: ChangeRouteOptions,
@@ -240,8 +239,7 @@ const useResolveSearchCodec = () => {
   );
 };
 
-// Dispatch inside a transition so the eager elements merge suspends without
-// blanking the tree, while sync throws and rejections reach the caller.
+// a transition, so the eager elements merge suspends without blanking the tree
 const changeRouteInTransition = (
   changeRoute: ChangeRoute,
   route: RouteProps,
@@ -767,8 +765,7 @@ const FollowError = ({
   }, [nav]);
   useEffect(() => {
     const [caughtPath, caughtQuery] = caughtAtRef.current!;
-    // the route derives from the elements, so a change means the followed
-    // route slot is committed and the children render it after the reset
+    // a route change means the followed slot is committed; safe to reset
     if (routePath !== caughtPath || routeQuery !== caughtQuery) {
       reset();
       return;
@@ -790,8 +787,7 @@ const FollowError = ({
   }, [routePath, routeQuery, nav, reset, fail, error]);
   useEffect(() => {
     const info = getErrorInfo(error);
-    // relative redirects resolve against the attempted url, which may not
-    // have reached the address bar yet
+    // the attempted url may not have reached the address bar yet
     const attemptedUrl = navRef.current
       ? new URL(navRef.current.url, window.location.href)
       : new URL(window.location.href);
@@ -915,7 +911,7 @@ const preloadRouteModules = (path: string) => {
   });
 };
 
-// In flight slice fetches, deduped per Root through the refetch identity.
+// in flight slice fetches; the refetch identity scopes them per Root
 const fetchingSlicesMap = new WeakMap<object, Set<SliceId>>();
 const getFetchingSlices = (refetch: object): Set<SliceId> => {
   let set = fetchingSlicesMap.get(refetch);
@@ -1053,10 +1049,8 @@ const InnerRouter = ({
   const refetch = useRefetch();
   const mergeElements = useMergeElements();
   const [err, setErr] = useState<unknown>(null);
-  // the server does not know the hash; it appears after hydration
-  // the server does not know the hash; restore it after hydration. The
-  // update bails out when there is no hash, so hydrating suspense
-  // boundaries are not disturbed on hash-less loads.
+  // the hash appears after hydration; an empty one bails out, leaving
+  // hydrating suspense boundaries undisturbed
   const [restoredHash, setRestoredHash] = useState('');
   useEffect(() => {
     setRestoredHash(window.location.hash || initialHash);
