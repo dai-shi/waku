@@ -330,7 +330,7 @@ describe('minimal/client eager merge', () => {
     mocks.createFromFetch.mockReturnValueOnce(
       resolvedThenable({ dynamic: 'D2', extra: 'X' }),
     );
-    const unstable_isEager = (key: string) => key === 'cached';
+    const unstable_isEager = (key: string | symbol) => key === 'cached';
     await act(async () => {
       await refetch!('R/next.txt', undefined, {
         unstable_swr: { pin: unstable_isEager },
@@ -432,7 +432,7 @@ describe('minimal/client eager merge', () => {
         resolveB = resolve;
       }),
     );
-    const isSwr = (key: string) => key === 'eager';
+    const isSwr = (key: string | symbol) => key === 'eager';
     await act(async () => {
       void refetch!('R/next.txt', undefined, { unstable_swr: { pin: isSwr } });
     });

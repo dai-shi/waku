@@ -1143,7 +1143,7 @@ const InnerRouter = ({
         mergeElements({
           [ROUTE_ID]: [nextRoute.path, nextRoute.query],
           [NAV_ID]: navState,
-        } as unknown as Record<string, unknown>);
+        });
         abortRef.current = null;
         emitRouteChangeEvent('complete', nextRoute);
         return;
@@ -1164,7 +1164,7 @@ const InnerRouter = ({
           [NAV_ID]: navState,
           // instant nav paints from the cache, so route meta comes with it
           ...(instant ? { [ROUTE_ID]: [nextRoute.path, nextRoute.query] } : {}),
-        } as unknown as Record<string, unknown>,
+        },
         ...(instant
           ? {
               unstable_swr: {
@@ -1218,7 +1218,7 @@ const InnerRouter = ({
             scrollIntent: options.shouldScroll,
             attempted: [routeBefore.path, routeBefore.query],
           },
-        } as unknown as Record<string, unknown>);
+        });
         setErr(e);
         if (info?.status === 404 && has404) {
           // a followable outcome; the boundary takes it from here

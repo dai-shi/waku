@@ -83,7 +83,7 @@ const checkStatus = async (
   return response;
 };
 
-type Elements = Record<string, unknown>;
+type Elements = Record<string | symbol, unknown>;
 
 const collectCachedEtags = (elements: Elements): Etags => {
   const etags: Etags = {};
@@ -125,46 +125,27 @@ const mergeElementsPromise = (
   return getCached(getResult, cache2, b);
 };
 
-const replaceCache = new WeakMap();
-const replaceElementsPromise = (
-  a: Promise<Elements>,
-  b: Promise<Elements>,
-): Promise<Elements> => {
-  const getResult = () =>
-    Promise.all([a, b]).then(([aRes, bRes]) => {
-      const nextElements = { ...bRes };
-      delete nextElements._value;
-      // symbol keys are client owned; they are carried, never fetched
-      for (const sym of Object.getOwnPropertySymbols(aRes)) {
-        (nextElements as Record<symbol, unknown>)[sym] = (
-          aRes as Record<symbol, unknown>
-        )[sym];
-      }
-      return nextElements;
-    });
-  const cache2 = getCached(() => new WeakMap(), replaceCache, a);
-  return getCached(getResult, cache2, b);
-};
-
-const slotIdOf = (key: string) =>
-  key.startsWith(ETAG_ID_PREFIX) ? key.slice(ETAG_ID_PREFIX.length) : key;
+const slotIdOf = <K extends string | symbol>(key: K): K =>
+  typeof key === 'string' && key.startsWith(ETAG_ID_PREFIX)
+    ? (key.slice(ETAG_ID_PREFIX.length) as K)
+    : key;
 
 const swrCache = new WeakMap();
 const swrElementsPromise = (
   a: Promise<Elements>,
   b: Promise<Elements>,
-  pin: (key: string) => boolean,
+  pin: (key: string | symbol) => boolean,
   base?: Elements,
   overlay?: Elements,
 ): Promise<Elements> => {
   const getResult = () => {
     const result: Promise<Elements> = Promise.resolve(a).then((aRes) => {
-      const holeFor = (key: string) =>
+      const holeFor = (key: string | symbol) =>
         b.then((bRes) =>
           key in bRes ? bRes[key] : base && key in base ? base[key] : aRes[key],
         );
       const nextElements: Elements = {};
-      for (const key of Object.keys(aRes)) {
+      for (const key of Reflect.ownKeys(aRes)) {
         if (key === '_value') {
           continue;
         }
@@ -184,12 +165,6 @@ const swrElementsPromise = (
             nextElements[key] = holeFor(key);
           }
         }
-      }
-      // symbol keys are client owned; they are carried, never fetched
-      for (const sym of Object.getOwnPropertySymbols(aRes)) {
-        (nextElements as Record<symbol, unknown>)[sym] = (
-          aRes as Record<symbol, unknown>
-        )[sym];
       }
       if (overlay) {
         Object.assign(nextElements, overlay);
@@ -259,7 +234,7 @@ type Refetch = (
     unstable_prefetched?: Elements | Promise<Elements>;
     unstable_overlay?: Elements;
     unstable_swr?: {
-      pin: (key: string) => boolean;
+      pin: (key: string | symbol) => boolean;
       base?: Elements;
     };
   },
@@ -507,7 +482,7 @@ export const unstable_fetchRsc = (
     registerHmrRefetch(() => {
       delete fetchRscStore[ENTRY];
       const data = unstable_fetchRsc(rscPath, rscParams, options);
-      getSetElements()((prev) => replaceElementsPromise(prev, data));
+      getSetElements()((prev) => mergeElementsPromise(prev, data));
     });
   }
   const entry = fetchRscStore[ENTRY];

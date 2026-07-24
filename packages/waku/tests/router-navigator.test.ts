@@ -25,11 +25,7 @@ const urlOf = (path: string) => new URL(path, window.location.origin);
 const withNav = (
   elements: Record<string, unknown>,
   nav: ReturnType<typeof makeNavState>,
-): Record<string, unknown> => {
-  const next: Record<string, unknown> = { ...elements };
-  (next as Record<symbol, unknown>)[NAV_ID] = nav;
-  return next;
-};
+) => ({ ...elements, [NAV_ID]: nav });
 
 describe('makeNavState', () => {
   test('captures the url, the attempted route and the intents', () => {

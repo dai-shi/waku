@@ -61,9 +61,8 @@ export type NavState = {
 };
 
 export const getNavState = (
-  elements: Record<string, unknown>,
-): NavState | undefined =>
-  (elements as Record<symbol, unknown>)[NAV_ID] as NavState | undefined;
+  elements: Record<string | symbol, unknown>,
+): NavState | undefined => elements[NAV_ID] as NavState | undefined;
 
 export const makeNavState = (
   route: RouteProps,
@@ -121,6 +120,10 @@ export const canCommitInstantly = (
   isImmutableElement(resolvedElements, routeSlotId) ||
   !!(prefetchedElements && isImmutableElement(prefetchedElements, routeSlotId));
 
+// symbol keys are client owned; they are carried, never fetched
 export const pinForSwr =
-  (getResolvedElements: () => Record<string, unknown>) => (key: string) =>
-    isMetaKey(key) || isImmutableElement(getResolvedElements(), key);
+  (getResolvedElements: () => Record<string, unknown>) =>
+  (key: string | symbol) =>
+    typeof key === 'symbol' ||
+    isMetaKey(key) ||
+    isImmutableElement(getResolvedElements(), key);
