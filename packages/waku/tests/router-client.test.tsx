@@ -282,32 +282,42 @@ vi.mock('../src/minimal/client.js', async () => {
   // Per-root refetch: calls the shared inner mock, then merges the response into
   // this Root's own store.
   const noopMergeElements = () => {};
+  const refetchByStore = new WeakMap<
+    object,
+    (
+      rscPath: string,
+      ...rest: [rscParams?: unknown, options?: unknown]
+    ) => unknown
+  >();
   const useMockRefetch = () => {
     const store = React.use(StoreContext);
-    return React.useMemo(
-      () =>
-        (
-          rscPath: string,
-          ...rest: [rscParams?: unknown, options?: unknown]
-        ) => {
-          const overlay = (
-            rest[1] as
-              { unstable_overlay?: Record<string, unknown> } | undefined
-          )?.unstable_overlay;
-          const dataPromise = Promise.resolve(
-            testHoisted.inner!(rscPath, ...rest),
-          ).then((result) => withRouteMeta(result, rscPath, rest[0]));
-          // like minimal's refetch: the overlay merges atomically on success
-          store?.applyAsync(
-            dataPromise.then(
-              (result) => ({ ...result, ...overlay }),
-              () => ({}),
-            ),
-          );
-          return dataPromise;
-        },
-      [store],
-    );
+    // one function identity per store, like the real RefetchContext value
+    let fn = store && refetchByStore.get(store);
+    if (!fn) {
+      fn = (
+        rscPath: string,
+        ...rest: [rscParams?: unknown, options?: unknown]
+      ) => {
+        const overlay = (
+          rest[1] as { unstable_overlay?: Record<string, unknown> } | undefined
+        )?.unstable_overlay;
+        const dataPromise = Promise.resolve(
+          testHoisted.inner!(rscPath, ...rest),
+        ).then((result) => withRouteMeta(result, rscPath, rest[0]));
+        // like minimal's refetch: the overlay merges atomically on success
+        store?.applyAsync(
+          dataPromise.then(
+            (result) => ({ ...result, ...overlay }),
+            () => ({}),
+          ),
+        );
+        return dataPromise;
+      };
+      if (store) {
+        refetchByStore.set(store, fn);
+      }
+    }
+    return fn;
   };
 
   return {
@@ -610,7 +620,6 @@ describe('useRouter + Link with context', () => {
           changeRoute,
           prefetchRoute,
           routeChangeEvents,
-          fetchingSlices: new Set(),
         }}
       >
         <Probe />
@@ -703,7 +712,6 @@ describe('useRouter + Link with context', () => {
             changeRoute,
             prefetchRoute: vi.fn(),
             routeChangeEvents: { on: vi.fn(), off: vi.fn() },
-            fetchingSlices: new Set(),
           }}
         >
           <Probe />
@@ -773,7 +781,6 @@ describe('useRouter + Link with context', () => {
               changeRoute: vi.fn(async () => {}),
               prefetchRoute,
               routeChangeEvents: { on: vi.fn(), off: vi.fn() },
-              fetchingSlices: new Set(),
             }}
           >
             <Probe />
@@ -832,7 +839,6 @@ describe('useRouter + Link with context', () => {
           changeRoute: vi.fn(async () => {}),
           prefetchRoute: vi.fn(),
           routeChangeEvents: { on: vi.fn(), off: vi.fn() },
-          fetchingSlices: new Set(),
         }}
       >
         <Probe />
@@ -857,7 +863,6 @@ describe('useRouter + Link with context', () => {
           changeRoute: vi.fn(async () => {}),
           prefetchRoute: vi.fn(),
           routeChangeEvents: { on: vi.fn(), off: vi.fn() },
-          fetchingSlices: new Set(),
         }}
       >
         <Probe />
@@ -913,7 +918,6 @@ describe('useRouter + Link with context', () => {
             changeRoute: vi.fn(async () => {}),
             prefetchRoute: vi.fn(),
             routeChangeEvents: { on: vi.fn(), off: vi.fn() },
-            fetchingSlices: new Set(),
           }}
         >
           <Probe />
@@ -943,7 +947,6 @@ describe('useRouter + Link with context', () => {
           changeRoute,
           prefetchRoute,
           routeChangeEvents: { on: vi.fn(), off: vi.fn() },
-          fetchingSlices: new Set(),
         }}
       >
         <>
@@ -1034,7 +1037,6 @@ describe('useRouter + Link with context', () => {
           changeRoute,
           prefetchRoute,
           routeChangeEvents: { on: vi.fn(), off: vi.fn() },
-          fetchingSlices: new Set(),
         }}
       >
         <Link to="/start#target" data-testid="hash-link">
@@ -1095,7 +1097,6 @@ describe('useRouter + Link with context', () => {
           changeRoute,
           prefetchRoute,
           routeChangeEvents: { on: vi.fn(), off: vi.fn() },
-          fetchingSlices: new Set(),
         }}
       >
         <Link to="/start#target" scroll={false} data-testid="hash-link">
@@ -1138,7 +1139,6 @@ describe('useRouter + Link with context', () => {
           changeRoute,
           prefetchRoute,
           routeChangeEvents: { on: vi.fn(), off: vi.fn() },
-          fetchingSlices: new Set(),
         }}
       >
         <>
@@ -1213,7 +1213,6 @@ describe('useRouter + Link with context', () => {
           changeRoute: vi.fn(async () => {}),
           prefetchRoute,
           routeChangeEvents: { on: vi.fn(), off: vi.fn() },
-          fetchingSlices: new Set(),
         }}
       >
         <Link
@@ -1272,7 +1271,6 @@ describe('useRouter + Link with context', () => {
           changeRoute,
           prefetchRoute,
           routeChangeEvents: { on: vi.fn(), off: vi.fn() },
-          fetchingSlices: new Set(),
         }}
       >
         <Link to="/next" unstable_startTransition={unstableStartTransition}>
@@ -1311,7 +1309,6 @@ describe('useRouter + Link with context', () => {
       changeRoute: vi.fn(async () => {}),
       prefetchRoute: vi.fn(),
       routeChangeEvents: { on: vi.fn(), off: vi.fn() },
-      fetchingSlices: new Set<string>(),
     };
 
     const objectRef: { current: HTMLAnchorElement | null } = { current: null };
@@ -1344,9 +1341,9 @@ describe('useRouter + Link with context', () => {
 });
 
 describe('Slice', () => {
-  test('throws without RouterContext', async () => {
+  test('throws without a Root', async () => {
     await expect(renderApp(<Slice id="slice-1" />)).rejects.toThrow(
-      'Missing Router',
+      'Missing Root component',
     );
   });
 
@@ -1363,7 +1360,6 @@ describe('Slice', () => {
           changeRoute: vi.fn(async () => {}),
           prefetchRoute: vi.fn(),
           routeChangeEvents: { on: vi.fn(), off: vi.fn() },
-          fetchingSlices: new Set(),
         }}
       >
         <Slice id="slice-1" />
@@ -1376,8 +1372,6 @@ describe('Slice', () => {
   });
 
   test('lazy slice fetches once, dedupes, and clears in-flight set on completion', async () => {
-    const fetchingSlices = new Set<string>();
-
     const view = await renderWithMinimalRoot(
       <RouterContext
         value={{
@@ -1385,7 +1379,6 @@ describe('Slice', () => {
           changeRoute: vi.fn(async () => {}),
           prefetchRoute: vi.fn(),
           routeChangeEvents: { on: vi.fn(), off: vi.fn() },
-          fetchingSlices,
         }}
       >
         <>
@@ -1409,7 +1402,6 @@ describe('Slice', () => {
     expect(view.container.textContent).toContain('loading 2');
     expect(refetch).toHaveBeenCalledTimes(1);
     expect(refetch).toHaveBeenCalledWith(unstable_encodeSliceId('slice-1'));
-    expect(fetchingSlices.size).toBe(0);
 
     view.unmount();
   });
@@ -1428,7 +1420,6 @@ describe('Slice', () => {
           changeRoute: vi.fn(async () => {}),
           prefetchRoute: vi.fn(),
           routeChangeEvents: { on: vi.fn(), off: vi.fn() },
-          fetchingSlices: new Set(),
         }}
       >
         <Slice id="slice-1" lazy fallback={<div>fallback</div>} />
@@ -1457,7 +1448,6 @@ describe('Slice', () => {
           changeRoute: vi.fn(async () => {}),
           prefetchRoute: vi.fn(),
           routeChangeEvents: { on: vi.fn(), off: vi.fn() },
-          fetchingSlices: new Set(),
         }}
       >
         <Slice id="slice-1" lazy fallback={<div>fallback</div>} />
@@ -1474,7 +1464,6 @@ describe('Slice', () => {
   });
 
   test('logs refetch failures and clears fetching set', async () => {
-    const fetchingSlices = new Set<string>();
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const refetch = vi.fn<ReturnType<typeof useRefetch>>(async () => ({}));
     refetch.mockRejectedValueOnce(new Error('slice failed'));
@@ -1487,7 +1476,6 @@ describe('Slice', () => {
           changeRoute: vi.fn(async () => {}),
           prefetchRoute: vi.fn(),
           routeChangeEvents: { on: vi.fn(), off: vi.fn() },
-          fetchingSlices,
         }}
       >
         <Slice id="slice-1" lazy fallback={<div>fallback</div>} />
@@ -1499,7 +1487,6 @@ describe('Slice', () => {
       'Failed to fetch slice:',
       expect.any(Error),
     );
-    expect(fetchingSlices.size).toBe(0);
 
     view.unmount();
   });
