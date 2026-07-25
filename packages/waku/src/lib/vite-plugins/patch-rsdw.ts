@@ -9,11 +9,9 @@ import type { Plugin } from 'vite';
 // from any object, which is needed for Waku's plain-object payloads to show
 // the "Server Components" track in Chrome DevTools Performance tab.
 //
-// TODO(react-19.3): once React 19.3 is the minimum, revisit whether reshaping
-// the RSC payload root into a value React's built-in recovery accepts (array,
-// async iterable, element, or lazy — see above) lets us delete this transform.
-// A thin wrapper like `[elements]` is unverified; confirm against React's
-// recovery logic first. Context: https://github.com/vitejs/vite-plugin-react/pull/1304
+// TODO: delete this transform once
+// https://github.com/react/react/issues/37116
+// is fixed in Waku's minimum React version.
 const SEARCH = 'debugInfo = root._debugInfo;';
 const REPLACE = `
 ${SEARCH}
