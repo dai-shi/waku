@@ -1,17 +1,13 @@
 import type { Plugin } from 'vite';
 
-// Waku sends RSC payloads as plain objects (Record<string, unknown>).
-// In React's flushComponentPerformance, moveDebugInfoFromChunkToInnerValue
-// uses splice(0) which empties chunk._debugInfo after resolution. React main
-// has a fallback that recovers _debugInfo from the resolved value, but only
-// for arrays, async iterables, React elements, and lazy types — not plain
-// objects. This transform relaxes that restriction so _debugInfo is recovered
-// from any object, which is needed for Waku's plain-object payloads to show
-// the "Server Components" track in Chrome DevTools Performance tab.
+// In React 19.2.x, debug info that moveDebugInfoFromChunkToInnerValue has
+// moved from a chunk onto its resolved value is not read back by
+// flushComponentPerformance, so those chunks are missing from the Server
+// Components performance track. This transform reads it back from the
+// resolved value. React main includes an equivalent recovery.
 //
-// TODO: delete this transform once
-// https://github.com/react/react/issues/37116
-// is fixed in Waku's minimum React version.
+// TODO: delete this transform once the recovery is in Waku's minimum React
+// version. Investigation: https://github.com/facebook/react/issues/37116
 const SEARCH = 'debugInfo = root._debugInfo;';
 const REPLACE = `
 ${SEARCH}
