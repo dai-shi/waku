@@ -4,6 +4,7 @@ export const UBUNTU_LTS_ONLY_SPECS = [
   'base-path.spec.ts',
   'broken-links.spec.ts',
   'cache-tag.spec.ts',
+  'cloudflare-adapter.dev.spec.ts',
   'cloudflare-adapter.prd.spec.ts',
   'css-plugin-integrations.spec.ts',
   'custom-library-adapter.prd.spec.ts',
@@ -42,6 +43,7 @@ export const UBUNTU_LTS_ONLY_SPECS = [
 
 export const CHROMIUM_ONLY_SPECS = [
   'cache-tag.spec.ts',
+  'cloudflare-adapter.dev.spec.ts',
   'cloudflare-adapter.prd.spec.ts',
   'css-plugin-integrations.spec.ts',
   'custom-library-adapter.prd.spec.ts',
@@ -85,6 +87,7 @@ export const PRD_ONLY_SPECS = [
 ] as const;
 
 export const DEV_ONLY_SPECS = [
+  'cloudflare-adapter.dev.spec.ts',
   'hot-reload.dev.spec.ts',
   'performance-track.dev.spec.ts',
 ] as const;

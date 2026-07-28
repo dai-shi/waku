@@ -12,6 +12,20 @@
   "vars": {
     "MAX_ITEMS": 10
   },
+  "queues": {
+    "producers": [
+      {
+        "binding": "QUEUE",
+        "queue": "test-queue"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "test-queue",
+        "max_batch_timeout": 1
+      }
+    ]
+  },
   "rules": [
     {
       "type": "ESModule",

@@ -153,6 +153,7 @@ export default createServerEntryAdapter(
     };
 
     return {
+      ...options?.handlers,
       fetch: fetchFn,
       build: async (utils) => {
         const server = await startPreviewServer();
