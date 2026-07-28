@@ -1189,12 +1189,110 @@ describe('minimal/client refetch scenarios', () => {
     mocks.createFromFetch.mockClear();
     await act(async () => {
       await view.refetch()('R/done.txt', undefined, {
-        unstable_prefetched: { _value: null, page: 'P2' },
+        unstable_prefetched: Promise.resolve({ _value: null, page: 'P2' }),
       });
     });
     expect(view.container.textContent).toBe('P2');
     expect(mocks.createFromFetch).not.toHaveBeenCalled();
 
+    view.unmount();
+  });
+
+  // createFromFetch says it returns a promise, but hands back a pending
+  // thenable whose `then` returns nothing
+  const pendingThenable = (value: Record<string, unknown>) => {
+    const resolvers: ((v: Record<string, unknown>) => void)[] = [];
+    return {
+      thenable: {
+        then(resolve: (v: Record<string, unknown>) => void) {
+          resolvers.push(resolve);
+        },
+      } as unknown as Promise<Record<string, unknown>>,
+      settle: () => resolvers.forEach((resolve) => resolve(value)),
+    };
+  };
+
+  test('a decoded payload comes back chainable, not as react gave it', async () => {
+    const { thenable, settle } = pendingThenable({ _value: null, page: 'P2' });
+    mocks.createFromFetch.mockReturnValue(thenable);
+    track(stubFetch());
+
+    // a thenable would return undefined from then, so this would throw
+    const chained = unstable_fetchRsc('R/next.txt')
+      .then((elements) => elements)
+      .finally(() => {});
+    await wait();
+    settle();
+
+    await expect(chained).resolves.toMatchObject({ page: 'P2' });
+  });
+
+  test('aborting a navigation releases the prefetch it adopted', async () => {
+    const view = await mount({ _value: null, page: 'P1' }, () => (
+      <Suspense fallback={null}>
+        <Slot id="page" />
+      </Suspense>
+    ));
+    const controller = new AbortController();
+    const pending = new Promise<Record<string, unknown>>(() => {});
+    await act(async () => {
+      view
+        .refetch()('R/pending.txt', undefined, {
+          unstable_prefetched: pending,
+          signal: controller.signal,
+        })
+        .catch(() => {});
+      await wait();
+    });
+
+    controller.abort();
+    await act(async () => {
+      await view.refetch()('R/next.txt', undefined, {
+        unstable_prefetched: Promise.resolve({ _value: null, page: 'P2' }),
+      });
+      await wait();
+    });
+
+    // the abandoned prefetch never settles, so the chain must not wait on it
+    expect(view.container.textContent).toBe('P2');
+    view.unmount();
+  });
+
+  test('an aborted navigation does not act on its prefetch build id', async () => {
+    vi.stubEnv('WAKU_BUILD_ID', 'build-1');
+    const view = await mount(
+      { _value: null, page: 'P1', _buildId: 'build-1' },
+      () => (
+        <Suspense fallback={null}>
+          <Slot id="page" />
+        </Suspense>
+      ),
+    );
+    const onBuildIdMismatch = vi.fn();
+    const controller = new AbortController();
+    let settle = () => {};
+    const prefetched = new Promise<Record<string, unknown>>((resolve) => {
+      settle = () => resolve({ _value: null, page: 'P2', _buildId: 'build-2' });
+    });
+    await act(async () => {
+      view
+        .refetch()('R/done.txt', undefined, {
+          unstable_prefetched: prefetched,
+          signal: controller.signal,
+          onBuildIdMismatch,
+        })
+        .catch(() => {});
+      await wait();
+    });
+
+    controller.abort();
+    await act(async () => {
+      // the stale build arrives after the user moved on
+      settle();
+      await wait();
+    });
+
+    expect(onBuildIdMismatch).not.toHaveBeenCalled();
     view.unmount();
   });
 
@@ -1211,7 +1309,11 @@ describe('minimal/client refetch scenarios', () => {
     const onBuildIdMismatch = vi.fn();
     await act(async () => {
       await view.refetch()('R/done.txt', undefined, {
-        unstable_prefetched: { _value: null, page: 'P2', _buildId: 'build-2' },
+        unstable_prefetched: Promise.resolve({
+          _value: null,
+          page: 'P2',
+          _buildId: 'build-2',
+        }),
         onBuildIdMismatch,
       });
       await wait();

@@ -51,6 +51,7 @@ import {
 import {
   getRouteUrl,
   isSameRoute,
+  isSameRscRoute,
   parseRedirectUrl,
   parseRoute,
   pathnameToCurrentRoutePath,
@@ -122,6 +123,11 @@ type Navigate = {
   ): Promise<void>;
 };
 
+/**
+ * Fetches whatever it is given, including the route already on screen, so it
+ * can warm the cache for a later reload. `<Link>` prefetching is automatic, so
+ * that one skips a target the router is already showing.
+ */
 type Prefetch = {
   (to: RouteHref, options?: PrefetchOptions): void;
   <Path extends RoutePath>(
@@ -526,19 +532,22 @@ function useSharedRef<T>(
 }
 
 const prefetchIfNotCurrent = (
-  router: { prefetchRoute: PrefetchRoute } | null,
+  router: { route: RouteProps; prefetchRoute: PrefetchRoute } | null,
   resolvedTo: string,
   options: PrefetchOptions | undefined,
 ) => {
-  const url = new URL(resolvedTo, window.location.href);
-  if (router && url.href !== window.location.href) {
-    router.prefetchRoute(parseRoute(url), options);
+  if (!router) {
+    return;
+  }
+  const route = parseRoute(new URL(resolvedTo, window.location.href));
+  if (!isSameRscRoute(route, router.route)) {
+    router.prefetchRoute(route, options);
   }
 };
 
 const usePrefetchOnView = (
   ref: RefObject<HTMLAnchorElement | null>,
-  router: { prefetchRoute: PrefetchRoute } | null,
+  router: { route: RouteProps; prefetchRoute: PrefetchRoute } | null,
   resolvedTo: string,
   options: PrefetchOptions | undefined,
 ) => {
@@ -884,6 +893,7 @@ const FollowError = ({
           history: 'replace',
           url,
           follow: true,
+          refetch: true,
         }).then(
           (followable) => {
             // a module scoped error is thrown again, so let it follow again
@@ -1225,7 +1235,7 @@ const InnerRouter = ({
         pathChanged: nextRoute.path !== routeBefore.path,
       });
       const shouldRefetch =
-        options.refetch ?? !isSameRoute(nextRoute, routeBefore);
+        options.refetch ?? !isSameRscRoute(nextRoute, routeBefore);
       setErr(null);
       if (staticPathSet.has(nextRoute.path) || !shouldRefetch) {
         mergeElements({

@@ -2358,6 +2358,8 @@ describe('Router integration', () => {
       });
       expect(window.location.hash).toBe('#target');
       expect(capture.router.hash).toBe('#target');
+      // the hash never reaches the server, so there is nothing to fetch
+      expect(getRefetchMock()).not.toHaveBeenCalled();
     } finally {
       view.unmount();
       getBoundingClientRectSpy.mockRestore();
@@ -2746,6 +2748,72 @@ describe('Router integration', () => {
       window.removeEventListener('error', onError);
       container.remove();
     }
+  });
+
+  test('a hover prefetch skips a link that only adds a hash', async () => {
+    const prefetchRoute = vi.fn();
+    const view = await renderApp(
+      <RouterContext
+        value={{
+          route: { path: '/start', query: '', hash: '' },
+          changeRoute: vi.fn(async () => {}),
+          prefetchRoute,
+          routeChangeEvents: { on: vi.fn(), off: vi.fn() },
+          fetchingSlices: new Set<string>(),
+        }}
+      >
+        <Link to="/start#target" unstable_prefetchOnEnter={{}}>
+          target
+        </Link>
+      </RouterContext>,
+    );
+
+    const link = view.container.querySelector('a');
+    if (!link) {
+      throw new Error('expected link');
+    }
+    link.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+
+    // the hash never reaches the server, so there is nothing to prefetch
+    expect(prefetchRoute).not.toHaveBeenCalled();
+
+    view.unmount();
+  });
+
+  test('a hover prefetch compares with the route on screen, not the address bar', async () => {
+    // an interceptor or a failed navigation leaves the two apart
+    window.history.replaceState({}, '', '/blocked');
+    const prefetchRoute = vi.fn();
+    const view = await renderApp(
+      <RouterContext
+        value={{
+          route: { path: '/start', query: '', hash: '' },
+          changeRoute: vi.fn(async () => {}),
+          prefetchRoute,
+          routeChangeEvents: { on: vi.fn(), off: vi.fn() },
+          fetchingSlices: new Set<string>(),
+        }}
+      >
+        <Link to="/start#target" unstable_prefetchOnEnter={{}}>
+          shown
+        </Link>
+        <Link to="/blocked#target" unstable_prefetchOnEnter={{}}>
+          in the url
+        </Link>
+      </RouterContext>,
+    );
+
+    const links = view.container.querySelectorAll('a');
+    links[0]!.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+    expect(prefetchRoute).not.toHaveBeenCalled();
+
+    links[1]!.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+    expect(prefetchRoute).toHaveBeenCalledWith(
+      { path: '/blocked', query: '', hash: '#target' },
+      {},
+    );
+
+    view.unmount();
   });
 
   // The instant shell: a prefetch for the target is adopted via
@@ -3750,6 +3818,8 @@ describe('Router integration', () => {
       expect(capture.router?.path).toBe('/start');
       expect(capture.router?.hash).toBe('#missing');
       expect(scrollToSpy).not.toHaveBeenCalled();
+      // back and forward between hashes stay on the client too
+      expect(getRefetchMock()).not.toHaveBeenCalled();
     } finally {
       view.unmount();
     }

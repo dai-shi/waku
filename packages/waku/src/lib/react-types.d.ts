@@ -85,7 +85,7 @@ declare module 'react-server-dom-webpack/client' {
   export function createFromFetch<T>(
     promiseForResponse: Promise<Response>,
     options?: Options<T>,
-  ): Promise<T>;
+  ): PromiseLike<T>;
   export function encodeReply(
     value: ReactServerValue,
     options?: { temporaryReferences?: TemporaryReferenceSet },

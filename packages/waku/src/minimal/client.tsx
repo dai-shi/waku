@@ -258,7 +258,7 @@ type Refetch = (
   rscPath: string,
   rscParams?: unknown,
   options?: FetchRscOptions & {
-    unstable_prefetched?: Elements | Promise<Elements>;
+    unstable_prefetched?: Promise<Elements>;
     unstable_overlay?: Elements;
     unstable_swr?: {
       pin: (key: string | symbol) => boolean;
@@ -322,12 +322,14 @@ const decodeRsc = (
   debugChannel:
     ReturnType<typeof setupDebugChannel>['debugChannel'] | undefined,
 ): Promise<Elements> =>
-  createFromFetch<Elements>(checkStatus(responsePromise), {
-    callServer: (funcId: string, args: unknown[]) =>
-      unstable_callServerRsc(funcId, args),
-    debugChannel,
-    temporaryReferences,
-  });
+  Promise.resolve(
+    createFromFetch<Elements>(checkStatus(responsePromise), {
+      callServer: (funcId: string, args: unknown[]) =>
+        unstable_callServerRsc(funcId, args),
+      debugChannel,
+      temporaryReferences,
+    }),
+  );
 
 const reloadOnBuildIdMismatch = (
   elements: Promise<Elements>,
@@ -344,6 +346,25 @@ const reloadOnBuildIdMismatch = (
     },
     () => {},
   );
+};
+
+const abortable = (
+  elements: Promise<Elements>,
+  signal: AbortSignal | undefined,
+): Promise<Elements> => {
+  if (!signal) {
+    return elements;
+  }
+  if (signal.aborted) {
+    return Promise.reject(signal.reason);
+  }
+  return new Promise<Elements>((resolve, reject) => {
+    const abort = () => reject(signal.reason);
+    signal.addEventListener('abort', abort, { once: true });
+    elements
+      .then(resolve, reject)
+      .finally(() => signal.removeEventListener('abort', abort));
+  });
 };
 
 const applyInputTransformers = (
@@ -597,7 +618,7 @@ export const Root = ({
     delete fetchRscStore[ENTRY];
     let data: Promise<Elements>;
     if (prefetched) {
-      data = Promise.resolve(prefetched);
+      data = abortable(prefetched, options?.signal);
       reloadOnBuildIdMismatch(data, options?.onBuildIdMismatch);
     } else {
       if (swr?.base) {
