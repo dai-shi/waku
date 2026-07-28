@@ -9,8 +9,8 @@ export const CACHED_ETAGS = 'c';
 
 export type SetElements = (
   updater: (
-    prev: Promise<Record<string, unknown>>,
-  ) => Promise<Record<string, unknown>>,
+    prev: Promise<Record<string | symbol, unknown>>,
+  ) => Promise<Record<string | symbol, unknown>>,
 ) => void;
 
 export type FetchEnhancer = (fetchFn: typeof fetch) => typeof fetch;

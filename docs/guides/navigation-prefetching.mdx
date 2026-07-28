@@ -163,6 +163,10 @@ export const PostButton = () => {
 };
 ```
 
+Both return a promise that resolves once the navigation you asked for has been handled: after the response when the route needs one, right away when it does not, such as a static route already loaded once or the route you are already on, and also when a newer navigation supersedes it.
+
+It does not wait for a redirect or a 404 page that the response leads to, and it does not wait for React to finish rendering the destination, so the address bar may still show the previous URL when it resolves.
+
 When the shell is cached, the layout and the `Loading...` fallback appear with no round trip, and the post's content streams into the fallback once the server responds. When the shell is **not** cached, the navigation falls back to normal behavior: the current page stays put until the response arrives, so there is no blank flash.
 
 The `<Suspense>` boundary decides how localized the loading state is. Wrapping the whole page area (as above) swaps the page for a skeleton; wrapping only a dynamic slice inside an otherwise-static page leaves the rest in place and shows the skeleton for just that slice.

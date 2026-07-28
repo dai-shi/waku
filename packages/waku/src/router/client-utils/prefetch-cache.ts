@@ -2,7 +2,7 @@
 // prefetch for one query is never reused for another, and bounded by a ttl and a
 // size limit so hover-prefetching in a long session cannot grow without bound.
 
-type Elements = Record<string, unknown>;
+type Elements = Record<string | symbol, unknown>;
 
 export type PrefetchMode = 'always' | 'once';
 

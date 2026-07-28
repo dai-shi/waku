@@ -130,6 +130,11 @@ const withRouteMeta = (
 type RootStore = {
   applySync: (data: Record<string, unknown>) => void;
   applyAsync: (data: Promise<Record<string, unknown>>) => void;
+  applySwr: (
+    result: Record<string, unknown>,
+    overlay: Record<string, unknown> | undefined,
+    pin: (key: string | symbol) => boolean,
+  ) => void;
 };
 type RefetchInner = ReturnType<typeof useRefetch>;
 type MockedRefetch = ReturnType<typeof vi.fn<RefetchInner>>;
@@ -189,6 +194,8 @@ vi.mock('react-server-dom-webpack/client', () => ({
   },
 }));
 
+// This hand models minimal's merge semantics; minimal-client.test.tsx holds
+// the tests that keep the model honest (see its overlay cases).
 vi.mock('../src/minimal/client.js', async () => {
   const actual = await vi.importActual<
     typeof import('../src/minimal/client.js')
@@ -200,6 +207,72 @@ vi.mock('../src/minimal/client.js', async () => {
       status: 'fulfilled' as const,
       value,
     });
+
+  const chainMergeCache = new WeakMap<
+    object,
+    WeakMap<object, Promise<Record<string, unknown>>>
+  >();
+  const chainMerge = (
+    prev: Promise<Record<string, unknown>>,
+    data: Record<string, unknown> | Promise<Record<string, unknown>>,
+  ): Promise<Record<string, unknown>> => {
+    let byData = chainMergeCache.get(prev);
+    if (!byData) {
+      byData = new WeakMap();
+      chainMergeCache.set(prev, byData);
+    }
+    let result = byData.get(data);
+    if (!result) {
+      const prevValue =
+        (prev as { status?: string }).status === 'fulfilled'
+          ? (prev as unknown as { value: Record<string, unknown> }).value
+          : undefined;
+      result =
+        prevValue && !('then' in data)
+          ? makeThenable({ ...prevValue, ...data })
+          : Promise.all([prev, data]).then(([a, b]) => ({ ...a, ...b }));
+      byData.set(data, result);
+    }
+    return result;
+  };
+
+  // A pinned key keeps the previous value: the eager pass held it instead of
+  // leaving a hole, and minimal's second pass only refreshes new and overlay
+  // keys. That staleness is real and the router has to plan for it.
+  const chainSwrCache = new WeakMap<
+    object,
+    WeakMap<object, Promise<Record<string, unknown>>>
+  >();
+  const chainSwr = (
+    prev: Promise<Record<string, unknown>>,
+    result: Record<string, unknown>,
+    overlay: Record<string, unknown> | undefined,
+    pin: (key: string | symbol) => boolean,
+  ): Promise<Record<string, unknown>> => {
+    let byResult = chainSwrCache.get(prev);
+    if (!byResult) {
+      byResult = new WeakMap();
+      chainSwrCache.set(prev, byResult);
+    }
+    let merged = byResult.get(result);
+    if (!merged) {
+      merged = Promise.resolve(prev).then((prevRes) => {
+        const next: Record<string | symbol, unknown> = { ...prevRes };
+        const from: Record<string | symbol, unknown> = result;
+        for (const key of Reflect.ownKeys(result)) {
+          if (key === '_value') {
+            continue;
+          }
+          if (!(key in prevRes) || (overlay && key in overlay) || !pin(key)) {
+            next[key] = from[key];
+          }
+        }
+        return next as Record<string, unknown>;
+      });
+      byResult.set(result, merged);
+    }
+    return merged;
+  };
 
   // Each mocked Root provides its own store through this context, so a refetch
   // or merge from within a Root targets that Root's elements state.
@@ -220,19 +293,22 @@ vi.mock('../src/minimal/client.js', async () => {
     if (!storeRef.current) {
       storeRef.current = {
         // synchronous merge of a value (route metadata with no fetch)
+        // both merges chain off the previous elements like the real
+        // client's setElements(prev => merge(prev, ...)). The result is
+        // cached per (prev, data) like minimal's merge helpers, so React
+        // rebasing the updater re-runs it idempotently.
         applySync: (data) => {
-          valueRef.current = { ...valueRef.current, ...data };
-          setElements(makeThenable(valueRef.current));
+          setElements((prev) => chainMerge(prev, data));
         },
         // eager merge of a pending fetch: elements suspend until it resolves,
         // like the real client, so a transition stays pending across the fetch
         applyAsync: (dataPromise) => {
-          setElements(
-            dataPromise.then((data) => {
-              valueRef.current = { ...valueRef.current, ...data };
-              return valueRef.current!;
-            }),
-          );
+          setElements((prev) => chainMerge(prev, dataPromise));
+        },
+        // the swr response landing: minimal refreshes the keys the eager pass
+        // left as holes plus the overlay keys, and keeps the pinned ones
+        applySwr: (result, overlay, pin) => {
+          setElements((prev) => chainSwr(prev, result, overlay, pin));
         },
       };
     }
@@ -255,22 +331,60 @@ vi.mock('../src/minimal/client.js', async () => {
 
   // Per-root refetch: calls the shared inner mock, then merges the response into
   // this Root's own store.
+  const noopMergeElements = () => {};
+  const refetchByStore = new WeakMap<
+    object,
+    (
+      rscPath: string,
+      ...rest: [rscParams?: unknown, options?: unknown]
+    ) => unknown
+  >();
   const useMockRefetch = () => {
     const store = React.use(StoreContext);
-    return React.useMemo(
-      () =>
-        (
-          rscPath: string,
-          ...rest: [rscParams?: unknown, options?: unknown]
-        ) => {
-          const dataPromise = Promise.resolve(
-            testHoisted.inner!(rscPath, ...rest),
-          ).then((result) => withRouteMeta(result, rscPath, rest[0]));
-          store?.applyAsync(dataPromise.catch(() => ({})));
+    // one function identity per store, like the real RefetchContext value
+    let fn = store && refetchByStore.get(store);
+    if (!fn) {
+      fn = (
+        rscPath: string,
+        ...rest: [rscParams?: unknown, options?: unknown]
+      ) => {
+        const options = rest[1] as
+          | {
+              unstable_overlay?: Record<string, unknown>;
+              unstable_swr?: { pin: (key: string | symbol) => boolean };
+            }
+          | undefined;
+        const overlay = options?.unstable_overlay;
+        const swr = options?.unstable_swr;
+        const dataPromise = Promise.resolve(
+          testHoisted.inner!(rscPath, ...rest),
+        ).then((result) => withRouteMeta(result, rscPath, rest[0]));
+        if (swr) {
+          // like minimal's swr merge: the overlay lands right away and the
+          // record keeps rendering while the response streams into its holes
+          if (overlay) {
+            store?.applySync(overlay);
+          }
+          dataPromise.then(
+            (result) => store?.applySwr(result, overlay, swr.pin),
+            () => {},
+          );
           return dataPromise;
-        },
-      [store],
-    );
+        }
+        // like minimal's refetch: the overlay merges atomically on success
+        store?.applyAsync(
+          dataPromise.then(
+            (result) => ({ ...result, ...overlay }),
+            () => ({}),
+          ),
+        );
+        return dataPromise;
+      };
+      if (store) {
+        refetchByStore.set(store, fn);
+      }
+    }
+    return fn;
   };
 
   return {
@@ -282,7 +396,7 @@ vi.mock('../src/minimal/client.js', async () => {
     // to the calling Root's own store.
     useMergeElements_UNSTABLE: () => {
       const store = React.use(StoreContext);
-      return store ? store.applySync : () => {};
+      return store ? store.applySync : noopMergeElements;
     },
     unstable_prefetchRsc: vi.fn(),
     useRefetch: vi.fn(useMockRefetch),
@@ -307,6 +421,11 @@ const renderApp = async (element: ReactElement) => {
 };
 
 const flush = async () => {
+  await act(async () => {
+    await new Promise<void>((resolve) => setTimeout(resolve));
+  });
+  // one more round so effect-driven updates (e.g. a boundary reset after a
+  // followed commit) also land
   await act(async () => {
     await new Promise<void>((resolve) => setTimeout(resolve));
   });
@@ -568,7 +687,7 @@ describe('useRouter + Link with context', () => {
           changeRoute,
           prefetchRoute,
           routeChangeEvents,
-          fetchingSlices: new Set(),
+          fetchingSlices: new Set<string>(),
         }}
       >
         <Probe />
@@ -598,7 +717,7 @@ describe('useRouter + Link with context', () => {
       { path: '/start', query: 'query=1', hash: '' },
       expect.objectContaining({
         shouldScroll: false,
-        mode: 'push',
+        history: 'push',
         url: expect.any(URL),
       }),
     );
@@ -607,14 +726,19 @@ describe('useRouter + Link with context', () => {
       { path: '/start', query: 'query=2', hash: '' },
       expect.objectContaining({
         shouldScroll: false,
-        mode: 'replace',
+        history: 'replace',
         url: expect.any(URL),
       }),
     );
     expect(changeRoute).toHaveBeenNthCalledWith(
       3,
       { path: '/start', query: '', hash: '' },
-      { shouldScroll: true, refetch: true },
+      {
+        shouldScroll: true,
+        refetch: true,
+        history: 'replace',
+        url: expect.any(URL),
+      },
     );
     const firstUrl = (
       (changeRoute.mock.calls[0] as unknown[] | undefined)?.[1] as
@@ -663,7 +787,7 @@ describe('useRouter + Link with context', () => {
             changeRoute,
             prefetchRoute: vi.fn(),
             routeChangeEvents: { on: vi.fn(), off: vi.fn() },
-            fetchingSlices: new Set(),
+            fetchingSlices: new Set<string>(),
           }}
         >
           <Probe />
@@ -698,12 +822,12 @@ describe('useRouter + Link with context', () => {
     expect(changeRoute).toHaveBeenNthCalledWith(
       1,
       expectedRoute,
-      expect.objectContaining({ mode: 'push', url: expect.any(URL) }),
+      expect.objectContaining({ history: 'push', url: expect.any(URL) }),
     );
     expect(changeRoute).toHaveBeenNthCalledWith(
       2,
       expectedRoute,
-      expect.objectContaining({ mode: 'replace', url: expect.any(URL) }),
+      expect.objectContaining({ history: 'replace', url: expect.any(URL) }),
     );
     const pushedUrl = (
       (changeRoute.mock.calls[0] as unknown[] | undefined)?.[1] as
@@ -733,7 +857,7 @@ describe('useRouter + Link with context', () => {
               changeRoute: vi.fn(async () => {}),
               prefetchRoute,
               routeChangeEvents: { on: vi.fn(), off: vi.fn() },
-              fetchingSlices: new Set(),
+              fetchingSlices: new Set<string>(),
             }}
           >
             <Probe />
@@ -792,7 +916,7 @@ describe('useRouter + Link with context', () => {
           changeRoute: vi.fn(async () => {}),
           prefetchRoute: vi.fn(),
           routeChangeEvents: { on: vi.fn(), off: vi.fn() },
-          fetchingSlices: new Set(),
+          fetchingSlices: new Set<string>(),
         }}
       >
         <Probe />
@@ -817,7 +941,7 @@ describe('useRouter + Link with context', () => {
           changeRoute: vi.fn(async () => {}),
           prefetchRoute: vi.fn(),
           routeChangeEvents: { on: vi.fn(), off: vi.fn() },
-          fetchingSlices: new Set(),
+          fetchingSlices: new Set<string>(),
         }}
       >
         <Probe />
@@ -873,7 +997,7 @@ describe('useRouter + Link with context', () => {
             changeRoute: vi.fn(async () => {}),
             prefetchRoute: vi.fn(),
             routeChangeEvents: { on: vi.fn(), off: vi.fn() },
-            fetchingSlices: new Set(),
+            fetchingSlices: new Set<string>(),
           }}
         >
           <Probe />
@@ -903,7 +1027,7 @@ describe('useRouter + Link with context', () => {
           changeRoute,
           prefetchRoute,
           routeChangeEvents: { on: vi.fn(), off: vi.fn() },
-          fetchingSlices: new Set(),
+          fetchingSlices: new Set<string>(),
         }}
       >
         <>
@@ -933,7 +1057,7 @@ describe('useRouter + Link with context', () => {
       { path: '/next', query: '', hash: '' },
       expect.objectContaining({
         shouldScroll: true,
-        mode: 'push',
+        history: 'push',
         url: expect.any(URL),
       }),
     );
@@ -994,7 +1118,7 @@ describe('useRouter + Link with context', () => {
           changeRoute,
           prefetchRoute,
           routeChangeEvents: { on: vi.fn(), off: vi.fn() },
-          fetchingSlices: new Set(),
+          fetchingSlices: new Set<string>(),
         }}
       >
         <Link to="/start#target" data-testid="hash-link">
@@ -1055,7 +1179,7 @@ describe('useRouter + Link with context', () => {
           changeRoute,
           prefetchRoute,
           routeChangeEvents: { on: vi.fn(), off: vi.fn() },
-          fetchingSlices: new Set(),
+          fetchingSlices: new Set<string>(),
         }}
       >
         <Link to="/start#target" scroll={false} data-testid="hash-link">
@@ -1098,7 +1222,7 @@ describe('useRouter + Link with context', () => {
           changeRoute,
           prefetchRoute,
           routeChangeEvents: { on: vi.fn(), off: vi.fn() },
-          fetchingSlices: new Set(),
+          fetchingSlices: new Set<string>(),
         }}
       >
         <>
@@ -1173,7 +1297,7 @@ describe('useRouter + Link with context', () => {
           changeRoute: vi.fn(async () => {}),
           prefetchRoute,
           routeChangeEvents: { on: vi.fn(), off: vi.fn() },
-          fetchingSlices: new Set(),
+          fetchingSlices: new Set<string>(),
         }}
       >
         <Link
@@ -1232,7 +1356,7 @@ describe('useRouter + Link with context', () => {
           changeRoute,
           prefetchRoute,
           routeChangeEvents: { on: vi.fn(), off: vi.fn() },
-          fetchingSlices: new Set(),
+          fetchingSlices: new Set<string>(),
         }}
       >
         <Link to="/next" unstable_startTransition={unstableStartTransition}>
@@ -1258,7 +1382,7 @@ describe('useRouter + Link with context', () => {
     expect(changeRoute).toHaveBeenCalledWith(
       { path: '/next', query: '', hash: '' },
       expect.objectContaining({
-        startTransition: unstableStartTransition,
+        history: 'push',
       }),
     );
 
@@ -1304,7 +1428,7 @@ describe('useRouter + Link with context', () => {
 });
 
 describe('Slice', () => {
-  test('throws without RouterContext', async () => {
+  test('throws without a Router', async () => {
     await expect(renderApp(<Slice id="slice-1" />)).rejects.toThrow(
       'Missing Router',
     );
@@ -1323,7 +1447,7 @@ describe('Slice', () => {
           changeRoute: vi.fn(async () => {}),
           prefetchRoute: vi.fn(),
           routeChangeEvents: { on: vi.fn(), off: vi.fn() },
-          fetchingSlices: new Set(),
+          fetchingSlices: new Set<string>(),
         }}
       >
         <Slice id="slice-1" />
@@ -1337,7 +1461,6 @@ describe('Slice', () => {
 
   test('lazy slice fetches once, dedupes, and clears in-flight set on completion', async () => {
     const fetchingSlices = new Set<string>();
-
     const view = await renderWithMinimalRoot(
       <RouterContext
         value={{
@@ -1369,6 +1492,7 @@ describe('Slice', () => {
     expect(view.container.textContent).toContain('loading 2');
     expect(refetch).toHaveBeenCalledTimes(1);
     expect(refetch).toHaveBeenCalledWith(unstable_encodeSliceId('slice-1'));
+    // released when it settles, so the slice can be fetched again later
     expect(fetchingSlices.size).toBe(0);
 
     view.unmount();
@@ -1388,7 +1512,7 @@ describe('Slice', () => {
           changeRoute: vi.fn(async () => {}),
           prefetchRoute: vi.fn(),
           routeChangeEvents: { on: vi.fn(), off: vi.fn() },
-          fetchingSlices: new Set(),
+          fetchingSlices: new Set<string>(),
         }}
       >
         <Slice id="slice-1" lazy fallback={<div>fallback</div>} />
@@ -1417,7 +1541,7 @@ describe('Slice', () => {
           changeRoute: vi.fn(async () => {}),
           prefetchRoute: vi.fn(),
           routeChangeEvents: { on: vi.fn(), off: vi.fn() },
-          fetchingSlices: new Set(),
+          fetchingSlices: new Set<string>(),
         }}
       >
         <Slice id="slice-1" lazy fallback={<div>fallback</div>} />
@@ -1435,6 +1559,7 @@ describe('Slice', () => {
 
   test('logs refetch failures and clears fetching set', async () => {
     const fetchingSlices = new Set<string>();
+
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const refetch = vi.fn<ReturnType<typeof useRefetch>>(async () => ({}));
     refetch.mockRejectedValueOnce(new Error('slice failed'));
@@ -1459,6 +1584,7 @@ describe('Slice', () => {
       'Failed to fetch slice:',
       expect.any(Error),
     );
+    // a failed fetch releases the id too, so a retry is possible
     expect(fetchingSlices.size).toBe(0);
 
     view.unmount();
@@ -1591,6 +1717,166 @@ describe('Router integration', () => {
     } finally {
       vi.stubEnv('WAKU_CONFIG_BASE_PATH', '/');
     }
+  });
+
+  test('a server function response marks a static route as static', async () => {
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const refetch = vi.fn<ReturnType<typeof useRefetch>>(async () => ({}));
+    installRefetch(refetch);
+
+    const view = await renderRouter(
+      { initialRoute: { path: '/start', query: '', hash: '' } },
+      {
+        [unstable_getRouteSlotId('/start')]: <Probe />,
+        [unstable_getRouteSlotId('/next')]: <Probe />,
+        [ROUTE_ID]: ['/start', ''],
+        [IS_STATIC_ID]: false,
+      },
+    );
+
+    const store = fetchRscStore as unknown as Record<string, unknown>;
+    const listeners = store.l as Set<
+      (elements: Record<string, unknown>) => void
+    >;
+    await act(async () => {
+      for (const listener of listeners) {
+        listener({ [ROUTE_ID]: ['/next', ''], [IS_STATIC_ID]: true });
+      }
+      await flush();
+    });
+    expect(capture.router?.path).toBe('/next');
+
+    await act(async () => {
+      await capture.router!.push('/start');
+      await flush();
+    });
+    refetch.mockClear();
+    await act(async () => {
+      await capture.router!.push('/next');
+      await flush();
+    });
+
+    // the response said /next is static, so going back to it needs no request
+    expect(refetch).not.toHaveBeenCalled();
+
+    view.unmount();
+  });
+
+  test('a server function 404 keeps the attempted url', async () => {
+    window.history.replaceState({}, '', '/start?a=1');
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const elements = {
+      [unstable_getRouteSlotId('/start')]: <Probe />,
+      [unstable_getRouteSlotId('/404')]: <Probe />,
+      [ROUTE_ID]: ['/start', 'a=1'],
+      [IS_STATIC_ID]: false,
+      [HAS404_ID]: true,
+    };
+    const view = await renderRouter(
+      { initialRoute: { path: '/start', query: 'a=1', hash: '' } },
+      elements,
+    );
+
+    const store = fetchRscStore as unknown as Record<string, unknown>;
+    const listeners = store.l as Set<
+      (elements: Record<string, unknown>) => void
+    >;
+    await act(async () => {
+      for (const listener of listeners) {
+        listener({ [ROUTE_ID]: ['/404', ''], [IS_STATIC_ID]: false });
+      }
+      await flush();
+    });
+    await flush();
+
+    expect(capture.router?.path).toBe('/404');
+    expect(window.location.pathname + window.location.search).toBe(
+      '/start?a=1',
+    );
+
+    view.unmount();
+  });
+
+  test('a followed redirect emits events for the attempt and the follow', async () => {
+    const { view, capture, router } = await renderFollowRouter({
+      responses: [
+        { redirect: { from: '/moved', location: '/next' } },
+        { resolve: { [ROUTE_ID]: ['/next', ''], [IS_STATIC_ID]: false } },
+      ],
+      slots: ['/next'],
+    });
+    const events: string[] = [];
+    capture.router!.unstable_events.on('start', (route) =>
+      events.push(`start ${route.path}`),
+    );
+    capture.router!.unstable_events.on('complete', (route) =>
+      events.push(`complete ${route.path}`),
+    );
+
+    await act(async () => {
+      await router.push('/moved').catch(() => {});
+      for (let i = 0; i < 4; i += 1) {
+        await flush();
+      }
+    });
+
+    // the attempt reports its own fetch, then the follow reports the landing
+    expect(events).toEqual([
+      'start /moved',
+      'complete /moved',
+      'start /next',
+      'complete /next',
+    ]);
+
+    view.unmount();
+  });
+
+  test('a start listener that navigates beats the navigation it interrupted', async () => {
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const view = await renderRouter(
+      { initialRoute: { path: '/start', query: '', hash: '' } },
+      {
+        [unstable_getRouteSlotId('/start')]: <Probe />,
+        [unstable_getRouteSlotId('/a')]: <Probe />,
+        [unstable_getRouteSlotId('/b')]: <Probe />,
+        [ROUTE_ID]: ['/start', ''],
+        [IS_STATIC_ID]: false,
+      },
+    );
+    const refetch = getRefetchMock();
+    for (const path of ['/a', '/b']) {
+      refetch.mockResolvedValueOnce({
+        [ROUTE_ID]: [path, ''],
+        [IS_STATIC_ID]: true,
+      });
+      await act(async () => {
+        await capture.router!.push(path as never);
+      });
+    }
+
+    const events: string[] = [];
+    capture.router!.unstable_events.on('start', (route) => {
+      events.push(`start ${route.path}`);
+      if (route.path === '/a') {
+        void capture.router!.push('/b' as never);
+      }
+    });
+    capture.router!.unstable_events.on('complete', (route) =>
+      events.push(`complete ${route.path}`),
+    );
+
+    await act(async () => {
+      await capture.router!.push('/a' as never);
+      await flush();
+    });
+
+    expect(events).toEqual(['start /a', 'start /b', 'complete /b']);
+    expect(capture.router!.path).toBe('/b');
+    expect(window.location.pathname).toBe('/b');
+    view.unmount();
   });
 
   test('push performs refetch for dynamic routes and emits start/complete events', async () => {
@@ -2313,24 +2599,36 @@ describe('Router integration', () => {
       [IS_STATIC_ID]: false,
     };
 
-    const view = await renderRouter(
-      {
-        initialRoute: { path: '/start', query: '', hash: '' },
-      },
-      elements,
+    testHoisted.elements = elements;
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    const view = await renderApp(
+      <ErrorBoundary>
+        <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+          <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
+        </Unstable_SearchCodecsProvider>
+      </ErrorBoundary>,
     );
     try {
       if (!capture.router) {
         throw new Error('router not initialized');
       }
 
-      await expect(capture.router.push('/next')).rejects.toThrow(
-        'refetch failed',
-      );
+      await act(async () => {
+        await expect(capture.router!.push('/next')).rejects.toThrow(
+          'refetch failed',
+        );
+        await flush();
+      });
       expect(historyPushSpy).toHaveBeenCalledTimes(1);
       expect(window.location.pathname).toBe('/next');
-      expect(capture.router.path).toBe('/start');
+      // the unrecoverable error rethrows to the app boundary
+      expect(view.container.textContent).toContain(
+        'Caught an unexpected error',
+      );
     } finally {
+      consoleErrorSpy.mockRestore();
       view.unmount();
     }
   });
@@ -2507,12 +2805,197 @@ describe('Router integration', () => {
       expect.any(URLSearchParams),
       expect.objectContaining({
         unstable_prefetched: shellPromise,
+        unstable_overlay: expect.objectContaining({
+          [ROUTE_ID]: ['/next', ''],
+        }),
         unstable_swr: {
           pin: expect.any(Function),
           base: shell,
-          overlay: { [ROUTE_ID]: ['/next', ''] },
         },
       }),
+    );
+
+    view.unmount();
+  });
+
+  test('instant nav paints the target and writes the url before the response', async () => {
+    const pending = createDeferred<Record<string, unknown>>();
+    const refetch = vi.fn<ReturnType<typeof useRefetch>>(() => pending.promise);
+    installRefetch(refetch);
+
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const elements = {
+      ...instantNavElements(),
+      [unstable_getRouteSlotId('/start')]: <Probe />,
+      [unstable_getRouteSlotId('/next')]: <Probe />,
+    };
+
+    const view = await renderRouter(
+      { initialRoute: { path: '/start', query: '', hash: '' } },
+      elements,
+    );
+    if (!capture.router) {
+      throw new Error('router not initialized');
+    }
+
+    let pushed: Promise<void> | undefined;
+    await act(async () => {
+      pushed = capture.router!.push('/next', { unstable_instant: true });
+      await flush();
+    });
+
+    expect(window.location.pathname).toBe('/next');
+    expect(capture.router?.path).toBe('/next');
+
+    await act(async () => {
+      pending.resolve({ [ROUTE_ID]: ['/next', ''], [IS_STATIC_ID]: true });
+      await pushed;
+      await flush();
+    });
+
+    expect(window.location.pathname).toBe('/next');
+
+    view.unmount();
+  });
+
+  test('a redirect after the url already moved replaces instead of pushing', async () => {
+    const assignSpy = vi
+      .spyOn(window.location, 'assign')
+      .mockImplementation(() => {});
+    const replaceLocationSpy = vi
+      .spyOn(window.location, 'replace')
+      .mockImplementation(() => {});
+    // an instant commit writes the attempted url before the response lands
+    window.history.replaceState({}, '', '/next?x=1');
+    const refetch = vi.fn<ReturnType<typeof useRefetch>>(() =>
+      Promise.reject(
+        createCustomError('moved', { status: 307, location: '/login' }),
+      ),
+    );
+    installRefetch(refetch);
+
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const view = await renderRouter(
+      { initialRoute: { path: '/start', query: '', hash: '' } },
+      {
+        [unstable_getRouteSlotId('/start')]: <Probe />,
+        [ROUTE_ID]: ['/start', ''],
+        [IS_STATIC_ID]: false,
+      },
+    );
+    if (!capture.router) {
+      throw new Error('router not initialized');
+    }
+
+    await act(async () => {
+      await capture.router!.push('/next?x=1').catch(() => {});
+      await flush();
+    });
+
+    // that entry already exists, so the redirect must not add another
+    expect(assignSpy).not.toHaveBeenCalled();
+    expect(replaceLocationSpy).toHaveBeenCalledTimes(1);
+    expect(replaceLocationSpy.mock.calls[0]![0]).toContain('/login');
+
+    assignSpy.mockRestore();
+    replaceLocationSpy.mockRestore();
+    view.unmount();
+  });
+
+  test('an instant nav to a static route keeps the query', async () => {
+    // A static payload does not echo the query. The meta the eager pass pins
+    // is the route being left, so without a refresh the record would call this
+    // a server redirect and drop ?x=1 from the address bar.
+    const refetch = vi.fn<ReturnType<typeof useRefetch>>(async () => ({
+      [ROUTE_ID]: ['/next', ''],
+      [IS_STATIC_ID]: true,
+    }));
+    installRefetch(refetch);
+
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const elements = {
+      ...instantNavElements(),
+      [unstable_getRouteSlotId('/start')]: <Probe />,
+      [unstable_getRouteSlotId('/next')]: <Probe />,
+    };
+
+    const view = await renderRouter(
+      { initialRoute: { path: '/start', query: '', hash: '' } },
+      elements,
+    );
+    if (!capture.router) {
+      throw new Error('router not initialized');
+    }
+
+    await act(async () => {
+      await capture.router!.push('/next?x=1', { unstable_instant: true });
+      await flush();
+      await flush();
+    });
+
+    expect(capture.router.path).toBe('/next');
+    expect(capture.router.query).toBe('x=1');
+    expect(window.location.pathname + window.location.search).toBe('/next?x=1');
+
+    view.unmount();
+  });
+
+  test('an instant nav from a static route does not mark the target static', async () => {
+    const pending = createDeferred<Record<string, unknown>>();
+    const refetch = vi.fn<ReturnType<typeof useRefetch>>(async () => ({
+      [ROUTE_ID]: ['/next', ''],
+      [IS_STATIC_ID]: false,
+    }));
+    refetch.mockImplementationOnce(() => pending.promise);
+    installRefetch(refetch);
+
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const elements = {
+      ...instantNavElements(),
+      [unstable_getRouteSlotId('/start')]: <Probe />,
+      [unstable_getRouteSlotId('/next')]: <Probe />,
+      // the route being left is static, the instant target is not
+      [IS_STATIC_ID]: true,
+    };
+
+    const view = await renderRouter(
+      { initialRoute: { path: '/start', query: '', hash: '' } },
+      elements,
+    );
+    if (!capture.router) {
+      throw new Error('router not initialized');
+    }
+
+    // the instant commit lands before the response: /next's route id sits next
+    // to /start's pinned static flag
+    let pushed: Promise<void> | undefined;
+    await act(async () => {
+      pushed = capture.router!.push('/next', { unstable_instant: true });
+      await flush();
+    });
+    await act(async () => {
+      pending.resolve({ [ROUTE_ID]: ['/next', ''], [IS_STATIC_ID]: false });
+      await pushed;
+      await flush();
+    });
+    await act(async () => {
+      await capture.router!.push('/start');
+      await flush();
+    });
+    refetch.mockClear();
+    await act(async () => {
+      await capture.router!.push('/next');
+      await flush();
+    });
+
+    expect(refetch).toHaveBeenCalledWith(
+      unstable_encodeRoutePath('/next'),
+      expect.any(URLSearchParams),
+      expect.anything(),
     );
 
     view.unmount();
@@ -3024,6 +3507,100 @@ describe('Router integration', () => {
     view.unmount();
   });
 
+  test('reload leaves the url the browser has alone', async () => {
+    // the same round trip that popstate must not suffer: a trailing slash and
+    // a percent encoded space do not survive parseRoute + getRouteUrl
+    window.history.replaceState({}, '', '/start/?q=hello%20world');
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+
+    const view = await renderRouter(
+      { initialRoute: { path: '/start', query: 'q=hello+world', hash: '' } },
+      {
+        [unstable_getRouteSlotId('/start')]: <Probe />,
+        [ROUTE_ID]: ['/start', 'q=hello+world'],
+        [IS_STATIC_ID]: false,
+      },
+    );
+
+    await act(async () => {
+      await capture.router!.reload();
+      await flush();
+    });
+
+    expect(window.location.pathname + window.location.search).toBe(
+      '/start/?q=hello%20world',
+    );
+    expect(getRefetchMock()).toHaveBeenCalledTimes(1);
+
+    view.unmount();
+  });
+
+  test('popstate leaves the url the browser restored alone', async () => {
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+
+    const elements = {
+      [unstable_getRouteSlotId('/start')]: <Probe />,
+      [ROUTE_ID]: ['/start', ''],
+      [IS_STATIC_ID]: true,
+    };
+
+    const view = await renderRouter(
+      { initialRoute: { path: '/start', query: '', hash: '' } },
+      elements,
+    );
+
+    // a trailing slash and a percent-encoded space both survive the round trip
+    // through parseRoute, which the address bar must not be rewritten with
+    window.history.pushState({}, '', '/start/?q=hello%20world');
+    await act(async () => {
+      window.dispatchEvent(new PopStateEvent('popstate'));
+      await flush();
+    });
+
+    expect(window.location.pathname + window.location.search).toBe(
+      '/start/?q=hello%20world',
+    );
+    expect(capture.router?.query).toBe('q=hello+world');
+
+    view.unmount();
+  });
+
+  test('popstate that lands on another route moves the url with it', async () => {
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const refetch = vi.fn<ReturnType<typeof useRefetch>>(async () => ({
+      [ROUTE_ID]: ['/new', ''],
+      [IS_STATIC_ID]: false,
+    }));
+    installRefetch(refetch);
+
+    const elements = {
+      [unstable_getRouteSlotId('/start')]: <Probe />,
+      [unstable_getRouteSlotId('/new')]: <Probe />,
+      [ROUTE_ID]: ['/start', ''],
+      [IS_STATIC_ID]: false,
+    };
+
+    const view = await renderRouter(
+      { initialRoute: { path: '/start', query: '', hash: '' } },
+      elements,
+    );
+
+    // the browser restored /old, but the server redirects it to /new
+    window.history.pushState({}, '', '/old');
+    await act(async () => {
+      window.dispatchEvent(new PopStateEvent('popstate'));
+      await flush();
+    });
+
+    expect(capture.router?.path).toBe('/new');
+    expect(window.location.pathname).toBe('/new');
+
+    view.unmount();
+  });
+
   test('popstate query-only transition preserves scroll behavior', async () => {
     const capture = { router: null as RouterApi | null };
     const Probe = makeProbe(capture);
@@ -3350,6 +3927,7 @@ describe('Router integration', () => {
   }: {
     responses: (
       | { reject: { status: number; location?: string } }
+      | { redirect: { from: string; fromQuery?: string; location: string } }
       | { resolve: Record<string, unknown> }
     )[];
     slots?: string[];
@@ -3357,7 +3935,23 @@ describe('Router integration', () => {
   }) => {
     const refetch = vi.fn<ReturnType<typeof useRefetch>>();
     for (const response of responses) {
-      if ('reject' in response) {
+      if ('redirect' in response) {
+        const err = createCustomError('redirect', {
+          status: 307,
+          location: response.redirect.location,
+        });
+        const Thrower = () => {
+          throw err;
+        };
+        refetch.mockResolvedValueOnce({
+          [unstable_getRouteSlotId(response.redirect.from)]: <Thrower />,
+          [ROUTE_ID]: [
+            response.redirect.from,
+            response.redirect.fromQuery ?? '',
+          ],
+          [IS_STATIC_ID]: false,
+        });
+      } else if ('reject' in response) {
         refetch.mockImplementationOnce(() =>
           Promise.reject(createCustomError('follow-error', response.reject)),
         );
@@ -3390,99 +3984,95 @@ describe('Router integration', () => {
     return { view, refetch, capture, router: capture.router };
   };
 
-  test('a navigation follows a redirect error inline', async () => {
+  test('a rejected fetch redirect hard navigates with a new entry', async () => {
+    const assignSpy = vi
+      .spyOn(window.location, 'assign')
+      .mockImplementation(() => {});
     const { view, refetch, capture, router } = await renderFollowRouter({
-      responses: [
-        { reject: { status: 307, location: '/next' } },
-        { resolve: { [ROUTE_ID]: ['/next', ''], [IS_STATIC_ID]: false } },
-      ],
-      slots: ['/next'],
+      responses: [{ reject: { status: 307, location: '/next' } }],
     });
     await act(async () => {
-      await router.push('/moved');
+      await router.push('/moved').catch(() => {});
+      await flush();
       await flush();
     });
-    expect(refetch).toHaveBeenCalledTimes(2);
-    expect(capture.router!.path).toBe('/next');
+    expect(refetch).toHaveBeenCalledTimes(1);
+    expect(assignSpy).toHaveBeenCalledTimes(1);
+    expect(assignSpy.mock.calls[0]![0]).toContain('/next');
+    expect(capture.router!.path).toBe('/start');
+    expect(window.location.pathname).toBe('/start');
+    assignSpy.mockRestore();
     view.unmount();
   });
 
-  test('an instant navigation resolves a relative redirect against the attempted url', async () => {
-    const refetch = vi.fn<ReturnType<typeof useRefetch>>();
-    refetch
-      .mockImplementationOnce(() =>
-        Promise.reject(
-          createCustomError('moved', { status: 307, location: 'login' }),
-        ),
-      )
-      .mockResolvedValueOnce({
-        [ROUTE_ID]: ['/account/login', ''],
-        [IS_STATIC_ID]: false,
-      });
-    installRefetch(refetch);
-
+  test('a rejected redirect to an unusable protocol never reaches the browser', async () => {
+    const assignSpy = vi
+      .spyOn(window.location, 'assign')
+      .mockImplementation(() => {});
+    const replaceLocationSpy = vi
+      .spyOn(window.location, 'replace')
+      .mockImplementation(() => {});
     const capture = { router: null as RouterApi | null };
     const Probe = makeProbe(capture);
-    const profileSlotId = unstable_getRouteSlotId('/account/profile');
-    const elements = {
+    const refetch = vi.fn<ReturnType<typeof useRefetch>>(async () => ({}));
+    refetch.mockImplementationOnce(() =>
+      Promise.reject(
+        createCustomError('moved', {
+          status: 307,
+          location: 'javascript:alert(1)',
+        }),
+      ),
+    );
+    installRefetch(refetch);
+
+    testHoisted.elements = {
       [unstable_getRouteSlotId('/start')]: <Probe />,
-      [profileSlotId]: <div>profile</div>,
-      [unstable_getRouteSlotId('/account/login')]: <Probe />,
       [ROUTE_ID]: ['/start', ''],
       [IS_STATIC_ID]: false,
-      // mark the attempted route static so the instant branch engages
-      [`${ETAG_ID_PREFIX}${profileSlotId}`]: IMMUTABLE_ETAG,
     };
-
-    const view = await renderRouter(
-      { initialRoute: { path: '/start', query: '', hash: '' } },
-      elements,
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    const view = await renderApp(
+      <ErrorBoundary>
+        <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+          <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
+        </Unstable_SearchCodecsProvider>
+      </ErrorBoundary>,
     );
-    if (!capture.router) {
-      throw new Error('router not initialized');
-    }
-
-    // the rejection can arrive before the history effect writes the
-    // attempted url, so the previous url must not be the base
-    const pushStateSpy = vi
-      .spyOn(window.history, 'pushState')
-      .mockImplementation(() => {});
-    const replaceStateSpy = vi
-      .spyOn(window.history, 'replaceState')
-      .mockImplementation(() => {});
     try {
       await act(async () => {
-        await capture.router!.push('/account/profile', {
-          unstable_instant: true,
-        });
+        await capture.router!.push('/moved').catch(() => {});
+        await flush();
         await flush();
       });
+
+      expect(assignSpy).not.toHaveBeenCalled();
+      expect(replaceLocationSpy).not.toHaveBeenCalled();
+      expect(view.container.textContent).toContain(
+        'cannot follow a redirect to javascript:alert(1)',
+      );
     } finally {
-      pushStateSpy.mockRestore();
-      replaceStateSpy.mockRestore();
+      consoleErrorSpy.mockRestore();
+      assignSpy.mockRestore();
+      replaceLocationSpy.mockRestore();
+      view.unmount();
     }
-
-    // "login" resolves against /account/profile, not the previous url
-    expect(refetch.mock.calls[1]?.[0]).toBe(
-      unstable_encodeRoutePath('/account/login'),
-    );
-    expect(capture.router.path).toBe('/account/login');
-
-    view.unmount();
   });
 
-  test('an instant redirect keeps the attempted history entry', async () => {
+  test('a rejected redirect resolves a relative location against the attempted url', async () => {
+    const assignSpy = vi
+      .spyOn(window.location, 'assign')
+      .mockImplementation(() => {});
+    const replaceLocationSpy = vi
+      .spyOn(window.location, 'replace')
+      .mockImplementation(() => {});
     const refetch = vi.fn<ReturnType<typeof useRefetch>>();
-    refetch
-      .mockImplementationOnce(() =>
-        Promise.reject(
-          createCustomError('moved', { status: 307, location: 'login' }),
-        ),
-      )
-      .mockResolvedValueOnce({
-        [ROUTE_ID]: ['/account/login', ''],
-        [IS_STATIC_ID]: false,
-      });
+    refetch.mockImplementationOnce(() =>
+      Promise.reject(
+        createCustomError('moved', { status: 307, location: 'login' }),
+      ),
+    );
     installRefetch(refetch);
 
     const capture = { router: null as RouterApi | null };
@@ -3491,7 +4081,6 @@ describe('Router integration', () => {
     const elements = {
       [unstable_getRouteSlotId('/start')]: <Probe />,
       [profileSlotId]: <div>profile</div>,
-      [unstable_getRouteSlotId('/account/login')]: <Probe />,
       [ROUTE_ID]: ['/start', ''],
       [IS_STATIC_ID]: false,
       [`${ETAG_ID_PREFIX}${profileSlotId}`]: IMMUTABLE_ETAG,
@@ -3505,19 +4094,67 @@ describe('Router integration', () => {
       throw new Error('router not initialized');
     }
 
-    const lengthBefore = window.history.length;
     await act(async () => {
-      await capture.router!.push('/account/profile', {
-        unstable_instant: true,
-      });
+      await capture
+        .router!.push('/account/profile', { unstable_instant: true })
+        .catch(() => {});
+      await flush();
       await flush();
     });
 
-    // the attempted entry is pushed, then replaced by the redirect
-    expect(window.location.pathname).toBe('/account/login');
-    expect(window.history.length).toBe(lengthBefore + 1);
-    expect(capture.router.path).toBe('/account/login');
+    // the commit races the rejection, so either write style can happen
+    const calls = [...assignSpy.mock.calls, ...replaceLocationSpy.mock.calls];
+    expect(calls).toHaveLength(1);
+    expect(calls[0]![0]).toContain('/account/login');
 
+    assignSpy.mockRestore();
+    replaceLocationSpy.mockRestore();
+    view.unmount();
+  });
+
+  test('a rejected redirect on replace navigates without a new entry', async () => {
+    const assignSpy = vi
+      .spyOn(window.location, 'assign')
+      .mockImplementation(() => {});
+    const replaceLocationSpy = vi
+      .spyOn(window.location, 'replace')
+      .mockImplementation(() => {});
+    const refetch = vi.fn<ReturnType<typeof useRefetch>>();
+    refetch.mockImplementationOnce(() =>
+      Promise.reject(
+        createCustomError('moved', { status: 307, location: 'login' }),
+      ),
+    );
+    installRefetch(refetch);
+
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const elements = {
+      [unstable_getRouteSlotId('/start')]: <Probe />,
+      [ROUTE_ID]: ['/start', ''],
+      [IS_STATIC_ID]: false,
+    };
+
+    const view = await renderRouter(
+      { initialRoute: { path: '/start', query: '', hash: '' } },
+      elements,
+    );
+    if (!capture.router) {
+      throw new Error('router not initialized');
+    }
+
+    await act(async () => {
+      await capture.router!.replace('/account/profile').catch(() => {});
+      await flush();
+      await flush();
+    });
+
+    expect(replaceLocationSpy).toHaveBeenCalledTimes(1);
+    expect(replaceLocationSpy.mock.calls[0]![0]).toContain('/account/login');
+    expect(assignSpy).not.toHaveBeenCalled();
+
+    assignSpy.mockRestore();
+    replaceLocationSpy.mockRestore();
     view.unmount();
   });
 
@@ -3556,9 +4193,12 @@ describe('Router integration', () => {
 
     const lengthBefore = window.history.length;
     await act(async () => {
-      await capture.router!.push('/account/profile', {
-        unstable_instant: true,
-      });
+      await capture
+        .router!.push('/account/profile', {
+          unstable_instant: true,
+        })
+        .catch(() => {});
+      await flush();
       await flush();
     });
 
@@ -3574,27 +4214,31 @@ describe('Router integration', () => {
     const scrollToSpy = vi
       .spyOn(window, 'scrollTo')
       .mockImplementation(() => {});
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const RedirectErrorObject = createCustomError('moved', {
+      status: 307,
+      location: '/account/profile?login=1',
+    });
+    const ThrowRedirect = () => {
+      throw RedirectErrorObject;
+    };
     const refetch = vi.fn<ReturnType<typeof useRefetch>>();
     refetch
-      .mockImplementationOnce(() =>
-        Promise.reject(
-          createCustomError('moved', {
-            status: 307,
-            location: '/account/profile?login=1',
-          }),
-        ),
-      )
       .mockResolvedValueOnce({
+        [unstable_getRouteSlotId('/account/profile')]: <ThrowRedirect />,
+        [ROUTE_ID]: ['/account/profile', ''],
+        [IS_STATIC_ID]: false,
+      })
+      .mockResolvedValueOnce({
+        [unstable_getRouteSlotId('/account/profile')]: <Probe />,
         [ROUTE_ID]: ['/account/profile', 'login=1'],
         [IS_STATIC_ID]: false,
       });
     installRefetch(refetch);
 
-    const capture = { router: null as RouterApi | null };
-    const Probe = makeProbe(capture);
     const elements = {
       [unstable_getRouteSlotId('/start')]: <Probe />,
-      [unstable_getRouteSlotId('/account/profile')]: <Probe />,
       [ROUTE_ID]: ['/start', ''],
       [IS_STATIC_ID]: false,
     };
@@ -3608,35 +4252,46 @@ describe('Router integration', () => {
     }
 
     await act(async () => {
-      await capture.router!.push('/account/profile');
+      await capture.router!.push('/account/profile').catch(() => {});
+      await flush();
+      await flush();
+      await flush();
       await flush();
     });
 
     // the visible navigation is from /start, so the page scrolls even
     // though the redirect keeps the attempted pathname
-    expect(capture.router.path).toBe('/account/profile');
-    expect(scrollToSpy).toHaveBeenCalled();
+    expect(capture.router.query).toBe('login=1');
+    // twice: the attempted commit, then the follow
+    expect(scrollToSpy).toHaveBeenCalledTimes(2);
 
     scrollToSpy.mockRestore();
     view.unmount();
   });
 
   test('a query-only navigation that redirects writes one history entry', async () => {
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const RedirectErrorObject = createCustomError('moved', {
+      status: 307,
+      location: '/login',
+    });
+    const ThrowRedirect = () => {
+      throw RedirectErrorObject;
+    };
     const refetch = vi.fn<ReturnType<typeof useRefetch>>();
     refetch
-      .mockImplementationOnce(() =>
-        Promise.reject(
-          createCustomError('moved', { status: 307, location: '/login' }),
-        ),
-      )
+      .mockResolvedValueOnce({
+        [unstable_getRouteSlotId('/products')]: <ThrowRedirect />,
+        [ROUTE_ID]: ['/products', 'page=2'],
+        [IS_STATIC_ID]: false,
+      })
       .mockResolvedValueOnce({
         [ROUTE_ID]: ['/login', ''],
         [IS_STATIC_ID]: false,
       });
     installRefetch(refetch);
 
-    const capture = { router: null as RouterApi | null };
-    const Probe = makeProbe(capture);
     const elements = {
       [unstable_getRouteSlotId('/products')]: <Probe />,
       [unstable_getRouteSlotId('/login')]: <Probe />,
@@ -3655,7 +4310,10 @@ describe('Router integration', () => {
     window.history.replaceState(null, '', '/products?page=1');
     const lengthBefore = window.history.length;
     await act(async () => {
-      await capture.router!.push('/products?page=2');
+      await capture.router!.push('/products?page=2').catch(() => {});
+      await flush();
+      await flush();
+      await flush();
       await flush();
     });
 
@@ -3668,14 +4326,21 @@ describe('Router integration', () => {
   });
 
   test('a slow redirect after an instant error writes one attempted entry', async () => {
+    const RedirectErrorObject = createCustomError('moved', {
+      status: 307,
+      location: 'login',
+    });
+    const ThrowRedirect = () => {
+      throw RedirectErrorObject;
+    };
     let resolveSecond!: (value: Record<string, unknown>) => void;
     const refetch = vi.fn<ReturnType<typeof useRefetch>>();
     refetch
-      .mockImplementationOnce(() =>
-        Promise.reject(
-          createCustomError('moved', { status: 307, location: 'login' }),
-        ),
-      )
+      .mockResolvedValueOnce({
+        [unstable_getRouteSlotId('/account/profile')]: <ThrowRedirect />,
+        [ROUTE_ID]: ['/account/profile', ''],
+        [IS_STATIC_ID]: false,
+      })
       .mockImplementationOnce(
         () =>
           new Promise((resolve) => {
@@ -3689,7 +4354,7 @@ describe('Router integration', () => {
     const profileSlotId = unstable_getRouteSlotId('/account/profile');
     const elements = {
       [unstable_getRouteSlotId('/start')]: <Probe />,
-      [profileSlotId]: <div>profile</div>,
+      [profileSlotId]: <ThrowRedirect />,
       [unstable_getRouteSlotId('/account/login')]: <Probe />,
       [ROUTE_ID]: ['/start', ''],
       [IS_STATIC_ID]: false,
@@ -3713,13 +4378,15 @@ describe('Router integration', () => {
       });
       // flush the attempted route's commit while the redirect is pending
       await flush();
+      await flush();
     });
     await act(async () => {
       resolveSecond({
         [ROUTE_ID]: ['/account/login', ''],
         [IS_STATIC_ID]: false,
       });
-      await pushPromise;
+      await pushPromise!.catch(() => {});
+      await flush();
       await flush();
     });
 
@@ -3729,19 +4396,49 @@ describe('Router integration', () => {
     view.unmount();
   });
 
+  test('a redirect location is an app path, so the base path is added', async () => {
+    vi.stubEnv('WAKU_CONFIG_BASE_PATH', '/docs/');
+    try {
+      window.history.replaceState({}, '', '/docs/start');
+      const { view, capture, router } = await renderFollowRouter({
+        responses: [
+          { redirect: { from: '/moved', location: '/next' } },
+          { resolve: { [ROUTE_ID]: ['/next', ''], [IS_STATIC_ID]: false } },
+        ],
+        slots: ['/next'],
+      });
+      await act(async () => {
+        await router.push('/moved').catch(() => {});
+        for (let i = 0; i < 4; i += 1) {
+          await flush();
+        }
+      });
+
+      expect(capture.router!.path).toBe('/next');
+      expect(window.location.pathname).toBe('/docs/next');
+
+      view.unmount();
+    } finally {
+      vi.stubEnv('WAKU_CONFIG_BASE_PATH', '/');
+    }
+  });
+
   test('a redirect keeps an explicit scroll false option', async () => {
     const scrollToSpy = vi
       .spyOn(window, 'scrollTo')
       .mockImplementation(() => {});
     const { view, capture, router } = await renderFollowRouter({
       responses: [
-        { reject: { status: 307, location: '/next' } },
+        { redirect: { from: '/moved', location: '/next' } },
         { resolve: { [ROUTE_ID]: ['/next', ''], [IS_STATIC_ID]: false } },
       ],
       slots: ['/next'],
     });
     await act(async () => {
-      await router.push('/moved', { scroll: false });
+      await router.push('/moved', { scroll: false }).catch(() => {});
+      await flush();
+      await flush();
+      await flush();
       await flush();
     });
     expect(capture.router!.path).toBe('/next');
@@ -3754,24 +4451,29 @@ describe('Router integration', () => {
     const scrollToSpy = vi
       .spyOn(window, 'scrollTo')
       .mockImplementation(() => {});
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const RedirectErrorObject = createCustomError('moved', {
+      status: 307,
+      location: '/products?page=3',
+    });
+    const ThrowRedirect = () => {
+      throw RedirectErrorObject;
+    };
     const refetch = vi.fn<ReturnType<typeof useRefetch>>();
     refetch
-      .mockImplementationOnce(() =>
-        Promise.reject(
-          createCustomError('moved', {
-            status: 307,
-            location: '/products?page=3',
-          }),
-        ),
-      )
       .mockResolvedValueOnce({
+        [unstable_getRouteSlotId('/products')]: <ThrowRedirect />,
+        [ROUTE_ID]: ['/products', 'page=2'],
+        [IS_STATIC_ID]: false,
+      })
+      .mockResolvedValueOnce({
+        [unstable_getRouteSlotId('/products')]: <Probe />,
         [ROUTE_ID]: ['/products', 'page=3'],
         [IS_STATIC_ID]: false,
       });
     installRefetch(refetch);
 
-    const capture = { router: null as RouterApi | null };
-    const Probe = makeProbe(capture);
     const elements = {
       [unstable_getRouteSlotId('/products')]: <Probe />,
       [ROUTE_ID]: ['/products', 'page=1'],
@@ -3788,12 +4490,18 @@ describe('Router integration', () => {
 
     window.history.replaceState(null, '', '/products?page=1');
     await act(async () => {
-      await capture.router!.push('/products?page=2', { scroll: true });
+      await capture
+        .router!.push('/products?page=2', { scroll: true })
+        .catch(() => {});
+      await flush();
+      await flush();
+      await flush();
       await flush();
     });
 
     expect(capture.router.query).toBe('page=3');
-    expect(scrollToSpy).toHaveBeenCalled();
+    // twice: the attempted commit, then the follow
+    expect(scrollToSpy).toHaveBeenCalledTimes(2);
 
     scrollToSpy.mockRestore();
     view.unmount();
@@ -3803,13 +4511,20 @@ describe('Router integration', () => {
     const scrollToSpy = vi
       .spyOn(window, 'scrollTo')
       .mockImplementation(() => {});
+    const RedirectErrorObject = createCustomError('moved', {
+      status: 307,
+      location: '/next',
+    });
+    const ThrowRedirect = () => {
+      throw RedirectErrorObject;
+    };
     const refetch = vi.fn<ReturnType<typeof useRefetch>>();
     refetch
-      .mockImplementationOnce(() =>
-        Promise.reject(
-          createCustomError('moved', { status: 307, location: '/next' }),
-        ),
-      )
+      .mockResolvedValueOnce({
+        [unstable_getRouteSlotId('/moved')]: <ThrowRedirect />,
+        [ROUTE_ID]: ['/moved', ''],
+        [IS_STATIC_ID]: false,
+      })
       .mockResolvedValueOnce({
         [ROUTE_ID]: ['/next', ''],
         [IS_STATIC_ID]: false,
@@ -3849,6 +4564,9 @@ describe('Router integration', () => {
         }),
       );
       await flush();
+      await flush();
+      await flush();
+      await flush();
     });
 
     expect(capture.router.path).toBe('/next');
@@ -3864,8 +4582,8 @@ describe('Router integration', () => {
       .mockImplementation(() => {});
     const { view, capture, router } = await renderFollowRouter({
       responses: [
-        { reject: { status: 307, location: '/b' } },
-        { reject: { status: 307, location: '/c' } },
+        { redirect: { from: '/a', location: '/b' } },
+        { redirect: { from: '/b', location: '/c' } },
         { resolve: { [ROUTE_ID]: ['/c', ''], [IS_STATIC_ID]: false } },
       ],
       slots: ['/c'],
@@ -3873,8 +4591,10 @@ describe('Router integration', () => {
     window.history.replaceState(null, '', '/start');
     const lengthBefore = window.history.length;
     await act(async () => {
-      await router.push('/a', { scroll: false });
-      await flush();
+      await router.push('/a', { scroll: false }).catch(() => {});
+      for (let i = 0; i < 8; i += 1) {
+        await flush();
+      }
     });
     expect(capture.router!.path).toBe('/c');
     expect(window.location.pathname).toBe('/c');
@@ -3884,11 +4604,20 @@ describe('Router integration', () => {
     view.unmount();
   });
 
-  test('a redirect cycle stops at the hop limit and rejects', async () => {
+  test('a redirect cycle surfaces a redirect loop error', async () => {
+    const RedirectErrorObject = createCustomError('moved', {
+      status: 307,
+      location: '/a',
+    });
+    const ThrowRedirect = () => {
+      throw RedirectErrorObject;
+    };
     const refetch = vi.fn<ReturnType<typeof useRefetch>>(() =>
-      Promise.reject(
-        createCustomError('moved', { status: 307, location: '/a' }),
-      ),
+      Promise.resolve({
+        [unstable_getRouteSlotId('/a')]: <ThrowRedirect />,
+        [ROUTE_ID]: ['/a', ''],
+        [IS_STATIC_ID]: false,
+      }),
     );
     installRefetch(refetch);
 
@@ -3917,45 +4646,158 @@ describe('Router integration', () => {
 
     try {
       await act(async () => {
-        await expect(capture.router!.push('/a')).rejects.toThrow(
-          'too many redirect or 404 follows',
-        );
-        await flush();
+        await capture.router!.push('/a');
+        for (let i = 0; i < 25; i += 1) {
+          await flush();
+        }
       });
-      // the original fetch plus one follow per allowed hop
-      expect(refetch).toHaveBeenCalledTimes(21);
+      expect(view.container.textContent).toContain('detected a redirect loop');
+      expect(refetch).toHaveBeenCalledTimes(1);
     } finally {
       consoleErrorSpy.mockRestore();
       view.unmount();
     }
   });
 
+  test('an endless redirect chain stops at the hop limit', async () => {
+    let calls = 0;
+    const refetch = vi.fn<ReturnType<typeof useRefetch>>(() => {
+      const path = `/hop/${calls}`;
+      calls += 1;
+      const err = createCustomError('moved', {
+        status: 307,
+        location: `/hop/${calls}`,
+      });
+      const Thrower = () => {
+        throw err;
+      };
+      return Promise.resolve({
+        [unstable_getRouteSlotId(path)]: <Thrower />,
+        [ROUTE_ID]: [path, ''],
+        [IS_STATIC_ID]: false,
+      });
+    });
+    installRefetch(refetch);
+
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    testHoisted.elements = {
+      [unstable_getRouteSlotId('/start')]: <Probe />,
+      [ROUTE_ID]: ['/start', ''],
+      [IS_STATIC_ID]: false,
+    };
+
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    const view = await renderApp(
+      <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+        <ErrorBoundary>
+          <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
+        </ErrorBoundary>
+      </Unstable_SearchCodecsProvider>,
+    );
+    try {
+      await act(async () => {
+        await capture.router!.push('/hop/0');
+        for (let i = 0; i < 120; i += 1) {
+          await flush();
+        }
+      });
+      expect(view.container.textContent).toContain(
+        'too many redirect or 404 follows',
+      );
+      // the per chain cap fires, not the per navigation budget
+      expect(refetch).toHaveBeenCalledTimes(21);
+    } finally {
+      consoleErrorSpy.mockRestore();
+      view.unmount();
+    }
+  }, 20_000);
+
+  test('a committing redirect cycle stops at the hop limit', async () => {
+    const refetch = vi.fn<ReturnType<typeof useRefetch>>(((rscPath: string) => {
+      const path = rscPath === unstable_encodeRoutePath('/a') ? '/a' : '/b';
+      const next = path === '/a' ? '/b' : '/a';
+      const err = createCustomError('moved', { status: 307, location: next });
+      const Thrower = () => {
+        throw err;
+      };
+      return Promise.resolve({
+        [unstable_getRouteSlotId(path)]: <Thrower />,
+        [ROUTE_ID]: [path, ''],
+        [IS_STATIC_ID]: false,
+      });
+    }) as never);
+    installRefetch(refetch);
+
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    testHoisted.elements = {
+      [unstable_getRouteSlotId('/start')]: <Probe />,
+      [ROUTE_ID]: ['/start', ''],
+      [IS_STATIC_ID]: false,
+    };
+
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    const view = await renderApp(
+      <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+        <ErrorBoundary>
+          <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
+        </ErrorBoundary>
+      </Unstable_SearchCodecsProvider>,
+    );
+    try {
+      await act(async () => {
+        await capture.router!.push('/a');
+        for (let i = 0; i < 120; i += 1) {
+          await flush();
+        }
+      });
+      expect(view.container.textContent).toContain(
+        'too many redirect or 404 follows',
+      );
+      // the per chain cap fires, not the per navigation budget
+      expect(refetch).toHaveBeenCalledTimes(21);
+    } finally {
+      consoleErrorSpy.mockRestore();
+      view.unmount();
+    }
+  }, 20_000);
+
   test('an instant redirect scrolls when the visible navigation changed paths', async () => {
     const scrollToSpy = vi
       .spyOn(window, 'scrollTo')
       .mockImplementation(() => {});
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const RedirectErrorObject = createCustomError('moved', {
+      status: 307,
+      location: '/account/profile?login=1',
+    });
+    const ThrowRedirect = () => {
+      throw RedirectErrorObject;
+    };
+    const profileSlotId = unstable_getRouteSlotId('/account/profile');
     const refetch = vi.fn<ReturnType<typeof useRefetch>>();
     refetch
-      .mockImplementationOnce(() =>
-        Promise.reject(
-          createCustomError('moved', {
-            status: 307,
-            location: '/account/profile?login=1',
-          }),
-        ),
-      )
       .mockResolvedValueOnce({
+        [profileSlotId]: <ThrowRedirect />,
+        [ROUTE_ID]: ['/account/profile', ''],
+        [IS_STATIC_ID]: false,
+      })
+      .mockResolvedValueOnce({
+        [profileSlotId]: <Probe />,
         [ROUTE_ID]: ['/account/profile', 'login=1'],
         [IS_STATIC_ID]: false,
       });
     installRefetch(refetch);
 
-    const capture = { router: null as RouterApi | null };
-    const Probe = makeProbe(capture);
-    const profileSlotId = unstable_getRouteSlotId('/account/profile');
     const elements = {
       [unstable_getRouteSlotId('/start')]: <Probe />,
-      [profileSlotId]: <Probe />,
+      [profileSlotId]: <ThrowRedirect />,
       [ROUTE_ID]: ['/start', ''],
       [IS_STATIC_ID]: false,
       [`${ETAG_ID_PREFIX}${profileSlotId}`]: IMMUTABLE_ETAG,
@@ -3970,16 +4812,22 @@ describe('Router integration', () => {
     }
 
     await act(async () => {
-      await capture.router!.push('/account/profile', {
-        unstable_instant: true,
-      });
+      await capture
+        .router!.push('/account/profile', {
+          unstable_instant: true,
+        })
+        .catch(() => {});
+      await flush();
+      await flush();
+      await flush();
       await flush();
     });
 
     // the visible navigation is /start -> /account/profile?login=1, so
     // the redirect scrolls even though it only changed the query
     expect(capture.router.query).toBe('login=1');
-    expect(scrollToSpy).toHaveBeenCalled();
+    // twice: the attempted commit, then the follow
+    expect(scrollToSpy).toHaveBeenCalledTimes(2);
 
     scrollToSpy.mockRestore();
     view.unmount();
@@ -3989,31 +4837,42 @@ describe('Router integration', () => {
     const scrollToSpy = vi
       .spyOn(window, 'scrollTo')
       .mockImplementation(() => {});
-    const { view, capture, router } = await renderFollowRouter({
+    const { view, refetch, router } = await renderFollowRouter({
       responses: [
-        { reject: { status: 307, location: '/start' } },
+        { redirect: { from: '/a', location: '/start' } },
         { resolve: { [ROUTE_ID]: ['/start', ''], [IS_STATIC_ID]: false } },
       ],
     });
     await act(async () => {
-      await router.push('/a');
+      await router.push('/a').catch(() => {});
+      await flush();
+      await flush();
+      await flush();
       await flush();
     });
-    expect(capture.router!.path).toBe('/start');
-    expect(scrollToSpy).toHaveBeenCalled();
+    expect(view.container.textContent).toContain('/start|');
+    expect(refetch).toHaveBeenCalledTimes(2);
+    expect(scrollToSpy).toHaveBeenCalledTimes(2);
     scrollToSpy.mockRestore();
     view.unmount();
   });
 
   test('a navigation during a redirect follow aborts the chain', async () => {
+    const RedirectErrorObject = createCustomError('moved', {
+      status: 307,
+      location: '/slow',
+    });
+    const ThrowRedirect = () => {
+      throw RedirectErrorObject;
+    };
     let resolveSecond!: (value: Record<string, unknown>) => void;
     const refetch = vi.fn<ReturnType<typeof useRefetch>>();
     refetch
-      .mockImplementationOnce(() =>
-        Promise.reject(
-          createCustomError('moved', { status: 307, location: '/slow' }),
-        ),
-      )
+      .mockResolvedValueOnce({
+        [unstable_getRouteSlotId('/a')]: <ThrowRedirect />,
+        [ROUTE_ID]: ['/a', ''],
+        [IS_STATIC_ID]: false,
+      })
       .mockImplementationOnce(
         () =>
           new Promise((resolve) => {
@@ -4049,10 +4908,12 @@ describe('Router integration', () => {
       firstPush = capture.router!.push('/a');
       firstPush.catch(() => {});
       await flush();
+      await flush();
     });
     // the follow to /slow is in flight; a second navigation supersedes it
     await act(async () => {
-      await capture.router!.push('/other');
+      await capture.router!.push('/other').catch(() => {});
+      await flush();
       await flush();
     });
     await act(async () => {
@@ -4060,6 +4921,7 @@ describe('Router integration', () => {
         [ROUTE_ID]: ['/slow', ''],
         [IS_STATIC_ID]: false,
       });
+      await flush();
       await flush();
     });
 
@@ -4080,7 +4942,8 @@ describe('Router integration', () => {
     window.history.replaceState(null, '', '/start');
     const lengthBefore = window.history.length;
     await act(async () => {
-      await router.push('/missing');
+      await router.push('/missing').catch(() => {});
+      await flush();
       await flush();
     });
     expect(refetch).toHaveBeenCalledTimes(2);
@@ -4091,10 +4954,329 @@ describe('Router integration', () => {
     view.unmount();
   });
 
+  test('push resolves before the 404 follow it hands to the boundary', async () => {
+    const { view, refetch, capture, router } = await renderFollowRouter({
+      responses: [
+        { reject: { status: 404 } },
+        { resolve: { [ROUTE_ID]: ['/404', ''], [IS_STATIC_ID]: false } },
+      ],
+      slots: ['/404'],
+      meta: { [HAS404_ID]: true },
+    });
+    let callsWhenSettled = 0;
+    const record = () => {
+      callsWhenSettled = refetch.mock.calls.length;
+    };
+    await act(async () => {
+      await router.push('/missing').then(record, record);
+      await flush();
+      await flush();
+    });
+    // the promise covers the route it was given, not the follow that comes after
+    expect(callsWhenSettled).toBe(1);
+    expect(refetch).toHaveBeenCalledTimes(2);
+    expect(capture.router!.path).toBe('/404');
+    view.unmount();
+  });
+
+  test('a 404 follow fetches the 404 route with the attempted query', async () => {
+    const { view, refetch, capture, router } = await renderFollowRouter({
+      responses: [
+        { reject: { status: 404 } },
+        { resolve: { [ROUTE_ID]: ['/404', 'foo=bar'], [IS_STATIC_ID]: false } },
+      ],
+      slots: ['/404'],
+      meta: { [HAS404_ID]: true },
+    });
+    await act(async () => {
+      await router.push('/missing?foo=bar').catch(() => {});
+      await flush();
+      await flush();
+    });
+    expect(refetch.mock.calls[1]?.[0]).toBe(unstable_encodeRoutePath('/404'));
+    // the server renders the 404 page for the query it was asked for
+    const params = refetch.mock.calls[1]?.[1] as URLSearchParams;
+    expect(params.get('query')).toBe('foo=bar');
+    expect(capture.router!.query).toBe('foo=bar');
+    view.unmount();
+  });
+
+  test('a chained redirect that only adds a hash is still followed', async () => {
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const toNext = createCustomError('redirect', {
+      status: 307,
+      location: '/next',
+    });
+    const toHash = createCustomError('redirect', {
+      status: 307,
+      location: '/next#section',
+    });
+    const ThrowToNext = () => {
+      throw toNext;
+    };
+    const ThrowToHash = () => {
+      throw toHash;
+    };
+    const refetch = vi.fn<ReturnType<typeof useRefetch>>();
+    refetch
+      .mockResolvedValueOnce({
+        [unstable_getRouteSlotId('/next')]: <ThrowToHash />,
+        [ROUTE_ID]: ['/next', ''],
+        [IS_STATIC_ID]: false,
+      })
+      .mockResolvedValueOnce({
+        [unstable_getRouteSlotId('/next')]: <Probe />,
+        [ROUTE_ID]: ['/next', ''],
+        [IS_STATIC_ID]: false,
+      });
+    installRefetch(refetch);
+
+    const view = await renderRouter(
+      { initialRoute: { path: '/start', query: '', hash: '' } },
+      {
+        [unstable_getRouteSlotId('/start')]: <ThrowToNext />,
+        [ROUTE_ID]: ['/start', ''],
+        [IS_STATIC_ID]: false,
+      },
+    );
+    await act(async () => {
+      for (let i = 0; i < 6; i += 1) {
+        await flush();
+      }
+    });
+
+    // the second target differs from the first only by its hash
+    expect(view.container.textContent).toContain('/next|');
+    expect(window.location.hash).toBe('#section');
+
+    view.unmount();
+  });
+
+  test('a 404 route that itself 404s stops instead of hitting the hop limit', async () => {
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const refetch = vi.fn<ReturnType<typeof useRefetch>>(() =>
+      Promise.reject(createCustomError('nf', { status: 404 })),
+    );
+    installRefetch(refetch);
+
+    testHoisted.elements = {
+      [unstable_getRouteSlotId('/start')]: <Probe />,
+      [unstable_getRouteSlotId('/404')]: <Probe />,
+      [ROUTE_ID]: ['/start', ''],
+      [IS_STATIC_ID]: false,
+      [HAS404_ID]: true,
+    };
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    const view = await renderApp(
+      <ErrorBoundary>
+        <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+          <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
+        </Unstable_SearchCodecsProvider>
+      </ErrorBoundary>,
+    );
+    try {
+      await act(async () => {
+        await capture.router!.push('/missing').catch(() => {});
+        for (let i = 0; i < 8; i += 1) {
+          await flush();
+        }
+      });
+
+      // one request for /missing, one for /404, then it gives up
+      expect(refetch).toHaveBeenCalledTimes(2);
+      expect(view.container.textContent).toContain('the follow target failed');
+    } finally {
+      consoleErrorSpy.mockRestore();
+      view.unmount();
+    }
+  });
+
+  test('a retry after a failed navigation fetches again', async () => {
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const refetch = vi.fn<ReturnType<typeof useRefetch>>(async () => ({}));
+    refetch.mockRejectedValueOnce(new Error('boom'));
+    installRefetch(refetch);
+
+    // an error boundary in the root layout, the documented pattern: the
+    // router keeps rendering after a navigation fails
+    testHoisted.elements = {
+      root: (
+        <ErrorBoundary>
+          <Children />
+        </ErrorBoundary>
+      ),
+      [unstable_getRouteSlotId('/list')]: <Probe />,
+      [ROUTE_ID]: ['/list', ''],
+      [IS_STATIC_ID]: false,
+    };
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    const view = await renderApp(
+      <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+        <Router initialRoute={{ path: '/list', query: '', hash: '' }} />
+      </Unstable_SearchCodecsProvider>,
+    );
+    try {
+      await act(async () => {
+        await capture.router!.push('/detail?id=5').catch(() => {});
+        await flush();
+      });
+      refetch.mockClear();
+
+      // the failed navigation must not make /list?id=5 look already loaded
+      await act(async () => {
+        await capture.router!.push('/list?id=5').catch(() => {});
+        await flush();
+      });
+
+      expect(refetch).toHaveBeenCalledTimes(1);
+    } finally {
+      consoleErrorSpy.mockRestore();
+      view.unmount();
+    }
+  });
+
+  test('a second 404 with a query lands on the 404 route again', async () => {
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const refetch = vi.fn<ReturnType<typeof useRefetch>>(((rscPath: string) =>
+      rscPath === unstable_encodeRoutePath('/404')
+        ? Promise.resolve({
+            [unstable_getRouteSlotId('/404')]: <Probe />,
+            [ROUTE_ID]: ['/404', ''],
+            [IS_STATIC_ID]: false,
+          })
+        : Promise.reject(
+            createCustomError('nf', { status: 404 }),
+          )) as unknown as ReturnType<typeof useRefetch>);
+    installRefetch(refetch);
+
+    testHoisted.elements = {
+      [unstable_getRouteSlotId('/start')]: <Probe />,
+      [unstable_getRouteSlotId('/404')]: <Probe />,
+      [ROUTE_ID]: ['/start', ''],
+      [IS_STATIC_ID]: false,
+      [HAS404_ID]: true,
+    };
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    const view = await renderApp(
+      <ErrorBoundary>
+        <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+          <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
+        </Unstable_SearchCodecsProvider>
+      </ErrorBoundary>,
+    );
+    try {
+      await act(async () => {
+        await capture.router!.push('/missing').catch(() => {});
+        for (let i = 0; i < 4; i += 1) {
+          await flush();
+        }
+      });
+      expect(view.container.textContent).toContain('/404|');
+
+      // now on /404, a second miss whose url carries a query
+      await act(async () => {
+        await capture.router!.push('/missing2?x=1').catch(() => {});
+        for (let i = 0; i < 4; i += 1) {
+          await flush();
+        }
+      });
+
+      expect(view.container.textContent).not.toContain('redirect loop');
+      expect(view.container.textContent).toContain('/404|');
+    } finally {
+      consoleErrorSpy.mockRestore();
+      view.unmount();
+    }
+  });
+
+  test('a 404 follow scrolls to the top like the navigation it replaces', async () => {
+    const scrollToSpy = vi
+      .spyOn(window, 'scrollTo')
+      .mockImplementation(() => {});
+    const { view, capture, router } = await renderFollowRouter({
+      responses: [
+        { reject: { status: 404 } },
+        { resolve: { [ROUTE_ID]: ['/404', ''], [IS_STATIC_ID]: false } },
+      ],
+      slots: ['/404'],
+      meta: { [HAS404_ID]: true },
+    });
+    scrollToSpy.mockClear();
+
+    await act(async () => {
+      await router.push('/missing').catch(() => {});
+      await flush();
+      await flush();
+    });
+
+    expect(capture.router!.path).toBe('/404');
+    // the user asked for a new path, so the 404 page starts at the top, and
+    // the failed commit on the way there does not scroll of its own
+    expect(scrollToSpy).toHaveBeenCalledTimes(1);
+
+    scrollToSpy.mockRestore();
+    view.unmount();
+  });
+
+  test('a follow into a known static route does not fetch it', async () => {
+    const refetch = vi.fn<ReturnType<typeof useRefetch>>();
+    refetch
+      .mockResolvedValueOnce({ [ROUTE_ID]: ['/a', ''], [IS_STATIC_ID]: false })
+      .mockImplementationOnce(() =>
+        Promise.reject(createCustomError('follow-error', { status: 404 })),
+      );
+    installRefetch(refetch);
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    // starting on a static /404 records it as static, so the follow below can
+    // serve it without a request
+    const view = await renderRouter(
+      { initialRoute: { path: '/404', query: '', hash: '' } },
+      {
+        [unstable_getRouteSlotId('/404')]: <Probe />,
+        [unstable_getRouteSlotId('/a')]: <Probe />,
+        [ROUTE_ID]: ['/404', ''],
+        [IS_STATIC_ID]: true,
+        [HAS404_ID]: true,
+      },
+    );
+    if (!capture.router) {
+      throw new Error('router not initialized');
+    }
+
+    await act(async () => {
+      await capture.router!.push('/a');
+      await flush();
+    });
+    await act(async () => {
+      await capture.router!.push('/missing').catch(() => {});
+      for (let i = 0; i < 4; i += 1) {
+        await flush();
+      }
+    });
+
+    // /a and the failed /missing; the follow serves the static /404
+    expect(refetch).toHaveBeenCalledTimes(2);
+    expect(capture.router.path).toBe('/404');
+    expect(window.location.pathname).toBe('/missing');
+
+    view.unmount();
+  });
+
   test('a redirect that lands on a missing route goes to the 404 route', async () => {
     const { view, refetch, capture, router } = await renderFollowRouter({
       responses: [
-        { reject: { status: 307, location: '/gone' } },
+        { redirect: { from: '/moved', location: '/gone' } },
         { reject: { status: 404 } },
         { resolve: { [ROUTE_ID]: ['/404', ''], [IS_STATIC_ID]: false } },
       ],
@@ -4102,8 +5284,10 @@ describe('Router integration', () => {
       meta: { [HAS404_ID]: true },
     });
     await act(async () => {
-      await router.push('/moved');
-      await flush();
+      await router.push('/moved').catch(() => {});
+      for (let i = 0; i < 8; i += 1) {
+        await flush();
+      }
     });
     expect(refetch).toHaveBeenCalledTimes(3);
     expect(capture.router!.path).toBe('/404');
@@ -4116,14 +5300,19 @@ describe('Router integration', () => {
       .mockImplementation(() => {});
     const { view, capture, router } = await renderFollowRouter({
       responses: [
-        { reject: { status: 307, location: '/login' } },
+        {
+          redirect: { from: '/start', fromQuery: 'page=2', location: '/login' },
+        },
         { resolve: { [ROUTE_ID]: ['/login', ''], [IS_STATIC_ID]: false } },
       ],
       slots: ['/login'],
     });
     window.history.replaceState(null, '', '/start?page=1');
     await act(async () => {
-      await router.push('/start?page=2');
+      await router.push('/start?page=2').catch(() => {});
+      await flush();
+      await flush();
+      await flush();
       await flush();
     });
     // the attempted query update does not scroll, and the redirect
@@ -4142,14 +5331,18 @@ describe('Router integration', () => {
     await act(async () => {
       await expect(router.push('/missing')).rejects.toThrow('follow-error');
       await flush();
+      await flush();
     });
     expect(refetch).toHaveBeenCalledTimes(1);
     view.unmount();
   });
 
   test('custom 404 handling without a /404 page keeps Not Found fallback', async () => {
+    const ThrowNotFoundErrorObject = createCustomError('not-found', {
+      status: 404,
+    });
     const ThrowNotFound = () => {
-      throw createCustomError('not-found', { status: 404 });
+      throw ThrowNotFoundErrorObject;
     };
 
     const elements = {
@@ -4219,8 +5412,11 @@ describe('Router integration', () => {
   test('custom 404 handling with a /404 page triggers client navigation to /404', async () => {
     const capture = { router: null as RouterApi | null };
     const Probe = makeProbe(capture);
+    const ThrowNotFoundErrorObject = createCustomError('not-found', {
+      status: 404,
+    });
     const ThrowNotFound = () => {
-      throw createCustomError('not-found', { status: 404 });
+      throw ThrowNotFoundErrorObject;
     };
 
     const elements = {
@@ -4252,8 +5448,11 @@ describe('Router integration', () => {
   test('custom 404 handling with a /404 page avoids strict-mode refetching race', async () => {
     const capture = { router: null as RouterApi | null };
     const Probe = makeProbe(capture);
+    const ThrowNotFoundErrorObject = createCustomError('not-found', {
+      status: 404,
+    });
     const ThrowNotFound = () => {
-      throw createCustomError('not-found', { status: 404 });
+      throw ThrowNotFoundErrorObject;
     };
     const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
@@ -4295,8 +5494,11 @@ describe('Router integration', () => {
   test('redirect error triggers same-origin client navigation', async () => {
     const capture = { router: null as RouterApi | null };
     const Probe = makeProbe(capture);
+    const ThrowRedirectErrorObject = createCustomError('redirect', {
+      location: '/target?ok=1',
+    });
     const ThrowRedirect = () => {
-      throw createCustomError('redirect', { location: '/target?ok=1' });
+      throw ThrowRedirectErrorObject;
     };
 
     const replaceStateSpy = vi.spyOn(window.history, 'replaceState');
@@ -4330,14 +5532,20 @@ describe('Router integration', () => {
     view.unmount();
   });
 
-  test('a render-time redirect whose target also redirects reconciles the url to the final route', async () => {
+  test('a follow whose fetch is redirected hard navigates', async () => {
     const capture = { router: null as RouterApi | null };
     const Probe = makeProbe(capture);
+    const ThrowRedirectErrorObject = createCustomError('redirect', {
+      status: 307,
+      location: '/login',
+    });
     const ThrowRedirect = () => {
-      throw createCustomError('redirect', { status: 307, location: '/login' });
+      throw ThrowRedirectErrorObject;
     };
 
-    const replaceStateSpy = vi.spyOn(window.history, 'replaceState');
+    const replaceLocationSpy = vi
+      .spyOn(window.location, 'replace')
+      .mockImplementation(() => {});
 
     getRefetchMock().mockImplementation(((rscPath: string) =>
       rscPath === unstable_encodeRoutePath('/login')
@@ -4362,16 +5570,18 @@ describe('Router integration', () => {
       },
       elements,
     );
-    // the first follow redirects again, so let both follows settle
-    await flush();
-    await flush();
-    await flush();
+    try {
+      await flush();
+      await flush();
+      await flush();
 
-    expect(capture.router?.path).toBe('/dashboard');
-    expect(window.location.pathname).toBe('/dashboard');
-    expect(replaceStateSpy).toHaveBeenCalled();
-
-    view.unmount();
+      // the follow dispatch is not a push, so the browser replaces
+      expect(replaceLocationSpy).toHaveBeenCalledTimes(1);
+      expect(replaceLocationSpy.mock.calls[0]![0]).toContain('/dashboard');
+    } finally {
+      view.unmount();
+      replaceLocationSpy.mockRestore();
+    }
   });
 
   test('a followed redirect keeps the base path in the url', async () => {
@@ -4380,11 +5590,12 @@ describe('Router integration', () => {
       window.history.replaceState({}, '', '/docs/start');
       const capture = { router: null as RouterApi | null };
       const Probe = makeProbe(capture);
+      const ThrowRedirectErrorObject = createCustomError('redirect', {
+        status: 307,
+        location: '/login', // an app path; the base path is the client's job
+      });
       const ThrowRedirect = () => {
-        throw createCustomError('redirect', {
-          status: 307,
-          location: '/docs/login',
-        });
+        throw ThrowRedirectErrorObject;
       };
 
       const elements = {
@@ -4415,8 +5626,12 @@ describe('Router integration', () => {
   test('a followed redirect whose response redirects again replaces instead of pushing', async () => {
     const capture = { router: null as RouterApi | null };
     const Probe = makeProbe(capture);
+    const ThrowRedirectErrorObject = createCustomError('redirect', {
+      status: 307,
+      location: '/login',
+    });
     const ThrowRedirect = () => {
-      throw createCustomError('redirect', { status: 307, location: '/login' });
+      throw ThrowRedirectErrorObject;
     };
 
     const pushStateSpy = vi.spyOn(window.history, 'pushState');
@@ -4459,11 +5674,12 @@ describe('Router integration', () => {
       window.history.replaceState({}, '', '/docs/start');
       const capture = { router: null as RouterApi | null };
       const Probe = makeProbe(capture);
+      const ThrowRedirectErrorObject = createCustomError('redirect', {
+        status: 307,
+        location: '/login', // an app path; the base path is the client's job
+      });
       const ThrowRedirect = () => {
-        throw createCustomError('redirect', {
-          status: 307,
-          location: '/docs/login',
-        });
+        throw ThrowRedirectErrorObject;
       };
 
       const pushStateSpy = vi.spyOn(window.history, 'pushState');
@@ -4505,8 +5721,12 @@ describe('Router integration', () => {
     const consoleErrorSpy = vi
       .spyOn(console, 'error')
       .mockImplementation(() => {});
+    const ThrowRedirectErrorObject = createCustomError('redirect', {
+      status: 307,
+      location: '/start',
+    });
     const ThrowRedirect = () => {
-      throw createCustomError('redirect', { status: 307, location: '/start' });
+      throw ThrowRedirectErrorObject;
     };
 
     testHoisted.elements = {
@@ -4534,12 +5754,250 @@ describe('Router integration', () => {
     }
   });
 
+  test('one router follows the same revived error twice', async () => {
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    // a module scoped error, or one revived from the cached elements, is the
+    // same object every time it is thrown
+    const RedirectErrorObject = createCustomError('redirect', {
+      status: 307,
+      location: '/login',
+    });
+    const ThrowRedirect = () => {
+      throw RedirectErrorObject;
+    };
+    const refetch = vi.fn<ReturnType<typeof useRefetch>>(async () => ({}));
+    installRefetch(refetch);
+
+    const view = await renderRouter(
+      { initialRoute: { path: '/start', query: '', hash: '' } },
+      {
+        [unstable_getRouteSlotId('/start')]: <ThrowRedirect />,
+        [unstable_getRouteSlotId('/login')]: <Probe />,
+        [ROUTE_ID]: ['/start', ''],
+        [IS_STATIC_ID]: false,
+      },
+    );
+    await flush();
+    await flush();
+    expect(view.container.textContent).toContain('/login');
+
+    // back to the route that throws it, with the very same error object
+    refetch.mockResolvedValueOnce({
+      [unstable_getRouteSlotId('/start')]: <ThrowRedirect />,
+      [ROUTE_ID]: ['/start', ''],
+      [IS_STATIC_ID]: false,
+    });
+    await act(async () => {
+      await capture.router!.push('/start').catch(() => {});
+      for (let i = 0; i < 4; i += 1) {
+        await flush();
+      }
+    });
+
+    // the followed route renders again instead of a blank slot
+    expect(view.container.textContent).toContain('/login');
+
+    view.unmount();
+  });
+
+  test('a protocol relative redirect is not treated as an app path', async () => {
+    vi.stubEnv('WAKU_CONFIG_BASE_PATH', '/docs/');
+    try {
+      window.history.replaceState({}, '', '/docs/start');
+      const capture = { router: null as RouterApi | null };
+      const Probe = makeProbe(capture);
+      // same origin, so the router follows it rather than leaving the app
+      const ThrowRedirectErrorObject = createCustomError('redirect', {
+        status: 307,
+        location: `//${window.location.host}/docs/login`,
+      });
+      const ThrowRedirect = () => {
+        throw ThrowRedirectErrorObject;
+      };
+
+      const view = await renderRouter(
+        { initialRoute: { path: '/start', query: '', hash: '' } },
+        {
+          [unstable_getRouteSlotId('/start')]: <ThrowRedirect />,
+          [unstable_getRouteSlotId('/login')]: <Probe />,
+          [ROUTE_ID]: ['/start', ''],
+          [IS_STATIC_ID]: false,
+        },
+      );
+      await flush();
+      await flush();
+
+      expect(capture.router?.path).toBe('/login');
+      expect(window.location.pathname).toBe('/docs/login');
+
+      view.unmount();
+    } finally {
+      vi.stubEnv('WAKU_CONFIG_BASE_PATH', '/');
+    }
+  });
+
+  test('a redirect the client cannot follow surfaces instead of blanking', async () => {
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const ThrowRedirectErrorObject = createCustomError('redirect', {
+      status: 307,
+      location: 'mailto:someone@example.com',
+    });
+    const ThrowRedirect = () => {
+      throw ThrowRedirectErrorObject;
+    };
+    testHoisted.elements = {
+      [unstable_getRouteSlotId('/start')]: <ThrowRedirect />,
+      [unstable_getRouteSlotId('/next')]: <Probe />,
+      [ROUTE_ID]: ['/start', ''],
+      [IS_STATIC_ID]: false,
+    };
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    const view = await renderApp(
+      <ErrorBoundary>
+        <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+          <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
+        </Unstable_SearchCodecsProvider>
+      </ErrorBoundary>,
+    );
+    try {
+      await flush();
+      await flush();
+
+      expect(view.container.textContent).toContain(
+        'cannot follow a redirect to mailto:someone@example.com',
+      );
+    } finally {
+      consoleErrorSpy.mockRestore();
+      view.unmount();
+    }
+  });
+
+  test('a session of followed redirects does not exhaust the budget', async () => {
+    // the follow budget bounds one navigation, so a long session of ordinary
+    // redirects must not run it down
+    const refetch = vi.fn<ReturnType<typeof useRefetch>>(((rscPath: string) => {
+      if (rscPath !== unstable_encodeRoutePath('/moved')) {
+        return Promise.resolve({});
+      }
+      const err = createCustomError('moved', {
+        status: 307,
+        location: '/next',
+      });
+      const Thrower = () => {
+        throw err;
+      };
+      return Promise.resolve({
+        [unstable_getRouteSlotId('/moved')]: <Thrower />,
+        [ROUTE_ID]: ['/moved', ''],
+        [IS_STATIC_ID]: false,
+      });
+    }) as unknown as ReturnType<typeof useRefetch>);
+    installRefetch(refetch);
+
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    testHoisted.elements = {
+      [unstable_getRouteSlotId('/start')]: <Probe />,
+      [unstable_getRouteSlotId('/next')]: <Probe />,
+      [ROUTE_ID]: ['/start', ''],
+      [IS_STATIC_ID]: false,
+    };
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    const view = await renderApp(
+      <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+        <ErrorBoundary>
+          <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
+        </ErrorBoundary>
+      </Unstable_SearchCodecsProvider>,
+    );
+    try {
+      for (let i = 0; i < 110; i += 1) {
+        await act(async () => {
+          await capture.router!.push('/moved').catch(() => {});
+          await flush();
+          await flush();
+        });
+        await act(async () => {
+          await capture.router!.push('/start').catch(() => {});
+          await flush();
+        });
+      }
+
+      expect(view.container.textContent).not.toContain('too many redirect');
+      expect(capture.router!.path).toBe('/start');
+    } finally {
+      consoleErrorSpy.mockRestore();
+      view.unmount();
+    }
+  }, 60_000);
+
+  test('a redirect that only adds a hash is followed, not a loop', async () => {
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    const ThrowRedirectErrorObject = createCustomError('redirect', {
+      status: 307,
+      location: '/start#section',
+    });
+    const ThrowRedirect = () => {
+      throw ThrowRedirectErrorObject;
+    };
+
+    getRefetchMock().mockImplementation(((rscPath: string) =>
+      Promise.resolve(
+        rscPath === unstable_encodeRoutePath('/start')
+          ? {
+              [unstable_getRouteSlotId('/start')]: <p>Start Section</p>,
+              [ROUTE_ID]: ['/start', ''],
+            }
+          : {},
+      )) as never);
+
+    testHoisted.elements = {
+      [unstable_getRouteSlotId('/start')]: <ThrowRedirect />,
+      [ROUTE_ID]: ['/start', ''],
+      [IS_STATIC_ID]: false,
+    };
+
+    try {
+      const view = await renderApp(
+        <ErrorBoundary>
+          <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+            <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
+          </Unstable_SearchCodecsProvider>
+        </ErrorBoundary>,
+      );
+      await flush();
+      await flush();
+
+      expect(view.container.textContent).not.toContain(
+        'detected a redirect loop',
+      );
+      expect(view.container.textContent).toContain('Start Section');
+      expect(window.location.hash).toBe('#section');
+
+      view.unmount();
+    } finally {
+      consoleErrorSpy.mockRestore();
+    }
+  });
+
   test('a fetched redirect back to the caught route surfaces a redirect loop error', async () => {
     const consoleErrorSpy = vi
       .spyOn(console, 'error')
       .mockImplementation(() => {});
+    const ThrowRedirectErrorObject = createCustomError('redirect', {
+      status: 307,
+      location: '/login',
+    });
     const ThrowRedirect = () => {
-      throw createCustomError('redirect', { status: 307, location: '/login' });
+      throw ThrowRedirectErrorObject;
     };
 
     getRefetchMock().mockImplementation(((rscPath: string) =>
@@ -4575,10 +6033,11 @@ describe('Router integration', () => {
   });
 
   test('redirect error with cross-origin location uses window.location.replace', async () => {
+    const ThrowRedirectErrorObject = createCustomError('redirect', {
+      location: 'https://example.com/target?ok=1',
+    });
     const ThrowRedirect = () => {
-      throw createCustomError('redirect', {
-        location: 'https://example.com/target?ok=1',
-      });
+      throw ThrowRedirectErrorObject;
     };
 
     const replaceLocationSpy = vi
@@ -4633,39 +6092,88 @@ describe('Router integration', () => {
     view.unmount();
   });
 
-  test('a cross origin redirect on push keeps the attempted history entry', async () => {
+  test('a cross origin rejected redirect hard navigates on push', async () => {
     const { view, router } = await renderFollowRouter({
       responses: [
         { reject: { status: 307, location: 'http://elsewhere.test/login' } },
       ],
       slots: [],
     });
-    const replaceLocationSpy = vi
-      .spyOn(window.location, 'replace')
+    const assignSpy = vi
+      .spyOn(window.location, 'assign')
       .mockImplementation(() => {});
     window.history.replaceState(null, '', '/dashboard');
     const lengthBefore = window.history.length;
     await act(async () => {
-      await router.push('/protected');
+      await router.push('/protected').catch(() => {});
+      await flush();
       await flush();
     });
-    // the attempted url is pushed first, so Back returns to /dashboard
-    expect(window.location.pathname).toBe('/protected');
-    expect(window.history.length).toBe(lengthBefore + 1);
-    expect(replaceLocationSpy).toHaveBeenCalledWith(
-      'http://elsewhere.test/login',
-    );
-    replaceLocationSpy.mockRestore();
+    // the browser follows and records the entry itself
+    expect(window.location.pathname).toBe('/dashboard');
+    expect(window.history.length).toBe(lengthBefore);
+    expect(assignSpy).toHaveBeenCalledWith('http://elsewhere.test/login');
+    assignSpy.mockRestore();
     view.unmount();
+  });
+
+  test('a network error stays an error instead of leaving the app', async () => {
+    const assignSpy = vi
+      .spyOn(window.location, 'assign')
+      .mockImplementation(() => {});
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const refetch = vi.fn<ReturnType<typeof useRefetch>>(async () => ({}));
+    // the shape checkStatus gives a network failure
+    refetch.mockRejectedValueOnce(
+      createCustomError('Failed to fetch', { unstable_networkError: true }),
+    );
+    installRefetch(refetch);
+
+    testHoisted.elements = {
+      [unstable_getRouteSlotId('/start')]: <Probe />,
+      [ROUTE_ID]: ['/start', ''],
+      [IS_STATIC_ID]: false,
+    };
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    const view = await renderApp(
+      <ErrorBoundary>
+        <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+          <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
+        </Unstable_SearchCodecsProvider>
+      </ErrorBoundary>,
+    );
+    try {
+      if (!capture.router) {
+        throw new Error('router not initialized');
+      }
+      await act(async () => {
+        await expect(capture.router!.push('/protected')).rejects.toThrow(
+          'Failed to fetch',
+        );
+        await flush();
+      });
+      expect(assignSpy).not.toHaveBeenCalled();
+      expect(view.container.textContent).toContain(
+        'Caught an unexpected error',
+      );
+    } finally {
+      consoleErrorSpy.mockRestore();
+      assignSpy.mockRestore();
+      view.unmount();
+    }
   });
 
   test('redirect error with a different origin leaves the app', async () => {
     const capture = { router: null as RouterApi | null };
     const Probe = makeProbe(capture);
+    const ThrowRedirectErrorObject = createCustomError('redirect', {
+      location: 'http://localhost:4321/target?ok=1',
+    });
     const ThrowRedirect = () => {
-      throw createCustomError('redirect', {
-        location: 'http://localhost:4321/target?ok=1',
-      });
+      throw ThrowRedirectErrorObject;
     };
 
     const replaceLocationSpy = vi

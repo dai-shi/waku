@@ -100,6 +100,32 @@ const getEntriesWithEtagsHeader = (
 ): Promise<Record<string, unknown>> =>
   drive(router, parseClientEtags(etagsHeader));
 
+// Same as `drive`, but for a page request: an html render must carry every
+// slot, so the etags a client sends along have to be ignored.
+const driveHtml = async (
+  router: ReturnType<typeof unstable_defineRouter>,
+  etags: Etags,
+): Promise<Record<string, unknown>> => {
+  let captured: Record<string, unknown> = {};
+  await router.handleRequest(
+    {
+      type: 'http',
+      pathname: '/foo',
+      req: new Request('http://localhost/foo'),
+      etags,
+    },
+    {
+      renderRsc: vi.fn(async (elements: Record<string, unknown>) => {
+        captured = { ...elements };
+        return makeStream();
+      }),
+      renderHtml: vi.fn(async () => new Response('ok')),
+      loadBuildMetadata: vi.fn(),
+    },
+  );
+  return captured;
+};
+
 const etagKey = (slotId: string) => `${ETAG_ID_PREFIX}${slotId}`;
 
 describe('define-router etags (per-slot omit)', () => {
@@ -129,6 +155,19 @@ describe('define-router etags (per-slot omit)', () => {
     const entries = await getEntries(router, { page: 'v1' });
     expect('page' in entries).toBe(false);
     expect(etagKey('page') in entries).toBe(false);
+  });
+
+  it('keeps a slot in html even when the client etag matches', async () => {
+    const router = buildRouter({
+      page: {
+        isStatic: false,
+        renderer: () => createElement('div', null, 'page'),
+        getEtagFromOption: async () => 'v1',
+      },
+    });
+
+    const entries = await driveHtml(router, { page: 'v1' });
+    expect('page' in entries).toBe(true);
   });
 
   it('re-sends a dynamic slot with the new etag when it changed', async () => {

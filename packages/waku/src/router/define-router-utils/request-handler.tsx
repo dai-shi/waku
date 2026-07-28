@@ -66,7 +66,8 @@ export const createRequestHandler = ({
         return cachedPath2moduleIds!;
       };
 
-      const clientEtags = input.etags ?? {};
+      // html has to carry every slot, so a client etag must not omit one
+      const clientEtags = (input.type !== 'http' && input.etags) || {};
       const withRerender = async <T,>(fn: () => Promise<T>) => {
         let entriesPromise: Promise<RouteEntries> = Promise.resolve({
           elements: {},
@@ -233,7 +234,8 @@ export const createRequestHandler = ({
           }
         }
         if (configRegistry.has404()) {
-          return renderPage('/404', '', 404);
+          // the 404 page renders for the url that was asked for, query and all
+          return renderPage('/404', query, 404);
         } else {
           return null;
         }

@@ -13,6 +13,7 @@ import {
   test,
   vi,
 } from 'vitest';
+import { getErrorInfo } from '../src/lib/utils/custom-errors.js';
 import { ETAG_ID_PREFIX, IMMUTABLE_ETAG } from '../src/lib/utils/etags.js';
 import { fetchRscStore } from '../src/minimal/client-utils/fetch-store.js';
 import {
@@ -154,6 +155,99 @@ describe('minimal/client prefetch', () => {
 
     expect(prefetchFetch).toHaveBeenCalledTimes(1); // only the prefetch request
     expect(actionFetch).toHaveBeenCalledTimes(1); // the server action request
+  });
+});
+
+describe('minimal/client transport failures', () => {
+  const redirectedResponse = (url: string) =>
+    ({
+      redirected: true,
+      url,
+      ok: true,
+      status: 200,
+      text: async () => 'the payload',
+    }) as unknown as Response;
+
+  test('a redirect within the rsc endpoint is decoded as the payload', async () => {
+    track(
+      unstable_registerFetchEnhancer(
+        () => async () =>
+          redirectedResponse(`${window.location.origin}/RSC/R/exists.txt`),
+      ),
+    );
+
+    // decoded from the response the redirect landed on
+    await expect(unstable_fetchRsc('R/redirect.txt')).resolves.toMatchObject({
+      text: 'the payload',
+    });
+  });
+
+  test('a redirect off the rsc endpoint leaves it, same origin or not', async () => {
+    const url = `${window.location.origin}/login`;
+    track(
+      unstable_registerFetchEnhancer(() => async () => redirectedResponse(url)),
+    );
+
+    const error = await unstable_fetchRsc('R/next.txt').catch(
+      (e: unknown) => e,
+    );
+
+    expect(getErrorInfo(error)).toEqual({ status: 307, location: url });
+  });
+
+  test('a redirect to another origin leaves the rsc endpoint', async () => {
+    const url = 'https://login.example/RSC/R/next.txt';
+    track(
+      unstable_registerFetchEnhancer(() => async () => redirectedResponse(url)),
+    );
+
+    const error = await unstable_fetchRsc('R/next.txt').catch(
+      (e: unknown) => e,
+    );
+
+    expect(getErrorInfo(error)).toEqual({ status: 307, location: url });
+  });
+
+  test('a network error is marked as such', async () => {
+    track(
+      unstable_registerFetchEnhancer(() => () => {
+        return Promise.reject(new TypeError('Failed to fetch'));
+      }),
+    );
+
+    const error = await unstable_fetchRsc('R/next.txt').catch(
+      (e: unknown) => e,
+    );
+
+    expect(getErrorInfo(error)).toEqual({ unstable_networkError: true });
+    expect((error as Error).message).toBe('Failed to fetch');
+  });
+
+  test('any other failure passes through untouched', async () => {
+    const unregisterAbort = unstable_registerFetchEnhancer(() => () => {
+      return Promise.reject(new DOMException('Aborted', 'AbortError'));
+    });
+    const aborted = await unstable_fetchRsc('R/next.txt').catch(
+      (e: unknown) => e,
+    );
+    unregisterAbort();
+
+    expect((aborted as Error).name).toBe('AbortError');
+    expect(getErrorInfo(aborted)).toBeNull();
+
+    // an app's own failure (a fetch enhancer, an unserializable argument)
+    // reaches the caller as it is
+    const appError = new Error('could not serialize');
+    track(
+      unstable_registerFetchEnhancer(() => () => {
+        return Promise.reject(appError);
+      }),
+    );
+    const thrown = await unstable_fetchRsc('R/other.txt').catch(
+      (e: unknown) => e,
+    );
+
+    expect(thrown).toBe(appError);
   });
 });
 
@@ -330,7 +424,7 @@ describe('minimal/client eager merge', () => {
     mocks.createFromFetch.mockReturnValueOnce(
       resolvedThenable({ dynamic: 'D2', extra: 'X' }),
     );
-    const unstable_isEager = (key: string) => key === 'cached';
+    const unstable_isEager = (key: string | symbol) => key === 'cached';
     await act(async () => {
       await refetch!('R/next.txt', undefined, {
         unstable_swr: { pin: unstable_isEager },
@@ -432,7 +526,7 @@ describe('minimal/client eager merge', () => {
         resolveB = resolve;
       }),
     );
-    const isSwr = (key: string) => key === 'eager';
+    const isSwr = (key: string | symbol) => key === 'eager';
     await act(async () => {
       void refetch!('R/next.txt', undefined, { unstable_swr: { pin: isSwr } });
     });
@@ -505,6 +599,142 @@ describe('minimal/client eager merge', () => {
     expect(finalElements.hole).toBe(holeThenable);
     expect(finalElements.eager).toBe('A1');
     await expect(finalElements.hole).resolves.toBe('H2');
+
+    act(() => root.unmount());
+  });
+
+  test('an overlay lands with the response it came with', async () => {
+    mocks.createFromFetch.mockReturnValueOnce(
+      resolvedThenable({ _value: null, page: 'A' }),
+    );
+    stubFetch();
+
+    let refetch: ReturnType<typeof useRefetch> | undefined;
+    let elementsPromise: Promise<Record<string, unknown>> | undefined;
+    const Probe = () => {
+      refetch = useRefetch();
+      elementsPromise = useElementsPromise_UNSTABLE();
+      return null;
+    };
+
+    const container = document.createElement('div');
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <Root initialRscPath="R/app.txt">
+          <Probe />
+        </Root>,
+      );
+    });
+
+    mocks.createFromFetch.mockReturnValueOnce(resolvedThenable({ page: 'B' }));
+    await act(async () => {
+      await refetch!('R/next.txt', undefined, {
+        unstable_overlay: { nav: 'from the client' },
+      });
+    });
+
+    const merged = await elementsPromise!;
+    expect(merged.page).toBe('B');
+    expect(merged.nav).toBe('from the client');
+
+    act(() => root.unmount());
+  });
+
+  test('an overlay is dropped when the response fails', async () => {
+    mocks.createFromFetch.mockReturnValueOnce(
+      resolvedThenable({ _value: null, page: 'A' }),
+    );
+    stubFetch();
+
+    let refetch: ReturnType<typeof useRefetch> | undefined;
+    let elementsPromise: Promise<Record<string, unknown>> | undefined;
+    const Probe = () => {
+      refetch = useRefetch();
+      elementsPromise = useElementsPromise_UNSTABLE();
+      return null;
+    };
+
+    const container = document.createElement('div');
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <Root initialRscPath="R/app.txt">
+          <Probe />
+        </Root>,
+      );
+    });
+
+    mocks.createFromFetch.mockRejectedValueOnce(new Error('rejected'));
+    await act(async () => {
+      await refetch!('R/next.txt', undefined, {
+        unstable_overlay: { nav: 'from the client' },
+      }).catch(() => {});
+    });
+
+    const merged = await elementsPromise!;
+    expect(merged.page).toBe('A');
+    expect('nav' in merged).toBe(false);
+
+    act(() => root.unmount());
+  });
+
+  test('an overlay key takes the response value once it lands', async () => {
+    // How the router keeps pinned meta fresh: a pinned key is never refreshed,
+    // so the keys it needs current ride in the overlay instead.
+    mocks.createFromFetch.mockReturnValueOnce(
+      resolvedThenable({
+        _value: null,
+        ROUTE: ['/start', ''],
+        IS_STATIC: false,
+      }),
+    );
+    stubFetch();
+
+    let refetch: ReturnType<typeof useRefetch> | undefined;
+    let elementsPromise: Promise<Record<string, unknown>> | undefined;
+    const Probe = () => {
+      refetch = useRefetch();
+      elementsPromise = useElementsPromise_UNSTABLE();
+      return null;
+    };
+
+    const container = document.createElement('div');
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <Root initialRscPath="R/app.txt">
+          <Probe />
+        </Root>,
+      );
+    });
+
+    let resolveB: (value: Record<string, unknown>) => void = () => {};
+    mocks.createFromFetch.mockReturnValueOnce(
+      new Promise<Record<string, unknown>>((resolve) => {
+        resolveB = resolve;
+      }),
+    );
+    let refetched: Promise<unknown> | undefined;
+    await act(async () => {
+      refetched = refetch!('R/next.txt', undefined, {
+        unstable_overlay: { ROUTE: ['/next', 'x=1'], IS_STATIC: false },
+        unstable_swr: {
+          pin: (key) => key === 'ROUTE' || key === 'IS_STATIC',
+        },
+      });
+    });
+    // the eager commit paints the overlay
+    expect((await elementsPromise!).ROUTE).toEqual(['/next', 'x=1']);
+
+    await act(async () => {
+      resolveB({ ROUTE: ['/next', ''], IS_STATIC: true });
+      await refetched;
+    });
+
+    const finalElements = await elementsPromise!;
+    expect(finalElements.ROUTE).toEqual(['/next', '']);
+    expect(finalElements.IS_STATIC).toBe(true);
 
     act(() => root.unmount());
   });

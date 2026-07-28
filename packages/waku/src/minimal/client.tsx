@@ -58,22 +58,38 @@ const BASE_RSC_PATH = `${import.meta.env?.WAKU_CONFIG_BASE_PATH ?? '/'}${
 const checkStatus = async (
   responsePromise: Promise<Response>,
 ): Promise<Response> => {
-  const response = await responsePromise;
+  let response: Response;
+  try {
+    response = await responsePromise;
+  } catch (e) {
+    if (e instanceof TypeError) {
+      // fetch reports a network error as a TypeError, so no response arrived
+      throw createCustomError(e.message, { unstable_networkError: true });
+    }
+    throw e;
+  }
+  const redirectedTo = response.redirected ? new URL(response.url) : undefined;
+  if (
+    redirectedTo &&
+    (redirectedTo.origin !== window.location.origin ||
+      !redirectedTo.pathname.startsWith(BASE_RSC_PATH))
+  ) {
+    // redirected off the rsc endpoint; the navigation layer follows it
+    throw createCustomError('redirected rsc request', {
+      status: 307,
+      location: response.url,
+    });
+  }
   if (!response.ok) {
-    const location = response.headers.get('location');
-    const err = createCustomError(
-      (await response.text()) || response.statusText,
-      {
-        status: response.status,
-        ...(location && { location }),
-      },
-    );
-    throw err;
+    throw createCustomError((await response.text()) || response.statusText, {
+      status: response.status,
+    });
   }
   return response;
 };
 
-type Elements = Record<string, unknown>;
+// only the client adds symbol keys; a decoded server payload has string keys
+type Elements = Record<string | symbol, unknown>;
 
 const collectCachedEtags = (elements: Elements): Etags => {
   const etags: Etags = {};
@@ -115,25 +131,47 @@ const mergeElementsPromise = (
   return getCached(getResult, cache2, b);
 };
 
-const slotIdOf = (key: string) =>
-  key.startsWith(ETAG_ID_PREFIX) ? key.slice(ETAG_ID_PREFIX.length) : key;
+// a replayed updater has to return the same promise, or the tree never
+// settles on the refreshed record (hot-reload.dev.spec.ts)
+const refreshCache = new WeakMap();
+const refreshElementsPromise = (
+  a: Promise<Elements>,
+  b: Promise<Elements>,
+): Promise<Elements> => {
+  const getResult = () =>
+    Promise.all([a, b]).then(([aRes, bRes]) => {
+      const nextElements = { ...bRes };
+      delete nextElements._value;
+      for (const key of Object.getOwnPropertySymbols(aRes)) {
+        nextElements[key] = aRes[key];
+      }
+      return nextElements;
+    });
+  const cache2 = getCached(() => new WeakMap(), refreshCache, a);
+  return getCached(getResult, cache2, b);
+};
+
+const slotIdOf = <K extends string | symbol>(key: K): K =>
+  typeof key === 'string' && key.startsWith(ETAG_ID_PREFIX)
+    ? (key.slice(ETAG_ID_PREFIX.length) as K)
+    : key;
 
 const swrCache = new WeakMap();
 const swrElementsPromise = (
   a: Promise<Elements>,
   b: Promise<Elements>,
-  pin: (key: string) => boolean,
+  pin: (key: string | symbol) => boolean,
   base?: Elements,
   overlay?: Elements,
 ): Promise<Elements> => {
   const getResult = () => {
     const result: Promise<Elements> = Promise.resolve(a).then((aRes) => {
-      const holeFor = (key: string) =>
+      const holeFor = (key: string | symbol) =>
         b.then((bRes) =>
           key in bRes ? bRes[key] : base && key in base ? base[key] : aRes[key],
         );
       const nextElements: Elements = {};
-      for (const key of Object.keys(aRes)) {
+      for (const key of Reflect.ownKeys(aRes)) {
         if (key === '_value') {
           continue;
         }
@@ -178,6 +216,7 @@ const swrNewKeysElementsPromise = (
   if (swrMergeSources.get(prev) !== b) {
     return prev;
   }
+  // Object.keys, so a client only symbol key keeps the value it was given
   const overlayKeys = overlay
     ? Object.keys(overlay).filter((key) => key in bRes)
     : [];
@@ -220,10 +259,10 @@ type Refetch = (
   rscParams?: unknown,
   options?: FetchRscOptions & {
     unstable_prefetched?: Elements | Promise<Elements>;
+    unstable_overlay?: Elements;
     unstable_swr?: {
-      pin: (key: string) => boolean;
+      pin: (key: string | symbol) => boolean;
       base?: Elements;
-      overlay?: Elements;
     };
   },
 ) => Promise<Elements>;
@@ -451,15 +490,6 @@ export const unstable_upsertRscReloadListener = (
   }
 };
 
-const registerHmrRefetch = (refetch: () => void) => {
-  const reload = () => {
-    fetchRscStore[CACHED_ETAGS] = {};
-    refetch();
-  };
-  unstable_upsertRscReloadListener(globalThis.__WAKU_REFETCH_RSC__, reload);
-  globalThis.__WAKU_REFETCH_RSC__ = reload;
-};
-
 /** Fetch elements for an RSC path, reusing a cached or prefetched result. */
 export const unstable_fetchRsc = (
   rscPath: string,
@@ -467,11 +497,18 @@ export const unstable_fetchRsc = (
   options?: FetchRscOptions,
 ): Promise<Elements> => {
   if (import.meta.hot) {
-    registerHmrRefetch(() => {
+    const refetchRscOnHmr = () => {
+      fetchRscStore[CACHED_ETAGS] = {};
       delete fetchRscStore[ENTRY];
       const data = unstable_fetchRsc(rscPath, rscParams, options);
-      getSetElements()(() => data);
-    });
+      const setElements = getSetElements();
+      setElements((prev) => refreshElementsPromise(prev, data));
+    };
+    unstable_upsertRscReloadListener(
+      globalThis.__WAKU_REFETCH_RSC__,
+      refetchRscOnHmr,
+    );
+    globalThis.__WAKU_REFETCH_RSC__ = refetchRscOnHmr;
   }
   const entry = fetchRscStore[ENTRY];
   if (entry && entry[0] === rscPath && entry[1] === rscParams) {
@@ -552,8 +589,11 @@ export const Root = ({
     elements.then(updateCachedEtags, () => {});
   }, [elements]);
   const refetch = useCallback<Refetch>(async (rscPath, rscParams, options) => {
-    const { unstable_prefetched: prefetched, unstable_swr: swr } =
-      options ?? {};
+    const {
+      unstable_prefetched: prefetched,
+      unstable_overlay: overlay,
+      unstable_swr: swr,
+    } = options ?? {};
     delete fetchRscStore[ENTRY];
     let data: Promise<Elements>;
     if (prefetched) {
@@ -571,27 +611,20 @@ export const Root = ({
     const dataWithoutErrors = Promise.resolve(data).catch(() => ({}));
     if (swr) {
       setElements((prev) =>
-        swrElementsPromise(
-          prev,
-          dataWithoutErrors,
-          swr.pin,
-          swr.base,
-          swr.overlay,
-        ),
+        swrElementsPromise(prev, dataWithoutErrors, swr.pin, swr.base, overlay),
       );
       return Promise.resolve(data).then((resolved) => {
         setElements((prev) =>
-          swrNewKeysElementsPromise(
-            prev,
-            dataWithoutErrors,
-            resolved,
-            swr.overlay,
-          ),
+          swrNewKeysElementsPromise(prev, dataWithoutErrors, resolved, overlay),
         );
         return resolved;
       });
     }
-    setElements((prev) => mergeElementsPromise(prev, dataWithoutErrors));
+    // the overlay lands only when the fetch succeeds
+    const dataToMerge = overlay
+      ? mergeElementsPromise(data, overlay).catch(() => ({}))
+      : dataWithoutErrors;
+    setElements((prev) => mergeElementsPromise(prev, dataToMerge));
     return data;
   }, []);
   const mergeElements = useCallback<MergeElements>((partial) => {

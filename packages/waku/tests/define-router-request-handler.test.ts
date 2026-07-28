@@ -163,6 +163,27 @@ describe('request dispatch', () => {
     expect(apiContext).toEqual({ params: { slug: 'hello' } });
   });
 
+  it('renders the 404 route with the query that was asked for', async () => {
+    const { handleRequest } = unstable_defineRouter({
+      getConfigs: async () => [dynamicRoute('/404')],
+    });
+    const utils = makeUtils();
+    await handleRequest(
+      {
+        type: 'http',
+        pathname: '/nowhere',
+        req: new Request('http://localhost/nowhere?foo=bar'),
+      },
+      utils,
+    );
+    // a client side 404 keeps the attempted query, so a direct load must too
+    const elements = utils.renderRsc.mock.calls[0]?.[0] as Record<
+      string,
+      unknown
+    >;
+    expect(elements?.ROUTE).toEqual(['/404', 'foo=bar']);
+  });
+
   it('renders the 404 route for an unknown http page', async () => {
     const { handleRequest } = unstable_defineRouter({
       getConfigs: async () => [dynamicRoute('/404')],
