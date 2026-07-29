@@ -176,7 +176,7 @@ type ChangeRouteOptions = {
   history: 'push' | 'replace' | null;
   url?: URL | undefined;
   instant?: boolean | undefined;
-  follow?: boolean | undefined;
+  follow?: 'continues' | 'announces' | undefined;
 };
 
 type ChangeRoute = (
@@ -184,7 +184,7 @@ type ChangeRoute = (
   options: ChangeRouteOptions,
 ) => Promise<void>;
 
-type ChangeRouteEvent = 'start' | 'complete';
+type ChangeRouteEvent = 'start' | 'complete' | 'error';
 
 type ChangeRouteCallback = (route: RouteProps) => void;
 
@@ -202,14 +202,41 @@ const createRouteChangeListeners = (): [
   const listeners: Record<ChangeRouteEvent, Set<ChangeRouteCallback>> = {
     start: new Set(),
     complete: new Set(),
+    error: new Set(),
   };
+  const queued: [ChangeRouteEvent, RouteProps][] = [];
+  let dispatching = false;
   const emit = (event: ChangeRouteEvent, route: RouteProps) => {
-    const eventListenersSet = listeners[event];
-    if (!eventListenersSet.size) {
+    queued.push([event, route]);
+    if (dispatching) {
       return;
     }
-    for (const listener of eventListenersSet) {
-      listener(route);
+    dispatching = true;
+    try {
+      let next = queued.shift();
+      while (next) {
+        const [queuedEvent, queuedRoute] = next;
+        const eventListenersSet = listeners[queuedEvent];
+        const report = (e: unknown) => {
+          console.error(
+            `Error in a route change '${queuedEvent}' listener:`,
+            e,
+          );
+        };
+        for (const listener of [...eventListenersSet]) {
+          if (!eventListenersSet.has(listener)) {
+            continue;
+          }
+          try {
+            Promise.resolve(listener(queuedRoute)).catch(report);
+          } catch (e) {
+            report(e);
+          }
+        }
+        next = queued.shift();
+      }
+    } finally {
+      dispatching = false;
     }
   };
   return [
@@ -877,7 +904,7 @@ const FollowError = ({
             : target.path !== caught.path,
           history: 'replace',
           url,
-          follow: true,
+          follow: 'announces',
           refetch: true,
         }).then(
           () => {
@@ -1192,15 +1219,27 @@ const InnerRouter = ({
   const fetchingSlices = useRef(new Set<SliceId>()).current;
   const followBudget = useRef<FollowBudget>({ spent: 0 }).current;
   const abortRef = useRef<AbortController | null>(null);
+  const announcedRef = useRef<RouteProps | null>(null);
 
   const changeRoute: ChangeRoute = useCallback(
     async function changeRoute(nextRoute, options) {
+      const superseded = abortRef.current ? announcedRef.current : null;
       abortRef.current?.abort();
       const abortController = new AbortController();
       abortRef.current = abortController;
       const isAborted = () => abortController.signal.aborted;
-      emitRouteChangeEvent('start', nextRoute);
-      // a start listener can navigate synchronously, which aborts this one
+      if (superseded) {
+        announcedRef.current = null;
+        emitRouteChangeEvent('error', superseded);
+      }
+      // a listener can navigate synchronously, which aborts this one
+      if (isAborted()) {
+        return;
+      }
+      if (options.follow !== 'continues') {
+        announcedRef.current = nextRoute;
+        emitRouteChangeEvent('start', nextRoute);
+      }
       if (isAborted()) {
         return;
       }
@@ -1313,7 +1352,7 @@ const InnerRouter = ({
             shouldScroll: options.shouldScroll,
             history: null,
             url: errorRoute.url,
-            follow: true,
+            follow: 'continues',
             refetch: true,
           });
         }
@@ -1329,6 +1368,7 @@ const InnerRouter = ({
           },
         });
         setErr(failure);
+        emitRouteChangeEvent('error', nextRoute);
         throw failure;
       }
     },

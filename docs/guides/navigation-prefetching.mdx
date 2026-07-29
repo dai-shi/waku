@@ -175,7 +175,7 @@ The `<Suspense>` boundary decides how localized the loading state is. Wrapping t
 
 Because an instant navigation commits before the server responds, it reconciles afterward: a server redirect updates the URL to the redirect target, while a not-found (404) response keeps the attempted URL, so the 404 page shows at the address the user tried.
 
-Instant navigation commits urgently rather than inside a React transition, since a transition would suppress the immediate skeleton. A custom `unstable_startTransition` therefore does not run for instant links, and `useNavigationStatus_UNSTABLE()` does not report `pending` for them; drive pending UI from route-change events instead.
+Instant navigation commits urgently rather than inside a React transition, since a transition would suppress the immediate skeleton. A custom `unstable_startTransition` therefore does not run for instant links, and `useNavigationStatus_UNSTABLE()` does not report `pending` for them. An instant navigation paints its cached shell immediately, so the shell itself is the pending state.
 
 ## Pending UI
 
@@ -208,7 +208,48 @@ export const NavLink = () => (
 );
 ```
 
-`useNavigationStatus_UNSTABLE()` must be called from a Client Component rendered inside the `<Link>`, which means the indicator lives inside the `<a>`. Keep it non-interactive and `aria-hidden` (as above), since it becomes part of the link's accessible name and click target; to render pending UI outside the anchor, drive it from route-change events instead. Called outside any `<Link>`, the hook returns an empty object (not `{ pending: false }`).
+`useNavigationStatus_UNSTABLE()` must be called from a Client Component rendered inside the `<Link>`, which means the indicator lives inside the `<a>`. Keep it non-interactive and `aria-hidden` (as above), since it becomes part of the link's accessible name and click target; there is no supported way yet to render it outside the anchor, because a navigation runs in a transition that deliberately keeps the current page on screen until the destination is ready. Called outside any `<Link>`, the hook returns an empty object (not `{ pending: false }`).
+
+## Route Change Events
+
+Subscribe to route change events to observe navigations, for example to log them or to report them to analytics:
+
+```tsx
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'waku';
+import type { Unstable_RouteProps } from 'waku/router/client';
+
+export const NavigationLogger = () => {
+  const { unstable_events } = useRouter();
+  useEffect(() => {
+    const started = (route: Unstable_RouteProps) =>
+      console.log('navigating to', route.path);
+    const landed = (route: Unstable_RouteProps) =>
+      console.log('landed on', route.path);
+    const gaveUp = (route: Unstable_RouteProps) =>
+      console.log('gave up on', route.path);
+    unstable_events.on('start', started);
+    unstable_events.on('complete', landed);
+    unstable_events.on('error', gaveUp);
+    return () => {
+      unstable_events.off('start', started);
+      unstable_events.off('complete', landed);
+      unstable_events.off('error', gaveUp);
+    };
+  }, [unstable_events]);
+  return null;
+};
+```
+
+Unless the browser takes over the page, every `start` is followed by exactly one `complete` or `error`, and they never interleave: when a second navigation supersedes one that is still running, the first one's `error` arrives before the second one's `start`.
+
+`complete` carries the route the response landed on, which is not always the one you asked for, because the server can redirect or send the 404 page. It fires when the response has been handled, not when React has finished rendering it. `error` means the navigation failed or was superseded. A superseded one reports the route it announced; a failed one reports the route it was fetching, which is the 404 page when the follow to it failed. A listener that throws is reported to the console and does not affect the navigation or the other listeners. A listener that navigates gets a navigation right away, and its events queue behind the one being delivered, so every listener sees the same order whenever it subscribed.
+
+A redirect carried by the response is the case where the browser takes over: it emits no closing event, because a full page load is already under way.
+
+For a spinner, prefer `useNavigationStatus_UNSTABLE()` above. A `start` listener runs inside the navigation's transition, so state you set there is batched with the navigation itself and may not paint on its own.
 
 ## Custom Transitions
 
