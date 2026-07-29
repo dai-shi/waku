@@ -165,7 +165,9 @@ export const PostButton = () => {
 
 Both return a promise that resolves once the navigation you asked for has been handled: after the response when the route needs one, right away when it does not, such as a static route already loaded once or the route you are already on, and also when a newer navigation supersedes it.
 
-It does not wait for a redirect or a 404 page that the response leads to, and it does not wait for React to finish rendering the destination, so the address bar may still show the previous URL when it resolves.
+It waits for the 404 page when the response itself came back 404. It does not wait for anything your page throws while rendering, such as a late `unstable_notFound()` or `unstable_redirect()`, which are followed after the promise has already resolved. A redirect carried by the response leaves the app with a full page load.
+
+The promise rejects when the navigation fails, so catch it if you await it. It also does not wait for React to finish rendering the destination, so the address bar may still show the previous URL when it resolves.
 
 When the shell is cached, the layout and the `Loading...` fallback appear with no round trip, and the post's content streams into the fallback once the server responds. When the shell is **not** cached, the navigation falls back to normal behavior: the current page stays put until the response arrives, so there is no blank flash.
 

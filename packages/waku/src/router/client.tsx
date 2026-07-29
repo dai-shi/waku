@@ -44,6 +44,7 @@ import {
   has404FromElements,
   isStaticFromElements,
 } from './client-utils/elements-meta.js';
+import { resolveErrorRoute } from './client-utils/error-route.js';
 import {
   type PrefetchOptions,
   createPrefetchManager,
@@ -84,7 +85,6 @@ import {
   encodeSliceId,
   getRouteSlotId,
   getSliceSlotId,
-  pathnameToRoutePath,
 } from './isomorphic-utils/route-path.js';
 import type { RouteProps } from './isomorphic-utils/route-path.js';
 import {
@@ -111,9 +111,11 @@ type NavigateOptions = {
 /**
  * Resolves once the requested navigation has been handled: after its response
  * when the route needs one, right away when it does not, and when a newer
- * navigation supersedes it. It does not wait for a redirect or 404 follow that
- * starts afterwards, nor for React to render the destination, so the address
- * bar may still show the previous url.
+ * navigation supersedes it. A response that came back 404 is covered, because
+ * the 404 page is fetched first; anything the destination throws while
+ * rendering is followed after it resolves. It rejects when the navigation
+ * fails, and it does not wait for React to render, so the address bar may still
+ * show the previous url.
  */
 type Navigate = {
   (to: RouteHref, options?: NavigateOptions): Promise<void>;
@@ -174,14 +176,13 @@ type ChangeRouteOptions = {
   history: 'push' | 'replace' | null;
   url?: URL | undefined;
   instant?: boolean | undefined;
-  follow?: boolean | undefined; // dispatched by the error boundary, not a user
+  follow?: boolean | undefined;
 };
 
-/** Resolves with a followable error instead of rejecting: a follow is a handoff. */
 type ChangeRoute = (
   route: RouteProps,
   options: ChangeRouteOptions,
-) => Promise<unknown>;
+) => Promise<void>;
 
 type ChangeRouteEvent = 'start' | 'complete';
 
@@ -260,7 +261,7 @@ const dispatchChangeRoute = (
 ): Promise<void> => {
   if (options.instant) {
     // instant paints from the cache; a transition would hold that back
-    return changeRoute(route, options).then(() => undefined);
+    return changeRoute(route, options);
   }
   // a transition keeps the tree up while the eager merge suspends
   return new Promise<void>((resolve, reject) => {
@@ -778,101 +779,81 @@ const FollowError = ({
   followPromiseMap: WeakMap<object, Promise<unknown>>;
 }) => {
   const { route, routerState, changeRoute } = useRouterOrThrow();
-  const { path: routePath, query: routeQuery } = route;
-  const caughtAtRef = useRef<readonly [string, string] | undefined>(undefined);
-  if (caughtAtRef.current === undefined) {
-    caughtAtRef.current = [routePath, routeQuery];
-  }
-  const dispatchedRef = useRef<readonly [string, string] | undefined>(
+  const { path: routePath, query: routeQuery, hash: routeHash } = route;
+  const caughtAtRef = useRef<readonly [string, string, string] | undefined>(
     undefined,
   );
-  const failedTargetRef = useRef<RouteProps | undefined>(undefined);
+  if (caughtAtRef.current === undefined) {
+    caughtAtRef.current = [routePath, routeQuery, routeHash];
+  }
+  const dispatchedRef = useRef<{ route: RouteProps; url: string } | undefined>(
+    undefined,
+  );
+  const stateAtDispatchRef = useRef<RouterState | undefined>(undefined);
   const routerStateRef = useRef(routerState);
   useEffect(() => {
     routerStateRef.current = routerState;
   }, [routerState]);
   useEffect(() => {
-    const [caughtPath, caughtQuery] = caughtAtRef.current!;
+    const [caughtPath, caughtQuery, caughtHash] = caughtAtRef.current!;
     // a route change means the followed slot is committed; safe to reset
-    if (routePath !== caughtPath || routeQuery !== caughtQuery) {
+    if (
+      routePath !== caughtPath ||
+      routeQuery !== caughtQuery ||
+      routeHash !== caughtHash
+    ) {
       reset();
       return;
     }
     const dispatched = dispatchedRef.current;
     if (
       dispatched &&
-      !routerState?.failed && // a failed follow committed no route
-      routerState?.attempted[0] === dispatched[0] &&
-      routerState?.attempted[1] === dispatched[1]
+      routerState &&
+      routerState !== stateAtDispatchRef.current &&
+      !routerState.failed
     ) {
-      if (dispatched[0] === routePath) {
+      const landed =
+        routerState.attempted[0] === dispatched.route.path &&
+        routerState.attempted[1] === dispatched.route.query;
+      const arrived = landed
+        ? dispatched.route.path === routePath
+        : routerState.url === dispatched.url;
+      if (arrived) {
         reset();
       } else {
-        fail(error, new Error('detected a redirect loop', { cause: error }));
+        fail(error, new Error('detected a navigation loop', { cause: error }));
       }
     }
-  }, [routePath, routeQuery, routerState, reset, fail, error]);
+  }, [routePath, routeQuery, routeHash, routerState, reset, fail, error]);
   useEffect(() => {
-    const info = getErrorInfo(error);
     // the attempted url may not have reached the address bar yet
     const attemptedUrl = routerStateRef.current
       ? new URL(routerStateRef.current.url, window.location.href)
       : new URL(window.location.href);
-    let target: RouteProps;
-    let url: URL;
-    if (info?.location) {
-      const parsed = parseRedirectUrl(info.location, attemptedUrl);
-      if (!parsed) {
-        fail(
-          error,
-          new Error(`cannot follow a redirect to ${info.location}`, {
-            cause: error,
-          }),
-        );
-        return;
-      }
-      if (parsed.origin !== window.location.origin) {
-        window.location.replace(parsed.href);
-        return;
-      }
-      // a protocol-relative location is another origin's, never an app path
-      if (info.location.startsWith('/') && !info.location.startsWith('//')) {
-        // an app location has no base path; the browser url gets it back
-        target = {
-          path: pathnameToRoutePath(parsed.pathname),
-          query: parsed.searchParams.toString(),
-          hash: parsed.hash,
-        };
-        url = getRouteUrl(target);
-      } else {
-        target = parseRoute(parsed);
-        url = parsed;
-      }
-    } else if (info?.status === 404 && has404) {
-      // the same query a direct request would render the 404 page with
-      target = {
-        path: '/404',
-        query: attemptedUrl.searchParams.toString(),
-        hash: '',
-      };
-      // the 404 route renders while the url keeps the attempted location
-      url = attemptedUrl;
-    } else {
+    const errorRoute = resolveErrorRoute(error, attemptedUrl, has404);
+    if (errorRoute.type === 'none') {
       return;
     }
+    if (errorRoute.type === 'unfollowable') {
+      fail(
+        error,
+        new Error(`cannot follow a redirect to ${errorRoute.location}`, {
+          cause: error,
+        }),
+      );
+      return;
+    }
+    if (errorRoute.type === 'leave') {
+      window.location.replace(errorRoute.url.href);
+      return;
+    }
+    const { target, url } = errorRoute;
     if (followPromiseMap.has(error as object)) {
       return;
     }
     const caught = parseRoute(attemptedUrl);
     if (isSameRoute(target, caught)) {
-      fail(error, new Error('detected a redirect loop', { cause: error }));
-      return;
-    }
-    if (
-      failedTargetRef.current &&
-      isSameRoute(target, failedTargetRef.current)
-    ) {
-      fail(error, new Error('the follow target failed too', { cause: error }));
+      fail(error, new Error('detected a navigation loop', { cause: error }));
       return;
     }
     if (!countHop()) {
@@ -882,7 +863,11 @@ const FollowError = ({
       );
       return;
     }
-    dispatchedRef.current = [target.path, target.query];
+    dispatchedRef.current = {
+      route: target,
+      url: url.pathname + url.search + url.hash,
+    };
+    stateAtDispatchRef.current = routerStateRef.current;
     startTransition(() => {
       followPromiseMap.set(
         error as object,
@@ -895,17 +880,12 @@ const FollowError = ({
           follow: true,
           refetch: true,
         }).then(
-          (followable) => {
+          () => {
             // a module scoped error is thrown again, so let it follow again
             followPromiseMap.delete(error as object);
-            if (followable !== undefined) {
-              failedTargetRef.current = target;
-              fail(error, followable);
-            }
           },
           (err) => {
             followPromiseMap.delete(error as object);
-            failedTargetRef.current = target;
             fail(error, err);
           },
         ),
@@ -1214,7 +1194,7 @@ const InnerRouter = ({
   const abortRef = useRef<AbortController | null>(null);
 
   const changeRoute: ChangeRoute = useCallback(
-    async (nextRoute, options) => {
+    async function changeRoute(nextRoute, options) {
       abortRef.current?.abort();
       const abortController = new AbortController();
       abortRef.current = abortController;
@@ -1324,6 +1304,23 @@ const InnerRouter = ({
             window.history.replaceState(window.history.state, '', targetUrl);
           }
         }
+        const errorRoute = resolveErrorRoute(e, targetUrl, has404);
+        if (
+          errorRoute.type === 'route' &&
+          !isSameRscRoute(errorRoute.target, nextRoute)
+        ) {
+          return dispatchChangeRoute(changeRoute, errorRoute.target, {
+            shouldScroll: options.shouldScroll,
+            history: null,
+            url: errorRoute.url,
+            follow: true,
+            refetch: true,
+          });
+        }
+        const failure =
+          errorRoute.type === 'route'
+            ? new Error('detected a navigation loop', { cause: e })
+            : e;
         mergeElements({
           [ROUTER_STATE_ID]: {
             ...routerState,
@@ -1331,12 +1328,8 @@ const InnerRouter = ({
             failed: true,
           },
         });
-        setErr(e);
-        if (info?.status === 404 && has404) {
-          // a followable outcome; the boundary takes it from here
-          return e;
-        }
-        throw e;
+        setErr(failure);
+        throw failure;
       }
     },
     [
