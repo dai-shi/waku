@@ -83,6 +83,8 @@ export default function NewPostPage() {
 }
 ```
 
+Waku renders the destination into the same response, so the client does not make a second request. That only works for a target it can render: a path on this site, without a hash. Anything else, including a target that is not a route at all or one that renders not found, is handed to the browser as a 303, which costs a full page load. The 303 is what keeps the form submission from being sent again to the destination.
+
 ## Render Not Found for Missing Data
 
 Use `unstable_notFound` when a route matches but the backing data does not exist:
@@ -127,6 +129,8 @@ export const getConfig = async () => {
 ```
 
 If a `/404` page exists, Waku uses it for unmatched routes and `notFound()` results. If it does not exist, Waku falls back to a minimal not-found response.
+
+A client-side navigation to a missing route is answered the same way: the server sends the 404 page in the response, so the client does not need a second request. That response carries status 200, because it carries a page rather than an error. A direct page load of the same URL is still a 404. Where no Waku server answers, such as a static export, the request 404s and the client fetches the 404 page itself.
 
 ## Status and Streaming Notes
 

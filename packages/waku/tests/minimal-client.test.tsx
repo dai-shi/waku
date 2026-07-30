@@ -192,7 +192,11 @@ describe('minimal/client transport failures', () => {
       (e: unknown) => e,
     );
 
-    expect(getErrorInfo(error)).toEqual({ status: 307, location: url });
+    expect(getErrorInfo(error)).toEqual({
+      status: 307,
+      location: url,
+      unstable_redirected: true,
+    });
   });
 
   test('a redirect to another origin leaves the rsc endpoint', async () => {
@@ -205,7 +209,11 @@ describe('minimal/client transport failures', () => {
       (e: unknown) => e,
     );
 
-    expect(getErrorInfo(error)).toEqual({ status: 307, location: url });
+    expect(getErrorInfo(error)).toEqual({
+      status: 307,
+      location: url,
+      unstable_redirected: true,
+    });
   });
 
   test('a network error is marked as such', async () => {

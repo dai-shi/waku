@@ -74,10 +74,10 @@ const checkStatus = async (
     (redirectedTo.origin !== window.location.origin ||
       !redirectedTo.pathname.startsWith(BASE_RSC_PATH))
   ) {
-    // redirected off the rsc endpoint; the navigation layer follows it
     throw createCustomError('redirected rsc request', {
       status: 307,
       location: response.url,
+      unstable_redirected: true,
     });
   }
   if (!response.ok) {

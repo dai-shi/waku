@@ -165,9 +165,11 @@ export const PostButton = () => {
 
 Both return a promise that resolves once the navigation you asked for has been handled: after the response when the route needs one, right away when it does not, such as a static route already loaded once or the route you are already on, and also when a newer navigation supersedes it.
 
-It waits for the 404 page when the response itself came back 404. It does not wait for anything your page throws while rendering, such as a late `unstable_notFound()` or `unstable_redirect()`, which are followed after the promise has already resolved. A redirect carried by the response leaves the app with a full page load.
+It does not wait for a follow. Anything your page throws while rendering, such as a late `unstable_notFound()` or `unstable_redirect()`, is followed by a navigation of its own that starts after this promise has settled.
 
-The promise rejects when the navigation fails, so catch it if you await it. It also does not wait for React to finish rendering the destination, so the address bar may still show the previous URL when it resolves.
+A missing route depends on who answers the request. A Waku server sends the 404 page as the response, so the promise resolves and the route you land on is `/404`. Where no Waku server answers, such as a static export or a CDN serving its own 404, the request fails and the client fetches the 404 page itself: there the promise **rejects** and the 404 page arrives from a second navigation.
+
+The promise also rejects when the navigation fails outright, and when a redirect carried by the response hands the page to the browser. Catch it if you call these programmatically, or an auth redirect at the fetch layer will surface as an unhandled rejection. It does not wait for React to finish rendering the destination, so the address bar may still show the previous URL when it resolves.
 
 When the shell is cached, the layout and the `Loading...` fallback appear with no round trip, and the post's content streams into the fallback once the server responds. When the shell is **not** cached, the navigation falls back to normal behavior: the current page stays put until the response arrives, so there is no blank flash.
 
@@ -243,11 +245,15 @@ export const NavigationLogger = () => {
 };
 ```
 
-Unless the browser takes over the page, every `start` is followed by exactly one `complete` or `error`, and they never interleave: when a second navigation supersedes one that is still running, the first one's `error` arrives before the second one's `start`.
+Every `start` is followed by exactly one `complete` or `error`, and they never interleave: when a second navigation supersedes one that is still running, the first one's `error` arrives before the second one's `start`.
 
-`complete` carries the route the response landed on, which is not always the one you asked for, because the server can redirect or send the 404 page. It fires when the response has been handled, not when React has finished rendering it. `error` means the navigation failed or was superseded. A superseded one reports the route it announced; a failed one reports the route it was fetching, which is the 404 page when the follow to it failed. A listener that throws is reported to the console and does not affect the navigation or the other listeners. A listener that navigates gets a navigation right away, and its events queue behind the one being delivered, so every listener sees the same order whenever it subscribed.
+`complete` carries the route the response landed on, which is not always the one you asked for, because the server can answer with the destination of a redirect or with the 404 page. It fires when the response has been handled, not when React has finished rendering it. `error` means the navigation failed or was superseded, and reports the route it announced.
 
-A redirect carried by the response is the case where the browser takes over: it emits no closing event, because a full page load is already under way.
+A follow is a navigation of its own, so it opens its own `start`. A late `unstable_redirect()` reports `complete` for the page that threw it and then a second pair for the destination. A navigation that fails first, such as a 404 with no Waku server to answer it, reports `error` and then the follow's own pair.
+
+A listener that throws is reported to the console and does not affect the navigation or the other listeners. A listener that navigates gets a navigation right away, and its events queue behind the one being delivered, so every listener sees the same order whenever it subscribed.
+
+A redirect carried by the response hands the page to the browser. It still reports `error` for the navigation it was asked to make, and the full page load follows.
 
 For a spinner, prefer `useNavigationStatus_UNSTABLE()` above. A `start` listener runs inside the navigation's transition, so state you set there is batched with the navigation itself and may not paint on its own.
 

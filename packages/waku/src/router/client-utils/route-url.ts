@@ -32,7 +32,9 @@ export const isSameRoute = (next: RouteProps, prev: RouteProps) =>
   next.query === prev.query &&
   next.hash === prev.hash;
 
-export const isSameRscRoute = (next: RouteProps, prev: RouteProps) =>
+type RscRoute = Pick<RouteProps, 'path' | 'query'>;
+
+export const isSameRscRoute = (next: RscRoute, prev: RscRoute) =>
   next.path === prev.path && next.query === prev.query;
 
 export const parseRedirectUrl = (location: string, base: string | URL) => {

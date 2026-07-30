@@ -24,6 +24,20 @@ import type { RouteEntries, createRouteEntries } from './route-entries.js';
 type HandleRequest = Parameters<typeof defineHandlers>[0]['handleRequest'];
 type HandlerInput = Parameters<HandleRequest>[0];
 
+const resolveInternalRoute = (location: string, base: string) => {
+  if (!location.startsWith('/') || location.includes('#')) {
+    return undefined;
+  }
+  const url = new URL(location, base);
+  if (url.origin !== new URL(base).origin) {
+    return undefined;
+  }
+  return {
+    path: pathnameToRoutePath(url.pathname),
+    query: url.searchParams.toString(),
+  };
+};
+
 export const createRequestHandler = ({
   configRegistry,
   routeEntries,
@@ -121,12 +135,34 @@ export const createRequestHandler = ({
           }
           return renderRsc(entries.elements, { etags: entries.etags });
         }
-        const entries = await routeEntries.getEntriesForRoute(
-          rscPath,
-          rscParams,
-          clientEtags,
-          requestElementCache,
-        );
+        let entries: RouteEntries | null = null;
+        try {
+          entries = await routeEntries.getEntriesForRoute(
+            rscPath,
+            rscParams,
+            clientEtags,
+            requestElementCache,
+          );
+        } catch (e) {
+          if (getErrorInfo(e)?.status !== 404) {
+            throw e;
+          }
+        }
+        if (!entries && configRegistry.has404()) {
+          entries = await routeEntries
+            .getEntriesForRoute(
+              encodeRoutePath('/404'),
+              rscParams,
+              clientEtags,
+              requestElementCache,
+            )
+            .catch((e) => {
+              if (getErrorInfo(e)?.status !== 404) {
+                throw e;
+              }
+              return null;
+            });
+        }
         if (!entries) {
           return null;
         }
@@ -141,22 +177,32 @@ export const createRequestHandler = ({
           const { value, entries } = await withRerender(() => fn(...args));
           return renderRsc(entries.elements, { value, etags: entries.etags });
         } catch (e) {
-          const info = getErrorInfo(e);
-          if (info?.location) {
-            const routePath = pathnameToRoutePath(info.location);
-            const rscPath = encodeRoutePath(routePath);
-            const entries = await routeEntries.getEntriesForRoute(
-              rscPath,
-              undefined,
-              clientEtags,
-              requestElementCache,
-            );
-            if (!entries) {
-              throw createCustomError('Not Found', { status: 404 });
-            }
-            return renderRsc(entries.elements, { etags: entries.etags });
+          const location = getErrorInfo(e)?.location;
+          if (!location) {
+            throw e;
           }
-          throw e;
+          const redirectRoute = resolveInternalRoute(location, input.req.url);
+          const entries =
+            redirectRoute &&
+            (await routeEntries
+              .getEntriesForRoute(
+                encodeRoutePath(redirectRoute.path),
+                new URLSearchParams({ query: redirectRoute.query }),
+                clientEtags,
+                requestElementCache,
+              )
+              .catch((e: unknown) => {
+                const info = getErrorInfo(e);
+                if (info?.location || info?.status === 404) {
+                  return null;
+                }
+                throw e;
+              }));
+          if (!entries) {
+            // 303 keeps the browser from sending the action body along
+            throw createCustomError('Redirect', { status: 303, location });
+          }
+          return renderRsc(entries.elements, { etags: entries.etags });
         }
       };
 
