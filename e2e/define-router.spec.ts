@@ -172,6 +172,27 @@ test.describe(`define-router`, () => {
     expect(await res.text()).toBe('');
   });
 
+  test('a redirected rsc request hands the page to the browser', async ({
+    page,
+  }) => {
+    await page.goto(`http://localhost:${port}/`);
+    await waitForHydration(page);
+    await page.evaluate(() => {
+      (window as unknown as { __beforeMoved?: true }).__beforeMoved = true;
+    });
+
+    await page.locator("a[href='/moved']").click();
+
+    await expect(page.getByTestId('foo-title')).toHaveText('Foo');
+    expect(page.url()).toBe(`http://localhost:${port}/foo`);
+    // the marker is gone only if the document was replaced, not soft navigated
+    expect(
+      await page.evaluate(
+        () => (window as unknown as { __beforeMoved?: true }).__beforeMoved,
+      ),
+    ).toBeUndefined();
+  });
+
   test('api hi with POST', async () => {
     const res = await fetch(`http://localhost:${port}/api/hi`, {
       method: 'POST',

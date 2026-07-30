@@ -182,6 +182,31 @@ describe('minimal/client transport failures', () => {
     });
   });
 
+  test('a redirect the fetch did not follow is reported as a status', async () => {
+    track(
+      unstable_registerFetchEnhancer(
+        () => async () =>
+          ({
+            redirected: false,
+            url: `${window.location.origin}/RSC/R/next.txt`,
+            ok: false,
+            status: 307,
+            statusText: 'Temporary Redirect',
+            headers: new Headers({ location: '/login' }),
+            text: async () => '',
+          }) as unknown as Response,
+      ),
+    );
+
+    const error = await unstable_fetchRsc('R/next.txt').catch(
+      (e: unknown) => e,
+    );
+
+    // waku never reads Location, so a fetch enhancer using redirect: 'manual'
+    // is not supported. Decided 2026-07-30; revisit with a real use case.
+    expect(getErrorInfo(error)).toEqual({ status: 307 });
+  });
+
   test('a redirect off the rsc endpoint leaves it, same origin or not', async () => {
     const url = `${window.location.origin}/login`;
     track(

@@ -3,7 +3,10 @@ import { readFile } from 'node:fs/promises';
 // NOTE: I think we need one spec to use non-default adapter
 import adapter from 'waku/adapters/node';
 import { Children, Slot } from 'waku/minimal/client';
-import { unstable_defineRouter as defineRouter } from 'waku/router/server';
+import {
+  unstable_defineRouter as defineRouter,
+  unstable_redirect as redirect,
+} from 'waku/router/server';
 import { Slice001 } from './components/slice001.js';
 import { Slice002 } from './components/slice002.js';
 import Bar1Page from './routes/bar1/page.js';
@@ -76,6 +79,34 @@ const router: ReturnType<typeof defineRouter> = defineRouter({
         },
       };
     }),
+    {
+      // the renderer throws before anything streams, so the rsc request is
+      // answered with a real redirect that the browser has to follow
+      type: 'route' as const,
+      pattern: '^/moved$',
+      path: [{ type: 'literal', name: 'moved' } as const],
+      isStatic: false,
+      rootElement: {
+        isStatic: true,
+        renderer: () => (
+          <html>
+            <head>
+              <title>Waku example</title>
+            </head>
+            <body>
+              <Children />
+            </body>
+          </html>
+        ),
+      },
+      routeElement: {
+        isStatic: false,
+        renderer: () => {
+          redirect('/foo');
+        },
+      },
+      elements: {},
+    },
     {
       type: 'api',
       path: [

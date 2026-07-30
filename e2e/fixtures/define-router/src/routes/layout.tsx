@@ -41,6 +41,12 @@ const HomeLayout = ({ children }: { children: ReactNode }) => (
           <Pending />
         </Link>
       </li>
+      <li>
+        <Link to="/moved">
+          Moved
+          <Pending />
+        </Link>
+      </li>
     </ul>
     {children}
   </div>
