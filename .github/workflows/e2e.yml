@@ -53,7 +53,8 @@ jobs:
         with:
           node-version: 'lts/*'
           cache: ${{ !inputs.react_version && 'pnpm' || '' }}
-      - if: ${{ inputs.react_version }}
+      - name: Override React versions and install
+        if: ${{ inputs.react_version }}
         env:
           REACT_VERSION: ${{ inputs.react_version }}
         run: |
@@ -124,7 +125,8 @@ jobs:
           cache: ${{ !inputs.react_version && 'pnpm' || '' }}
       - if: runner.os == 'Windows'
         run: choco install yq -y
-      - if: ${{ inputs.react_version }}
+      - name: Override React versions
+        if: ${{ inputs.react_version }}
         env:
           REACT_VERSION: ${{ inputs.react_version }}
         run: |
