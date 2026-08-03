@@ -36,12 +36,14 @@ describe('makeRouterState', () => {
         history: 'push',
         scroll: true,
         pathChanged: true,
+        followCount: 0,
       },
     );
     expect(routerState.url).toBe('/a?x=1#top');
     expect(routerState.attempted).toEqual(['/a', 'x=1']);
     expect(routerState.history).toBe('push');
     expect(routerState.scroll).toEqual({ pathChanged: true });
+    expect(routerState.followCount).toBe(0);
   });
 
   test('no scroll intent when scrolling is off', () => {
@@ -49,6 +51,7 @@ describe('makeRouterState', () => {
       history: 'replace',
       scroll: false,
       pathChanged: true,
+      followCount: 0,
     });
     expect(routerState.scroll).toBeNull();
   });
@@ -60,6 +63,7 @@ describe('getRouterState', () => {
       history: 'push',
       scroll: false,
       pathChanged: false,
+      followCount: 0,
     });
     expect(getRouterState(withRouterState({}, routerState))).toBe(routerState);
     expect(getRouterState({})).toBeUndefined();
@@ -72,6 +76,7 @@ describe('resolveServerRedirect', () => {
       history: 'push',
       scroll: true,
       pathChanged: true,
+      followCount: 0,
     });
     const elements = { [ROUTE_ID]: ['/a', ''] };
 
@@ -80,8 +85,11 @@ describe('resolveServerRedirect', () => {
       '/a',
     );
     expect(
-      resolveServerRedirect(elements, { ...attempt, failed: true }, '/f').url
-        .pathname,
+      resolveServerRedirect(
+        elements,
+        { ...attempt, failure: { error: new Error('x'), committedHash: '' } },
+        '/f',
+      ).url.pathname,
     ).toBe('/missing');
   });
 
@@ -93,6 +101,7 @@ describe('resolveServerRedirect', () => {
         history: 'replace',
         scroll: false,
         pathChanged: false,
+        followCount: 0,
       },
     );
     const elements = { [ROUTE_ID]: ['/a', 'x=1'] };
@@ -110,6 +119,7 @@ describe('resolveServerRedirect', () => {
       history: 'replace',
       scroll: false,
       pathChanged: false,
+      followCount: 0,
     });
     const elements = { [ROUTE_ID]: ['/a', ''], [IS_STATIC_ID]: true };
     const { route: resolvedRoute, url } = resolveServerRedirect(
@@ -126,6 +136,7 @@ describe('resolveServerRedirect', () => {
       history: 'push',
       scroll: false,
       pathChanged: true,
+      followCount: 0,
     });
     const elements = { [ROUTE_ID]: ['/b', 'y=2'] };
     const { route: resolvedRoute, url } = resolveServerRedirect(
@@ -145,6 +156,7 @@ describe('resolveServerRedirect', () => {
         history: 'replace',
         scroll: false,
         pathChanged: false,
+        followCount: 0,
       });
       const elements = { [ROUTE_ID]: ['/b', ''] };
       const { url } = resolveServerRedirect(elements, routerState, '/f');
@@ -159,6 +171,7 @@ describe('resolveServerRedirect', () => {
       history: 'replace',
       scroll: false,
       pathChanged: true,
+      followCount: 0,
     });
     const elements = { [ROUTE_ID]: ['/404', ''] };
     const { route: resolvedRoute, url } = resolveServerRedirect(
