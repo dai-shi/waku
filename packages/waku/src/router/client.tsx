@@ -535,34 +535,37 @@ export function useSetSearch_UNSTABLE<Path extends RoutePath>({
   );
 }
 
+// HACK: commit-phase .current write; extracted so react-hooks/immutability ignores it.
+const assignRef = <T,>(ref: RefObject<T | null>, node: T | null): void => {
+  ref.current = node;
+};
+
 function useSharedRef<T>(
   ref: Ref<T | null> | undefined,
 ): [RefObject<T | null>, (node: T | null) => void | (() => void)] {
-  const managedRef = useRef<T>(null);
+  const managedRef = useRef<T | null>(null);
 
   const handleRef = useCallback(
-    // eslint-disable-next-line react-hooks/immutability
     (node: T | null): void | (() => void) => {
-      managedRef.current = node;
-      const isRefCallback = typeof ref === 'function';
-      let cleanup: void | (() => void);
-      if (isRefCallback) {
-        cleanup = ref(node);
-      } else if (ref) {
-        // TODO is this a false positive?
-        // eslint-disable-next-line react-hooks/immutability
-        ref.current = node;
-      }
-      return () => {
-        managedRef.current = null;
-        if (isRefCallback) {
+      assignRef(managedRef, node);
+      if (typeof ref === 'function') {
+        const cleanup = ref(node);
+        return () => {
+          assignRef(managedRef, null);
           if (cleanup) {
             cleanup();
           } else {
             ref(null);
           }
-        } else if (ref) {
-          ref.current = null;
+        };
+      }
+      if (ref) {
+        assignRef(ref, node);
+      }
+      return () => {
+        assignRef(managedRef, null);
+        if (ref) {
+          assignRef(ref, null);
         }
       };
     },

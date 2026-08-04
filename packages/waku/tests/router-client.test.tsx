@@ -664,6 +664,43 @@ describe('router/client utilities', () => {
 });
 
 describe('useRouter + Link with context', () => {
+  const PrefetchOnViewToggleLink = () => {
+    const [prefetchOnView, setPrefetchOnView] = useState<
+      Record<string, never> | undefined
+    >(undefined);
+    return (
+      <>
+        <button
+          data-testid="enable-prefetch-on-view"
+          onClick={() => setPrefetchOnView({})}
+        />
+        <Link
+          to="/next"
+          {...(prefetchOnView
+            ? { unstable_prefetchOnView: prefetchOnView }
+            : {})}
+        >
+          next
+        </Link>
+      </>
+    );
+  };
+
+  const RemountablePrefetchOnViewLink = () => {
+    const [key, setKey] = useState(0);
+    return (
+      <>
+        <button
+          data-testid="remount-link"
+          onClick={() => setKey((current) => current + 1)}
+        />
+        <Link key={key} to="/next" unstable_prefetchOnView={{}}>
+          next
+        </Link>
+      </>
+    );
+  };
+
   test('throws without RouterContext', async () => {
     const UseRouterComponent = () => {
       useRouter();
@@ -1352,6 +1389,94 @@ describe('useRouter + Link with context', () => {
     expect(observer.disconnect).toHaveBeenCalledTimes(1);
   });
 
+  test('Link attaches prefetchOnView observer when enabled after mount', async () => {
+    const prefetchRoute = vi.fn();
+
+    const view = await renderApp(
+      <RouterContext
+        value={{
+          route: { path: '/start', query: '', hash: '' },
+          changeRoute: vi.fn(async () => {}),
+          prefetchRoute,
+          routeChangeEvents: { on: vi.fn(), off: vi.fn() },
+          fetchingSlices: new Set<string>(),
+        }}
+      >
+        <PrefetchOnViewToggleLink />
+      </RouterContext>,
+    );
+
+    const link = view.container.querySelector('a');
+    if (!link) {
+      throw new Error('expected link');
+    }
+
+    const ctor = globalThis.IntersectionObserver as unknown as {
+      mock?: { calls: unknown[][] };
+    };
+    expect(ctor.mock?.calls.length ?? 0).toBe(0);
+
+    const enableButton = view.container.querySelector(
+      '[data-testid="enable-prefetch-on-view"]',
+    );
+    if (!(enableButton instanceof HTMLButtonElement)) {
+      throw new Error('expected enable button');
+    }
+    enableButton.click();
+    await flush();
+
+    const observer = getIntersectionObserverMockInstance();
+    expect(observer.observe).toHaveBeenCalledWith(link);
+    view.unmount();
+  });
+
+  test('Link remount observes a new anchor for prefetchOnView', async () => {
+    const prefetchRoute = vi.fn();
+
+    const view = await renderApp(
+      <RouterContext
+        value={{
+          route: { path: '/start', query: '', hash: '' },
+          changeRoute: vi.fn(async () => {}),
+          prefetchRoute,
+          routeChangeEvents: { on: vi.fn(), off: vi.fn() },
+          fetchingSlices: new Set<string>(),
+        }}
+      >
+        <RemountablePrefetchOnViewLink />
+      </RouterContext>,
+    );
+
+    const firstLink = view.container.querySelector('a');
+    if (!firstLink) {
+      throw new Error('expected link');
+    }
+
+    const firstObserver = getIntersectionObserverMockInstance();
+    expect(firstObserver.observe).toHaveBeenCalledWith(firstLink);
+
+    const remountButton = view.container.querySelector(
+      '[data-testid="remount-link"]',
+    );
+    if (!(remountButton instanceof HTMLButtonElement)) {
+      throw new Error('expected remount button');
+    }
+    remountButton.click();
+    await flush();
+
+    expect(firstObserver.disconnect).toHaveBeenCalledTimes(1);
+
+    const secondLink = view.container.querySelector('a');
+    if (!secondLink) {
+      throw new Error('expected remounted link');
+    }
+    expect(secondLink).not.toBe(firstLink);
+
+    const secondObserver = getIntersectionObserverMockInstance();
+    expect(secondObserver.observe).toHaveBeenCalledWith(secondLink);
+    view.unmount();
+  });
+
   test('Link uses unstable_startTransition override for navigation', async () => {
     const changeRoute = vi.fn(async () => {});
     const prefetchRoute = vi.fn();
@@ -1432,6 +1557,35 @@ describe('useRouter + Link with context', () => {
 
     expect(callbackRef).toHaveBeenCalledTimes(1);
     expect(callbackCleanup).toHaveBeenCalledTimes(1);
+  });
+
+  test('Link callback ref without cleanup receives null on unmount', async () => {
+    const callbackRef = vi.fn<(node: HTMLAnchorElement | null) => void>();
+
+    const view = await renderApp(
+      <RouterContext
+        value={{
+          route: { path: '/start', query: '', hash: '' },
+          changeRoute: vi.fn(async () => {}),
+          prefetchRoute: vi.fn(),
+          routeChangeEvents: { on: vi.fn(), off: vi.fn() },
+          fetchingSlices: new Set<string>(),
+        }}
+      >
+        <Link to="/next" ref={callbackRef}>
+          next
+        </Link>
+      </RouterContext>,
+    );
+
+    const link = view.container.querySelector('a');
+    expect(callbackRef).toHaveBeenCalledTimes(1);
+    expect(callbackRef).toHaveBeenCalledWith(link);
+
+    view.unmount();
+
+    expect(callbackRef).toHaveBeenCalledTimes(2);
+    expect(callbackRef).toHaveBeenLastCalledWith(null);
   });
 });
 
