@@ -11,6 +11,11 @@ export type ErrorRoute =
   | { type: 'unfollowable'; location: string }
   | { type: 'none' };
 
+export const isFollowable = (error: unknown) => {
+  const info = getErrorInfo(error);
+  return info?.status === 404 || !!info?.location;
+};
+
 export const resolveErrorRoute = (
   error: unknown,
   attemptedUrl: URL,

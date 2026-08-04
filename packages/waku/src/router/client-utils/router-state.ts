@@ -14,7 +14,6 @@ export const ROUTER_STATE_ID = Symbol('waku-router-state');
 export type RouterState = {
   readonly url: string; // pathname + search + hash, with the base path
   readonly attempted: readonly [path: string, query: string];
-  // null leaves history alone: the browser already wrote it
   readonly history: 'push' | 'replace' | null;
   readonly scroll: { readonly pathChanged: boolean } | null;
   readonly followCount: number;
@@ -74,6 +73,28 @@ export const resolveServerRedirect = (
     },
     url: stateUrl,
   };
+};
+
+/**
+ * The route that actually landed, which a navigation measures itself against.
+ * A failed one keeps the hash that is still on screen, unlike the route the
+ * router paints, which takes its hash from the attempted url.
+ */
+export const getSettledRoute = (
+  elements: Record<string | symbol, unknown>,
+  fallback: RouteProps,
+): RouteProps => {
+  const routerState = getRouterState(elements);
+  if (!routerState) {
+    return fallback;
+  }
+  if (routerState.failure) {
+    return {
+      ...(getRouteFromElements(elements) ?? fallback),
+      hash: routerState.failure.committedHash,
+    };
+  }
+  return resolveServerRedirect(elements, routerState, fallback.path).route;
 };
 
 export const canCommitInstantly = (

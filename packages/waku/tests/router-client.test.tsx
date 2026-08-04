@@ -4596,6 +4596,53 @@ describe('Router integration', () => {
     }
   });
 
+  test('an instant nav scrolls once, not again when the response lands', async () => {
+    let land: (() => void) | undefined;
+    const refetch = vi.fn<ReturnType<typeof useRefetch>>(
+      () =>
+        new Promise((resolve) => {
+          land = () =>
+            resolve({
+              [ROUTE_ID]: ['/next', ''],
+              [IS_STATIC_ID]: false,
+            });
+        }),
+    );
+    installRefetch(refetch);
+    const scrollToSpy = vi
+      .spyOn(window, 'scrollTo')
+      .mockImplementation(() => {});
+
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const view = await renderRouter(
+      { initialRoute: { path: '/start', query: '', hash: '' } },
+      {
+        ...instantNavElements(),
+        [unstable_getRouteSlotId('/start')]: <Probe />,
+      },
+    );
+    try {
+      const pushed = capture.router!.push('/next', {
+        unstable_instant: true,
+      });
+      await act(async () => {
+        await flush();
+      });
+      await act(async () => {
+        land!();
+        await pushed;
+        await flush();
+      });
+
+      // the shell commit scrolls; the response landing must not scroll again
+      expect(scrollToSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      scrollToSpy.mockRestore();
+      view.unmount();
+    }
+  });
+
   test('an instant nav whose response rewrites the route pushes once', async () => {
     let land: (() => void) | undefined;
     const refetch = vi.fn<ReturnType<typeof useRefetch>>(
@@ -4621,6 +4668,7 @@ describe('Router integration', () => {
       },
     );
     const historyPushSpy = vi.spyOn(window.history, 'pushState');
+    const historyReplaceSpy = vi.spyOn(window.history, 'replaceState');
     try {
       // commits the attempted url first, then the response moves the route
       const pushed = capture.router!.push('/next', {
@@ -4636,9 +4684,14 @@ describe('Router integration', () => {
       });
 
       expect(capture.router?.path).toBe('/streamed');
+      expect(window.location.pathname).toBe('/streamed');
       // the second reconcile must replace the entry it already pushed
       expect(historyPushSpy).toHaveBeenCalledTimes(1);
+      expect(String(historyReplaceSpy.mock.lastCall?.[2])).toContain(
+        '/streamed',
+      );
     } finally {
+      historyReplaceSpy.mockRestore();
       historyPushSpy.mockRestore();
       view.unmount();
     }
@@ -6235,6 +6288,131 @@ describe('Router integration', () => {
       expect(refetch).toHaveBeenCalledTimes(1);
     } finally {
       consoleErrorSpy.mockRestore();
+      view.unmount();
+    }
+  });
+
+  test('an instant retry already at its url replaces the entry a failure wrote', async () => {
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    let land: (() => void) | undefined;
+    const refetch = vi.fn<RefetchInner>();
+    refetch.mockRejectedValueOnce(createCustomError('nf', { status: 404 }));
+    refetch.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          land = () =>
+            resolve({
+              [ROUTE_ID]: ['/other', ''],
+              [IS_STATIC_ID]: false,
+            });
+        }),
+    );
+    installRefetch(refetch);
+    const pushSpy = vi.spyOn(window.history, 'pushState');
+    const replaceSpy = vi.spyOn(window.history, 'replaceState');
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const nextSlotId = unstable_getRouteSlotId('/next');
+    const view = await renderRouter(
+      { initialRoute: { path: '/start', query: '', hash: '' } },
+      {
+        [unstable_getRouteSlotId('/start')]: <Probe />,
+        [nextSlotId]: <div>next</div>,
+        [unstable_getRouteSlotId('/other')]: <div>other</div>,
+        [ROUTE_ID]: ['/start', ''],
+        [IS_STATIC_ID]: false,
+        [`${ETAG_ID_PREFIX}${nextSlotId}`]: IMMUTABLE_ETAG,
+        [HAS404_ID]: false,
+      },
+    );
+    try {
+      // the failure writes /next itself, and with no 404 route to follow to
+      // the router stays mounted, so the retry starts already at its url
+      await act(async () => {
+        await expect(capture.router!.push('/next')).rejects.toBeTruthy();
+        await flush();
+      });
+      expect(window.location.pathname).toBe('/next');
+      pushSpy.mockClear();
+      replaceSpy.mockClear();
+
+      const retried = capture.router!.push('/next', {
+        unstable_instant: true,
+        scroll: false,
+      });
+      await act(async () => {
+        await flush();
+      });
+      await act(async () => {
+        land!();
+        await retried;
+        await flush();
+      });
+      expect(window.location.pathname).toBe('/other');
+      expect(pushSpy).not.toHaveBeenCalled();
+      expect(replaceSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      consoleErrorSpy.mockRestore();
+      pushSpy.mockRestore();
+      replaceSpy.mockRestore();
+      view.unmount();
+    }
+  });
+
+  test('an unrelated element merge does not scroll or push again', async () => {
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const grab = { refetch: null as null | ReturnType<typeof useRefetch> };
+    const Grabber = () => {
+      grab.refetch = useRefetch();
+      return null;
+    };
+    const refetch = vi.fn<RefetchInner>(async () => ({}));
+    installRefetch(refetch);
+    const scrollToSpy = vi
+      .spyOn(window, 'scrollTo')
+      .mockImplementation(() => {});
+    const pushSpy = vi.spyOn(window.history, 'pushState');
+    const view = await renderRouter(
+      { initialRoute: { path: '/start', query: '', hash: '' } },
+      {
+        [unstable_getRouteSlotId('/start')]: (
+          <>
+            <Probe />
+            <Grabber />
+          </>
+        ),
+        [unstable_getRouteSlotId('/b')]: (
+          <>
+            <Probe />
+            <Grabber />
+          </>
+        ),
+        [ROUTE_ID]: ['/start', ''],
+        [IS_STATIC_ID]: false,
+      },
+    );
+    try {
+      await act(async () => {
+        await capture.router!.push('/b');
+        await flush();
+      });
+      expect(scrollToSpy).toHaveBeenCalledTimes(1);
+      expect(pushSpy).toHaveBeenCalledTimes(1);
+      // this merge suspends the root, so React replays the layout effect for
+      // a state it has already applied
+      refetch.mockResolvedValueOnce({ 'sidebar:/': <div>fresh</div> });
+      await act(async () => {
+        await grab.refetch!('sidebar');
+        await flush();
+      });
+      expect(scrollToSpy).toHaveBeenCalledTimes(1);
+      expect(pushSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      scrollToSpy.mockRestore();
+      pushSpy.mockRestore();
       view.unmount();
     }
   });

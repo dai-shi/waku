@@ -5,6 +5,7 @@ import {
   ROUTER_STATE_ID,
   canCommitInstantly,
   getRouterState,
+  getSettledRoute,
   makeRouterState,
   pinForSwr,
   resolveServerRedirect,
@@ -181,6 +182,71 @@ describe('resolveServerRedirect', () => {
     );
     expect(resolvedRoute.path).toBe('/404');
     expect(url.pathname).toBe('/missing');
+  });
+});
+
+describe('getSettledRoute', () => {
+  const fallback = route('/f', '', '#restored');
+
+  test('the fallback until a navigation has landed', () => {
+    expect(getSettledRoute({}, fallback)).toEqual(fallback);
+  });
+
+  test('a failed navigation keeps the hash that is still on screen', () => {
+    const routerState = makeRouterState(route('/b'), urlOf('/b#target'), {
+      history: 'push',
+      scroll: true,
+      pathChanged: true,
+      followCount: 0,
+    });
+    const elements = withRouterState(
+      { [ROUTE_ID]: ['/a', 'x=1'] },
+      {
+        ...routerState,
+        failure: { error: new Error('x'), committedHash: '#onscreen' },
+      },
+    );
+    // the route id is the one the client came from, not the failed attempt
+    expect(getSettledRoute(elements, fallback)).toEqual({
+      path: '/a',
+      query: 'x=1',
+      hash: '#onscreen',
+    });
+  });
+
+  test('a failure with no route id falls back, still with the on screen hash', () => {
+    const routerState = makeRouterState(route('/b'), urlOf('/b'), {
+      history: 'push',
+      scroll: false,
+      pathChanged: true,
+      followCount: 0,
+    });
+    const elements = withRouterState(
+      {},
+      {
+        ...routerState,
+        failure: { error: new Error('x'), committedHash: '' },
+      },
+    );
+    expect(getSettledRoute(elements, fallback)).toEqual({
+      path: '/f',
+      query: '',
+      hash: '',
+    });
+  });
+
+  test('a landed navigation resolves the server redirect', () => {
+    const routerState = makeRouterState(route('/a'), urlOf('/a#top'), {
+      history: 'push',
+      scroll: true,
+      pathChanged: true,
+      followCount: 0,
+    });
+    const elements = withRouterState(
+      { [ROUTE_ID]: ['/b', 'y=2'] },
+      routerState,
+    );
+    expect(getSettledRoute(elements, fallback)).toEqual(route('/b', 'y=2'));
   });
 });
 
