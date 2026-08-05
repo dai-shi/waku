@@ -509,7 +509,7 @@ const pages = createPages(async ({ createApi }) => [
 export default adapter(pages);
 ```
 
-Dynamic APIs use a `handlers` object. Named methods take precedence over `all`.
+Dynamic APIs use a `handlers` object keyed by HTTP method (`GET`, `HEAD`, `POST`, `PUT`, `DELETE`, `CONNECT`, `OPTIONS`, `TRACE`, `PATCH`, `QUERY`) or `all`. Named methods take precedence over `all`.
 
 ```tsx
 const pages = createPages(async ({ createApi }) => [
@@ -519,6 +519,10 @@ const pages = createPages(async ({ createApi }) => [
     handlers: {
       GET: async (_req, { params }) => {
         return Response.json({ id: params.id });
+      },
+      QUERY: async (req) => {
+        const body = await req.json();
+        return Response.json({ ok: true, body });
       },
       all: async () => new Response('Method not allowed', { status: 405 }),
     },

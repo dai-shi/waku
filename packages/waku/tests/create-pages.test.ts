@@ -421,6 +421,15 @@ describe('type tests', () => {
           },
         },
       });
+      createApi({
+        path: '/search',
+        render: 'dynamic',
+        handlers: {
+          QUERY: async (req) => {
+            return Response.json(await req.json());
+          },
+        },
+      });
     });
   });
 
@@ -2749,6 +2758,40 @@ describe('createPages api', () => {
     const text = await res.text();
     expect(text).toEqual('Hello World foo');
     expect(res.status).toEqual(200);
+  });
+
+  it('dispatches a QUERY handler and prefers it over all', async () => {
+    createPages(async ({ createApi }) => [
+      createApi({
+        path: '/search',
+        render: 'dynamic',
+        handlers: {
+          QUERY: async (req) => {
+            const body = await req.json();
+            return Response.json({ via: 'QUERY', body });
+          },
+          all: async () => Response.json({ via: 'all' }),
+        },
+      }),
+    ]);
+    const { getConfigs } = injectedFunctions();
+    const [{ handler }] = Array.from(await getConfigs()) as any;
+    const queryRes = await handler(
+      new Request('http://localhost:3000/search', {
+        method: 'QUERY',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ q: 'waku' }),
+      }),
+    );
+    expect(queryRes.status).toEqual(200);
+    expect(await queryRes.json()).toEqual({
+      via: 'QUERY',
+      body: { q: 'waku' },
+    });
+    const postRes = await handler(
+      new Request('http://localhost:3000/search', { method: 'POST' }),
+    );
+    expect(await postRes.json()).toEqual({ via: 'all' });
   });
 
   it('static api with wildcard passes correct params', async () => {

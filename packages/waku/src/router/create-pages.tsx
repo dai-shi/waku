@@ -28,6 +28,7 @@ import { pathnameToRoutePath } from './isomorphic-utils/route-path.js';
 import type { Unstable_SearchCodec } from './isomorphic-utils/search-codec-registry.js';
 
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods
+// QUERY: https://www.rfc-editor.org/rfc/rfc10008.html
 export const METHODS = [
   'GET',
   'HEAD',
@@ -38,6 +39,7 @@ export const METHODS = [
   'OPTIONS',
   'TRACE',
   'PATCH',
+  'QUERY',
 ] as const;
 export type Method = (typeof METHODS)[number];
 
