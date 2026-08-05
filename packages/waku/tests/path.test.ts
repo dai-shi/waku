@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'vitest';
 import { extname, removeBase } from '../src/lib/utils/path.js';
-import { path2regexp } from '../src/router/define-router-utils/path-spec.js';
 import {
   getPathMapping,
   parsePathWithSlug,
+  path2regexp,
 } from '../src/router/isomorphic-utils/path-spec.js';
 
 function matchPath(path: string, input: string) {

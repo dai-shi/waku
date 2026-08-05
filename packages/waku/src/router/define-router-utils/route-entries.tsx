@@ -18,13 +18,14 @@ import type {
   RendererOption,
   SliceConfig,
   SlotId,
-} from './config-types.js';
+} from './config.js';
 import {
+  type CacheId,
+  type ElementCache,
   ROOT_SLOT_ID,
   getPathSpecCacheId,
   getSlotCacheId,
 } from './element-cache.js';
-import type { CacheId, ElementCache } from './element-cache.js';
 import { setRscParams, setRscPath } from './request-store.js';
 
 export type RouteEntries = {

@@ -1,15 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
+  type ApiConfig,
+  type RouteConfig,
+  type SerializableRouteConfig,
+  type SliceConfig,
   mergeWithRuntimeConfigs,
   pathSpecKey,
   toSerializable,
-} from '../src/router/define-router-utils/config-serialization.js';
-import type {
-  ApiConfig,
-  RouteConfig,
-  SerializableRouteConfig,
-  SliceConfig,
-} from '../src/router/define-router-utils/config-types.js';
+} from '../src/router/define-router-utils/config.js';
 import type { PathSpec } from '../src/router/isomorphic-utils/path-spec.js';
 
 const path = (name: string): PathSpec => [{ type: 'literal', name }];

@@ -5,13 +5,13 @@ import {
 import type { PathSpec } from '../isomorphic-utils/path-spec.js';
 import { pathnameToRoutePath } from '../isomorphic-utils/route-path.js';
 import type { Unstable_SearchCodec } from '../isomorphic-utils/search-codec-registry.js';
-import { DEFINE_ROUTER_METADATA } from './build-metadata.js';
-import { mergeWithRuntimeConfigs } from './config-serialization.js';
-import type {
-  RuntimeConfig,
-  SerializableConfig,
-  SliceConfig,
-} from './config-types.js';
+import {
+  DEFINE_ROUTER_METADATA,
+  type RuntimeConfig,
+  type SerializableConfig,
+  type SliceConfig,
+  mergeWithRuntimeConfigs,
+} from './config.js';
 import { assertNonReservedSlotId } from './element-cache.js';
 
 const is404 = (pathSpec: PathSpec) =>

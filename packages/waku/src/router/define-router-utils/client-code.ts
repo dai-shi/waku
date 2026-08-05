@@ -1,5 +1,5 @@
 import { pathSpecAsString } from '../isomorphic-utils/path-spec.js';
-import type { RuntimeConfig } from './config-types.js';
+import type { RuntimeConfig } from './config.js';
 
 export const getRouterPrefetchCode = (
   path2moduleIds: Record<string, string[]>,

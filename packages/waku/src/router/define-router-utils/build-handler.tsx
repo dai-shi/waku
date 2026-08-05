@@ -1,32 +1,61 @@
 import type { ReactNode } from 'react';
 import type { unstable_defineHandlers as defineHandlers } from '../../minimal/server.js';
 import { INTERNAL_ServerRouter } from '../client.js';
-import { pathSpecAsString } from '../isomorphic-utils/path-spec.js';
-import type { PathSpec } from '../isomorphic-utils/path-spec.js';
+import {
+  type PathSpec,
+  path2regexp,
+  pathSpecAsString,
+} from '../isomorphic-utils/path-spec.js';
 import {
   encodeRoutePath,
   encodeSliceId,
 } from '../isomorphic-utils/route-path.js';
-import { DEFINE_ROUTER_METADATA } from './build-metadata.js';
 import {
   getRouterPrefetchCode,
   setupRouterSearchCodecs,
 } from './client-code.js';
 import type { ConfigRegistry } from './config-registry.js';
-import { toSerializable } from './config-serialization.js';
-import type { RendererOption, RouteConfig } from './config-types.js';
 import {
+  DEFINE_ROUTER_METADATA,
+  type RendererOption,
+  type RouteConfig,
+  toSerializable,
+} from './config.js';
+import {
+  type CacheId,
   ROOT_SLOT_ID,
   createElementCache,
   getPathSpecCacheId,
   getSlotCacheId,
 } from './element-cache.js';
-import type { CacheId } from './element-cache.js';
-import { path2regexp } from './path-spec.js';
 import type { createRouteEntries } from './route-entries.js';
-import { createTaskRunner } from './task-runner.js';
 
 type HandleBuild = Parameters<typeof defineHandlers>[0]['handleBuild'];
+
+const createTaskRunner = (limit: number) => {
+  let running = 0;
+  const waiting: (() => void)[] = [];
+  const scheduleTask = async (task: () => Promise<void>) => {
+    while (running >= limit) {
+      await new Promise<void>((resolve) => waiting.push(resolve));
+    }
+    running++;
+    try {
+      await task();
+    } finally {
+      running--;
+      waiting.shift()?.();
+    }
+  };
+  const tasks: Promise<void>[] = [];
+  const runTask = (task: () => Promise<void>): void => {
+    tasks.push(scheduleTask(task));
+  };
+  const waitForTasks = async () => {
+    await Promise.all(tasks);
+  };
+  return { runTask, waitForTasks };
+};
 
 const pathSpecToRoutePath = (pathSpec: PathSpec) => {
   if (pathSpec.some(({ type }) => type !== 'literal')) {

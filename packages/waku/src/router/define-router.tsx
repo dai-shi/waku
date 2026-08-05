@@ -8,7 +8,7 @@ import type {
   ApiHandler,
   HandlerInterceptor,
   RuntimeConfig,
-} from './define-router-utils/config-types.js';
+} from './define-router-utils/config.js';
 import { createRequestHandler } from './define-router-utils/request-handler.js';
 import {
   getHeaders,

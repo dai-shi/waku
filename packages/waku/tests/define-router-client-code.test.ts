@@ -1,12 +1,16 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { DEFINE_ROUTER_METADATA } from '../src/router/define-router-utils/build-metadata.js';
 import {
   getRouterPrefetchCode,
   setupRouterSearchCodecs,
 } from '../src/router/define-router-utils/client-code.js';
-import type { RuntimeConfig } from '../src/router/define-router-utils/config-types.js';
-import { pathSpecAsString } from '../src/router/isomorphic-utils/path-spec.js';
-import type { PathSpec } from '../src/router/isomorphic-utils/path-spec.js';
+import {
+  DEFINE_ROUTER_METADATA,
+  type RuntimeConfig,
+} from '../src/router/define-router-utils/config.js';
+import {
+  type PathSpec,
+  pathSpecAsString,
+} from '../src/router/isomorphic-utils/path-spec.js';
 
 type Globals = {
   __WAKU_ROUTER_PREFETCH__?: (path: string, cb: (id: string) => void) => void;

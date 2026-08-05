@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createConfigRegistry } from '../src/router/define-router-utils/config-registry.js';
-import type { RuntimeConfig } from '../src/router/define-router-utils/config-types.js';
+import type { RuntimeConfig } from '../src/router/define-router-utils/config.js';
 import { createElementCache } from '../src/router/define-router-utils/element-cache.js';
 import { createRouteEntries } from '../src/router/define-router-utils/route-entries.js';
 import type { PathSpec } from '../src/router/isomorphic-utils/path-spec.js';

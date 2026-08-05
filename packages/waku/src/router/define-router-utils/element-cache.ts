@@ -6,8 +6,7 @@ import {
   isRouteSlotId,
   isSliceSlotId,
 } from '../isomorphic-utils/route-path.js';
-import { pathSpecKey } from './config-serialization.js';
-import type { SlotId } from './config-types.js';
+import { type SlotId, pathSpecKey } from './config.js';
 
 export const ROOT_SLOT_ID = 'root';
 

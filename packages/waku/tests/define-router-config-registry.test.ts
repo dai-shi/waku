@@ -1,10 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
-import { DEFINE_ROUTER_METADATA } from '../src/router/define-router-utils/build-metadata.js';
 import { createConfigRegistry } from '../src/router/define-router-utils/config-registry.js';
-import { toSerializable } from '../src/router/define-router-utils/config-serialization.js';
-import type { RuntimeConfig } from '../src/router/define-router-utils/config-types.js';
-import { pathSpecAsString } from '../src/router/isomorphic-utils/path-spec.js';
-import type { PathSpec } from '../src/router/isomorphic-utils/path-spec.js';
+import {
+  DEFINE_ROUTER_METADATA,
+  type RuntimeConfig,
+  toSerializable,
+} from '../src/router/define-router-utils/config.js';
+import {
+  type PathSpec,
+  pathSpecAsString,
+} from '../src/router/isomorphic-utils/path-spec.js';
 
 // element-cache (pulled in transitively) imports these; the registry never uses them.
 vi.mock('../src/server.js', () => ({

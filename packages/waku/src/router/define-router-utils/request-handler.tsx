@@ -11,12 +11,12 @@ import {
   encodeRoutePath,
   pathnameToRoutePath,
 } from '../isomorphic-utils/route-path.js';
-import { DEFINE_ROUTER_METADATA } from './build-metadata.js';
 import {
   getRouterPrefetchCode,
   setupRouterSearchCodecs,
 } from './client-code.js';
 import type { ConfigRegistry } from './config-registry.js';
+import { DEFINE_ROUTER_METADATA } from './config.js';
 import { createElementCache } from './element-cache.js';
 import { getNonce, setRerender } from './request-store.js';
 import type { RouteEntries, createRouteEntries } from './route-entries.js';
