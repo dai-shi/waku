@@ -29,7 +29,7 @@ const withRouterState = (
 ) => ({ ...elements, [ROUTER_STATE_ID]: routerState });
 
 describe('makeRouterState', () => {
-  test('captures the url, the attempted route and the intents', () => {
+  test('captures the url, the requested route and the intents', () => {
     const routerState = makeRouterState(
       route('/a', 'x=1'),
       urlOf('/a?x=1#top'),
@@ -41,7 +41,7 @@ describe('makeRouterState', () => {
       },
     );
     expect(routerState.url).toBe('/a?x=1#top');
-    expect(routerState.attempted).toEqual(['/a', 'x=1']);
+    expect(routerState.requested).toEqual(['/a', 'x=1']);
     expect(routerState.history).toBe('push');
     expect(routerState.scroll).toEqual({ pathChanged: true });
     expect(routerState.followCount).toBe(0);
@@ -167,7 +167,7 @@ describe('resolveServerRedirect', () => {
     }
   });
 
-  test('a server redirect to the 404 route keeps the attempted url', () => {
+  test('a server redirect to the 404 route keeps the requested url', () => {
     const routerState = makeRouterState(route('/missing'), urlOf('/missing'), {
       history: 'replace',
       scroll: false,

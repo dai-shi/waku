@@ -175,7 +175,7 @@ When the shell is cached, the layout and the `Loading...` fallback appear with n
 
 The `<Suspense>` boundary decides how localized the loading state is. Wrapping the whole page area (as above) swaps the page for a skeleton; wrapping only a dynamic slice inside an otherwise-static page leaves the rest in place and shows the skeleton for just that slice.
 
-Because an instant navigation commits before the server responds, it reconciles afterward: a server redirect updates the URL to the redirect target, while a not-found (404) response keeps the attempted URL, so the 404 page shows at the address the user tried.
+Because an instant navigation commits before the server responds, it reconciles afterward: a server redirect updates the URL to the redirect target, while a not-found (404) response keeps the requested URL, so the 404 page shows at the address the user tried.
 
 Instant navigation commits urgently rather than inside a React transition, since a transition would suppress the immediate skeleton. A custom `unstable_startTransition` therefore does not run for instant links, and `useNavigationStatus_UNSTABLE()` does not report `pending` for them. An instant navigation paints its cached shell immediately, so the shell itself is the pending state.
 

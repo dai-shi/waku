@@ -6,6 +6,7 @@ dist
 /packages/website/.vercel
 /packages/create-waku/templates
 .env.local
+/*.local.md
 .devcontainer
 .vscode
 *.tsbuildinfo

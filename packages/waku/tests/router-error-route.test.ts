@@ -7,7 +7,7 @@ beforeEach(() => {
   vi.stubEnv('WAKU_CONFIG_BASE_PATH', '/');
 });
 
-const attempted = (href: string) => new URL(href, window.location.href);
+const requested = (href: string) => new URL(href, window.location.href);
 
 describe('resolveErrorRoute', () => {
   test('an app path redirect keeps the route and rebuilds its url', () => {
@@ -16,7 +16,7 @@ describe('resolveErrorRoute', () => {
       location: '/next?a=1#frag',
     });
 
-    const errorRoute = resolveErrorRoute(error, attempted('/from'), false);
+    const errorRoute = resolveErrorRoute(error, requested('/from'), false);
 
     expect(errorRoute).toEqual({
       type: 'route',
@@ -35,7 +35,7 @@ describe('resolveErrorRoute', () => {
       location: '/next',
     });
 
-    const errorRoute = resolveErrorRoute(error, attempted('/docs/from'), false);
+    const errorRoute = resolveErrorRoute(error, requested('/docs/from'), false);
 
     expect(errorRoute.type === 'route' && errorRoute.target.path).toBe('/next');
     expect(errorRoute.type === 'route' && errorRoute.url.pathname).toBe(
@@ -49,7 +49,7 @@ describe('resolveErrorRoute', () => {
       location: `${window.location.origin}/next`,
     });
 
-    const errorRoute = resolveErrorRoute(error, attempted('/from'), false);
+    const errorRoute = resolveErrorRoute(error, requested('/from'), false);
 
     expect(errorRoute.type === 'route' && errorRoute.target.path).toBe('/next');
   });
@@ -61,7 +61,7 @@ describe('resolveErrorRoute', () => {
       unstable_redirected: true,
     });
 
-    const errorRoute = resolveErrorRoute(error, attempted('/from'), false);
+    const errorRoute = resolveErrorRoute(error, requested('/from'), false);
 
     expect(errorRoute.type).toBe('leave');
     expect(errorRoute.type === 'leave' && errorRoute.url.pathname).toBe(
@@ -75,7 +75,7 @@ describe('resolveErrorRoute', () => {
       location: 'https://example.com/next',
     });
 
-    const errorRoute = resolveErrorRoute(error, attempted('/from'), false);
+    const errorRoute = resolveErrorRoute(error, requested('/from'), false);
 
     expect(errorRoute).toEqual({ type: 'leave', url: expect.any(URL) });
     expect(errorRoute.type === 'leave' && errorRoute.url.href).toBe(
@@ -89,7 +89,7 @@ describe('resolveErrorRoute', () => {
       location: '//example.com/next',
     });
 
-    const errorRoute = resolveErrorRoute(error, attempted('/from'), false);
+    const errorRoute = resolveErrorRoute(error, requested('/from'), false);
 
     expect(errorRoute.type).toBe('leave');
   });
@@ -100,7 +100,7 @@ describe('resolveErrorRoute', () => {
       location: 'javascript:alert(1)',
     });
 
-    const errorRoute = resolveErrorRoute(error, attempted('/from'), false);
+    const errorRoute = resolveErrorRoute(error, requested('/from'), false);
 
     expect(errorRoute).toEqual({
       type: 'unfollowable',
@@ -108,12 +108,12 @@ describe('resolveErrorRoute', () => {
     });
   });
 
-  test('a 404 goes to the 404 route with the attempted query and url', () => {
+  test('a 404 goes to the 404 route with the requested query and url', () => {
     const error = createCustomError('nf', { status: 404 });
 
     const errorRoute = resolveErrorRoute(
       error,
-      attempted('/missing?foo=bar'),
+      requested('/missing?foo=bar'),
       true,
     );
 
@@ -130,14 +130,14 @@ describe('resolveErrorRoute', () => {
   test('a 404 without a 404 route is not followed', () => {
     const error = createCustomError('nf', { status: 404 });
 
-    expect(resolveErrorRoute(error, attempted('/missing'), false)).toEqual({
+    expect(resolveErrorRoute(error, requested('/missing'), false)).toEqual({
       type: 'none',
     });
   });
 
   test('a plain error is not followed', () => {
     expect(
-      resolveErrorRoute(new Error('boom'), attempted('/from'), true),
+      resolveErrorRoute(new Error('boom'), requested('/from'), true),
     ).toEqual({
       type: 'none',
     });

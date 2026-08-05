@@ -18,12 +18,12 @@ export const isFollowable = (error: unknown) => {
 
 export const resolveErrorRoute = (
   error: unknown,
-  attemptedUrl: URL,
+  requestedUrl: URL,
   has404: boolean,
 ): ErrorRoute => {
   const info = getErrorInfo(error);
   if (info?.location) {
-    const parsed = parseRedirectUrl(info.location, attemptedUrl);
+    const parsed = parseRedirectUrl(info.location, requestedUrl);
     if (!parsed) {
       return { type: 'unfollowable', location: info.location };
     }
@@ -43,10 +43,10 @@ export const resolveErrorRoute = (
   if (info?.status === 404 && has404) {
     const target = {
       path: '/404',
-      query: attemptedUrl.searchParams.toString(),
+      query: requestedUrl.searchParams.toString(),
       hash: '',
     };
-    return { type: 'route', target, url: attemptedUrl };
+    return { type: 'route', target, url: requestedUrl };
   }
   return { type: 'none' };
 };

@@ -139,9 +139,8 @@ type Prefetch = {
   ): void;
 };
 
-const parseRouteFromLocation = (): RouteProps => {
-  return parseRoute(new URL(window.location.href));
-};
+const parseRouteFromLocation = (): RouteProps =>
+  parseRoute(new URL(window.location.href));
 
 const commitHistory = (url: URL, mode: 'push' | 'replace' | null): void => {
   if (window.location.href === url.href) {
@@ -149,9 +148,10 @@ const commitHistory = (url: URL, mode: 'push' | 'replace' | null): void => {
   }
   if (mode === 'push') {
     window.history.pushState(window.history.state, '', url);
-  } else {
-    window.history.replaceState(window.history.state, '', url);
+    return;
   }
+  // null still writes: the state url is the one that should show
+  window.history.replaceState(window.history.state, '', url);
 };
 
 const reloadWithUrl = (url: URL) => {
@@ -380,11 +380,9 @@ export function useRouter() {
     });
   }, [changeRoute]);
   const back = useCallback(() => {
-    // FIXME is this correct?
     window.history.back();
   }, []);
   const forward = useCallback(() => {
-    // FIXME is this correct?
     window.history.forward();
   }, []);
   const prefetch = useCallback(
@@ -838,8 +836,8 @@ const FollowError = ({
       !routerState.failure
     ) {
       const landed =
-        routerState.attempted[0] === dispatched.route.path &&
-        routerState.attempted[1] === dispatched.route.query;
+        routerState.requested[0] === dispatched.route.path &&
+        routerState.requested[1] === dispatched.route.query;
       const arrived = landed
         ? dispatched.route.path === routePath
         : routerState.url === dispatched.url;
@@ -851,11 +849,11 @@ const FollowError = ({
     }
   }, [routePath, routeQuery, routeHash, routerState, reset, fail, error]);
   const followCaughtError = useEffectEvent(() => {
-    // the attempted url may not have reached the address bar yet
-    const attemptedUrl = routerState
+    // the requested url may not have reached the address bar yet
+    const stateUrl = routerState
       ? new URL(routerState.url, window.location.href)
       : new URL(window.location.href);
-    const errorRoute = resolveErrorRoute(error, attemptedUrl, has404);
+    const errorRoute = resolveErrorRoute(error, stateUrl, has404);
     if (errorRoute.type === 'none') {
       return;
     }
@@ -873,11 +871,11 @@ const FollowError = ({
       return;
     }
     const { target, url } = errorRoute;
-    const attempted = routerState?.attempted;
-    const caught = attempted
-      ? { path: attempted[0], query: attempted[1] }
-      : parseRoute(attemptedUrl);
-    if (isSameRscRoute(target, caught) && url.href === attemptedUrl.href) {
+    const requested = routerState?.requested;
+    const caught = requested
+      ? { path: requested[0], query: requested[1] }
+      : parseRoute(stateUrl);
+    if (isSameRscRoute(target, caught) && url.href === stateUrl.href) {
       fail(error, new Error('detected a navigation loop', { cause: error }));
       return;
     }
@@ -1010,17 +1008,58 @@ export function Slice({
   return <Slot id={slotId}>{children}</Slot>;
 }
 
+// a run decodes together, so a multi byte character survives
+const decodeHash = (raw: string) =>
+  raw.replace(/(?:%[0-9A-Fa-f]{2})+/g, (escapes) => {
+    try {
+      return decodeURIComponent(escapes);
+    } catch {
+      return escapes;
+    }
+  });
+
 const getHashElement = (hash: string): HTMLElement | null => {
   const raw = hash.slice(1);
-  const rawElement = document.getElementById(raw);
-  if (rawElement) {
-    return rawElement;
+  const decoded = decodeHash(raw);
+  for (const name of new Set([raw, decoded])) {
+    const byId = document.getElementById(name);
+    if (byId) {
+      return byId;
+    }
+    // the spec counts anchors only, not a meta or an input
+    for (const named of document.getElementsByName(name)) {
+      if (named.localName === 'a') {
+        return named;
+      }
+    }
   }
-  try {
-    return document.getElementById(decodeURIComponent(raw));
-  } catch {
-    return null;
-  }
+  return decoded.toLowerCase() === 'top' ? document.documentElement : null;
+};
+
+// a slot can resolve without re-rendering the router, so watch the dom
+const watchForHashElement = (hash: string, behavior: ScrollBehavior) => {
+  const stop = () => {
+    observer.disconnect();
+    window.removeEventListener('wheel', stop);
+    window.removeEventListener('touchmove', stop);
+    window.removeEventListener('keydown', stop);
+  };
+  const observer = new MutationObserver(() => {
+    if (getHashElement(hash)) {
+      stop();
+      scrollToHash(hash, behavior, false);
+    }
+  });
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['id', 'name'],
+  });
+  window.addEventListener('wheel', stop, { passive: true });
+  window.addEventListener('touchmove', stop, { passive: true });
+  window.addEventListener('keydown', stop);
+  return { hash, stop };
 };
 
 const scrollToHash = (
@@ -1113,6 +1152,10 @@ const InnerRouter = ({
     setRestoredHash(window.location.hash || initialHashRef.current!);
   }, []);
 
+  const routeFallback = useMemo(
+    () => ({ ...initialRoute, hash: restoredHash }),
+    [initialRoute, restoredHash],
+  );
   const routerState = getRouterState(elements);
   const destination = useMemo(
     () =>
@@ -1120,20 +1163,12 @@ const InnerRouter = ({
       resolveServerRedirect(elements, routerState, initialRoute.path),
     [elements, routerState, initialRoute],
   );
-  const currentRoute = useMemo(
-    () =>
-      destination ? destination.route : { ...initialRoute, hash: restoredHash },
-    [destination, initialRoute, restoredHash],
-  );
-  const committedRoute = useCallback(
-    (): RouteProps =>
-      getSettledRoute(resolvedElementsRef.current, {
-        ...initialRoute,
-        hash: restoredHash,
-      }),
-    [initialRoute, restoredHash],
-  );
+  const currentRoute = destination ? destination.route : routeFallback;
+  // only the current state is reconciled, so one slot is enough
   const appliedRef = useRef<RouterState>(undefined);
+  const hashWatchRef = useRef<ReturnType<typeof watchForHashElement> | null>(
+    null,
+  );
   const destinationHref = destination?.url.href;
   const currentHash = currentRoute.hash;
   useLayoutEffect(() => {
@@ -1141,29 +1176,42 @@ const InnerRouter = ({
       return;
     }
     const applied = appliedRef.current === routerState;
-    // history null still writes: the state's url is the one that should show
     commitHistory(
       new URL(destinationHref),
       applied ? 'replace' : routerState.history,
     );
     appliedRef.current = routerState;
-    if (routerState.scroll && !applied && !routerState.failure) {
-      const { pathChanged } = routerState.scroll;
-      scrollToHash(currentHash, pathChanged ? 'instant' : 'auto', pathChanged);
+    if (!applied || hashWatchRef.current?.hash !== currentHash) {
+      hashWatchRef.current?.stop();
+      hashWatchRef.current = null;
+    }
+    if (applied || !routerState.scroll || routerState.failure) {
+      return;
+    }
+    const { pathChanged } = routerState.scroll;
+    const behavior = pathChanged ? 'instant' : 'auto';
+    scrollToHash(currentHash, behavior, pathChanged);
+    if (currentHash && !getHashElement(currentHash)) {
+      hashWatchRef.current = watchForHashElement(currentHash, behavior);
     }
   }, [routerState, destinationHref, currentHash]);
+
+  useEffect(() => () => hashWatchRef.current?.stop(), []);
 
   useEffect(() => {
     if (import.meta.hot) {
       const refetchRouteOnHmr = () => {
         prefetchManagerRef.current!.clear();
         staticPathSetRef.current!.clear();
-        const route = committedRoute();
+        const settledRoute = getSettledRoute(
+          resolvedElementsRef.current,
+          routeFallback,
+        );
         startTransition(() => {
           // the reload clears the set, so the response has to teach it again
           void refetch(
-            encodeRoutePath(route.path),
-            createRscParams(route.query),
+            encodeRoutePath(settledRoute.path),
+            createRscParams(settledRoute.query),
           ).then(learnStaticPath, () => {});
         });
       };
@@ -1173,7 +1221,7 @@ const InnerRouter = ({
       );
       globalThis.__WAKU_REFETCH_ROUTE__ = refetchRouteOnHmr;
     }
-  }, [refetch, learnStaticPath, committedRoute]);
+  }, [refetch, learnStaticPath, routeFallback]);
 
   const [[routeChangeEvents, emitRouteChangeEvent]] = useState(
     createRouteChangeListeners,
@@ -1211,18 +1259,21 @@ const InnerRouter = ({
       if (isAborted()) {
         return;
       }
-      const routeBefore = committedRoute();
+      const settledRoute = getSettledRoute(
+        resolvedElementsRef.current,
+        routeFallback,
+      );
       const targetUrl = options.url ?? getRouteUrl(nextRoute);
       const routerState = makeRouterState(nextRoute, targetUrl, {
         history: options.history,
         scroll: options.shouldScroll,
-        pathChanged: nextRoute.path !== routeBefore.path,
+        pathChanged: nextRoute.path !== settledRoute.path,
         followCount: options.isFollow
           ? (getRouterState(resolvedElementsRef.current)?.followCount ?? 0) + 1
           : 0,
       });
       const shouldRefetch =
-        options.refetch ?? !isSameRscRoute(nextRoute, routeBefore);
+        options.refetch ?? !isSameRscRoute(nextRoute, settledRoute);
       if (staticPathSetRef.current!.has(nextRoute.path) || !shouldRefetch) {
         mergeElements({
           [ROUTE_ID]: [nextRoute.path, nextRoute.query],
@@ -1290,7 +1341,7 @@ const InnerRouter = ({
           [ROUTER_STATE_ID]: {
             ...routerState,
             history: null, // the url above is already written
-            failure: { error: e, committedHash: routeBefore.hash },
+            failure: { error: e, committedHash: settledRoute.hash },
           },
         });
         emitRouteChangeEvent('error', nextRoute);
@@ -1298,7 +1349,7 @@ const InnerRouter = ({
       }
     },
     [
-      committedRoute,
+      routeFallback,
       refetch,
       mergeElements,
       emitRouteChangeEvent,
@@ -1312,10 +1363,13 @@ const InnerRouter = ({
         return;
       }
       const [path, query] = routeData as [string, string];
-      const currentRoute = committedRoute();
+      const settledRoute = getSettledRoute(
+        resolvedElementsRef.current,
+        routeFallback,
+      );
       if (
-        currentRoute.path === path &&
-        (isStatic || currentRoute.query === query)
+        settledRoute.path === path &&
+        (isStatic || settledRoute.query === query)
       ) {
         return;
       }
@@ -1329,7 +1383,7 @@ const InnerRouter = ({
         url: is404 ? new URL(window.location.href) : getRouteUrl(route),
       });
     },
-    [changeRoute, committedRoute],
+    [changeRoute, routeFallback],
   );
   useEffect(() => {
     const listener = (elements: Record<string, unknown>) => {
@@ -1370,7 +1424,10 @@ const InnerRouter = ({
       }
       startTransition(() => {
         changeRoute(nextRoute, {
-          shouldScroll: shouldScrollForRouteChange(nextRoute, committedRoute()),
+          shouldScroll: shouldScrollForRouteChange(
+            nextRoute,
+            getSettledRoute(resolvedElementsRef.current, routeFallback),
+          ),
           history: null, // the browser already moved the address bar
           // keep the url it moved to; an interceptor rewrite needs a new one
           url: isSameRoute(nextRoute, popped)
@@ -1387,7 +1444,7 @@ const InnerRouter = ({
     return () => {
       window.removeEventListener('popstate', callback);
     };
-  }, [changeRoute, routeInterceptor, committedRoute]);
+  }, [changeRoute, routeInterceptor, routeFallback]);
 
   const routeElement = routerState?.failure ? (
     <ThrowError error={routerState.failure.error} />
