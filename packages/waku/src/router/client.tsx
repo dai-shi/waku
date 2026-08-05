@@ -55,7 +55,6 @@ import {
   isSameRoute,
   isSameRscRoute,
   parseRoute,
-  pathnameToCurrentRoutePath,
 } from './client-utils/route-url.js';
 import {
   ROUTER_STATE_ID,
@@ -67,6 +66,11 @@ import {
   resolveServerRedirect,
 } from './client-utils/router-state.js';
 import type { RouterState } from './client-utils/router-state.js';
+import {
+  scrollToHash,
+  shouldScrollByDefault,
+  shouldScrollForRouteChange,
+} from './client-utils/scroll.js';
 import type {
   RouteParams,
   RouteSearch,
@@ -158,14 +162,6 @@ const reloadWithUrl = (url: URL) => {
   window.history.pushState(window.history.state, '', url);
   window.location.reload();
 };
-
-const shouldScrollByDefault = (url: URL) =>
-  pathnameToCurrentRoutePath(url.pathname) !==
-    pathnameToCurrentRoutePath(window.location.pathname) ||
-  url.hash !== window.location.hash;
-
-const shouldScrollForRouteChange = (next: RouteProps, prev: RouteProps) =>
-  next.path !== prev.path || next.hash !== prev.hash;
 
 const isAltClick = (event: MouseEvent<HTMLAnchorElement>) =>
   event.button !== 0 ||
@@ -1008,95 +1004,6 @@ export function Slice({
   return <Slot id={slotId}>{children}</Slot>;
 }
 
-// a run decodes together, so a multi byte character survives
-const decodeHash = (raw: string) =>
-  raw.replace(/(?:%[0-9A-Fa-f]{2})+/g, (escapes) => {
-    try {
-      return decodeURIComponent(escapes);
-    } catch {
-      return escapes;
-    }
-  });
-
-const getHashElement = (hash: string): HTMLElement | null => {
-  const raw = hash.slice(1);
-  const decoded = decodeHash(raw);
-  for (const name of new Set([raw, decoded])) {
-    const byId = document.getElementById(name);
-    if (byId) {
-      return byId;
-    }
-    // the spec counts anchors only, not a meta or an input
-    for (const named of document.getElementsByName(name)) {
-      if (named.localName === 'a') {
-        return named;
-      }
-    }
-  }
-  return decoded.toLowerCase() === 'top' ? document.documentElement : null;
-};
-
-// a slot can resolve without re-rendering the router, so watch the dom
-const watchForHashElement = (hash: string, behavior: ScrollBehavior) => {
-  const stop = () => {
-    observer.disconnect();
-    window.removeEventListener('wheel', stop);
-    window.removeEventListener('touchmove', stop);
-    window.removeEventListener('keydown', stop);
-  };
-  const observer = new MutationObserver(() => {
-    if (getHashElement(hash)) {
-      stop();
-      scrollToHash(hash, behavior, false);
-    }
-  });
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true,
-    attributes: true,
-    attributeFilter: ['id', 'name'],
-  });
-  window.addEventListener('wheel', stop, { passive: true });
-  window.addEventListener('touchmove', stop, { passive: true });
-  window.addEventListener('keydown', stop);
-  return { hash, stop };
-};
-
-const scrollToHash = (
-  hash: string,
-  behavior: ScrollBehavior,
-  scrollTopForMissingHash: boolean,
-) => {
-  if (hash) {
-    const element = getHashElement(hash);
-    if (!element) {
-      if (!scrollTopForMissingHash) {
-        return;
-      }
-      window.scrollTo({
-        left: 0,
-        top: 0,
-        behavior,
-      });
-      return;
-    }
-    const scrollMarginTop =
-      Number.parseFloat(window.getComputedStyle(element).scrollMarginTop) || 0;
-    window.scrollTo({
-      left: 0,
-      top:
-        element.getBoundingClientRect().top + window.scrollY - scrollMarginTop,
-      behavior,
-    });
-    return;
-  }
-  window.scrollTo({
-    left: 0,
-    top: 0,
-    behavior,
-  });
-};
-
 const defaultRouteInterceptor = (route: RouteProps) => route;
 
 const InnerRouter = ({
@@ -1166,9 +1073,6 @@ const InnerRouter = ({
   const currentRoute = destination ? destination.route : routeFallback;
   // only the current state is reconciled, so one slot is enough
   const appliedRef = useRef<RouterState>(undefined);
-  const hashWatchRef = useRef<ReturnType<typeof watchForHashElement> | null>(
-    null,
-  );
   const destinationHref = destination?.url.href;
   const currentHash = currentRoute.hash;
   useLayoutEffect(() => {
@@ -1181,22 +1085,13 @@ const InnerRouter = ({
       applied ? 'replace' : routerState.history,
     );
     appliedRef.current = routerState;
-    if (!applied || hashWatchRef.current?.hash !== currentHash) {
-      hashWatchRef.current?.stop();
-      hashWatchRef.current = null;
-    }
     if (applied || !routerState.scroll || routerState.failure) {
       return;
     }
     const { pathChanged } = routerState.scroll;
     const behavior = pathChanged ? 'instant' : 'auto';
     scrollToHash(currentHash, behavior, pathChanged);
-    if (currentHash && !getHashElement(currentHash)) {
-      hashWatchRef.current = watchForHashElement(currentHash, behavior);
-    }
   }, [routerState, destinationHref, currentHash]);
-
-  useEffect(() => () => hashWatchRef.current?.stop(), []);
 
   useEffect(() => {
     if (import.meta.hot) {

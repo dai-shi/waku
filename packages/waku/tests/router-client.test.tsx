@@ -2736,77 +2736,6 @@ describe('Router integration', () => {
     }
   });
 
-  test('an instant nav aims at a hash target that arrives with the response', async () => {
-    const capture = { router: null as RouterApi | null };
-    const Probe = makeProbe(capture);
-    const nextSlotId = unstable_getRouteSlotId('/next');
-    let land: (() => void) | undefined;
-    const refetch = vi.fn<RefetchInner>(
-      () =>
-        new Promise((resolve) => {
-          land = () =>
-            resolve({
-              extra: <div id="target">target</div>,
-              [ROUTE_ID]: ['/next', ''],
-              [IS_STATIC_ID]: false,
-            });
-        }),
-    );
-    installRefetch(refetch);
-    const scrollToSpy = vi
-      .spyOn(window, 'scrollTo')
-      .mockImplementation(() => {});
-    const restoreScrollY = stubScrollY(100);
-    const getBoundingClientRectSpy = vi
-      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
-      .mockImplementation(function (this: HTMLElement) {
-        return { top: this.id === 'target' ? 40 : 0 } as DOMRect;
-      });
-    const view = await renderRouter(
-      { initialRoute: { path: '/start', query: '', hash: '' } },
-      {
-        [unstable_getRouteSlotId('/start')]: <Probe />,
-        // the cached shell paints without #target; it streams in after
-        [nextSlotId]: (
-          <>
-            <Probe />
-            <Slot id="extra" />
-          </>
-        ),
-        extra: <div>placeholder</div>,
-        [ROUTE_ID]: ['/start', ''],
-        [IS_STATIC_ID]: false,
-        [`${ETAG_ID_PREFIX}${nextSlotId}`]: IMMUTABLE_ETAG,
-      },
-    );
-    try {
-      document.body.append(view.container);
-      const pushed = capture.router!.push('/next#target', {
-        unstable_instant: true,
-      });
-      await act(async () => {
-        await flush();
-      });
-      await act(async () => {
-        land!();
-        await pushed;
-        await flush();
-      });
-
-      expect(scrollToSpy).toHaveBeenLastCalledWith({
-        left: 0,
-        top: 140,
-        behavior: 'instant',
-      });
-    } finally {
-      view.container.remove();
-      view.unmount();
-      getBoundingClientRectSpy.mockRestore();
-      scrollToSpy.mockRestore();
-      restoreScrollY();
-    }
-  });
-
   test('a server rewrite drops a hash target the response did not keep', async () => {
     const capture = { router: null as RouterApi | null };
     const Probe = makeProbe(capture);
@@ -6784,6 +6713,83 @@ describe('Router integration', () => {
       pushSpy.mockRestore();
       replaceSpy.mockRestore();
       view.unmount();
+    }
+  });
+
+  test('an instant nav does not chase a hash target that arrives later', async () => {
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const nextSlotId = unstable_getRouteSlotId('/next');
+    let land: (() => void) | undefined;
+    const refetch = vi.fn<RefetchInner>(
+      () =>
+        new Promise((resolve) => {
+          land = () =>
+            resolve({
+              extra: <div id="target">target</div>,
+              [ROUTE_ID]: ['/next', ''],
+              [IS_STATIC_ID]: false,
+            });
+        }),
+    );
+    installRefetch(refetch);
+    const scrollToSpy = vi
+      .spyOn(window, 'scrollTo')
+      .mockImplementation(() => {});
+    const restoreScrollY = stubScrollY(100);
+    const getBoundingClientRectSpy = vi
+      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockImplementation(function (this: HTMLElement) {
+        return { top: this.id === 'target' ? 40 : 0 } as DOMRect;
+      });
+    const view = await renderRouter(
+      { initialRoute: { path: '/start', query: '', hash: '' } },
+      {
+        [unstable_getRouteSlotId('/start')]: <Probe />,
+        // the cached shell paints without #target; it streams in after
+        [nextSlotId]: (
+          <>
+            <Probe />
+            <Slot id="extra" />
+          </>
+        ),
+        extra: <div>placeholder</div>,
+        [ROUTE_ID]: ['/start', ''],
+        [IS_STATIC_ID]: false,
+        [`${ETAG_ID_PREFIX}${nextSlotId}`]: IMMUTABLE_ETAG,
+      },
+    );
+    try {
+      document.body.append(view.container);
+      const pushed = capture.router!.push('/next#target', {
+        unstable_instant: true,
+      });
+      await act(async () => {
+        await flush();
+      });
+      // the path changed and the target was missing, so it went to the top
+      expect(scrollToSpy).toHaveBeenCalledTimes(1);
+      expect(scrollToSpy).toHaveBeenLastCalledWith({
+        left: 0,
+        top: 0,
+        behavior: 'instant',
+      });
+
+      await act(async () => {
+        land!();
+        await pushed;
+        await flush();
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+
+      expect(document.getElementById('target')).not.toBeNull();
+      expect(scrollToSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      view.container.remove();
+      view.unmount();
+      getBoundingClientRectSpy.mockRestore();
+      scrollToSpy.mockRestore();
+      restoreScrollY();
     }
   });
 
