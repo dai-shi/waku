@@ -50,6 +50,9 @@ export function createRenderUtils(
       if (options && 'value' in options) {
         data._value = options.value;
       }
+      if (options?.documentLocation) {
+        data._location = options.documentLocation;
+      }
       if (options?.etags) {
         for (const [slotId, etag] of Object.entries(options.etags)) {
           data[ETAG_ID_PREFIX + slotId] = etag;

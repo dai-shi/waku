@@ -3,7 +3,13 @@ import {
   type RouteProps,
   pathnameToRoutePath,
 } from '../isomorphic-utils/route-path.js';
-import { getRouteUrl, parseRedirectUrl, parseRoute } from './route-url.js';
+import {
+  getRouteUrl,
+  isInsideBase,
+  parseRedirectUrl,
+  parseRoute,
+  redactCredentials,
+} from './route-url.js';
 
 export type ErrorRoute =
   | { type: 'route'; target: RouteProps; url: URL }
@@ -22,21 +28,25 @@ export const resolveErrorRoute = (
   has404: boolean,
 ): ErrorRoute => {
   const info = getErrorInfo(error);
-  if (info?.location) {
-    const parsed = parseRedirectUrl(info.location, requestedUrl);
+  const location = info?.location;
+  if (location) {
+    const parsed = parseRedirectUrl(location, requestedUrl);
     if (!parsed) {
-      return { type: 'unfollowable', location: info.location };
+      return { type: 'unfollowable', location: redactCredentials(location) };
     }
-    if (info.unstable_redirected || parsed.origin !== window.location.origin) {
+    if (info.unstable_leave || parsed.origin !== window.location.origin) {
       return { type: 'leave', url: parsed };
     }
-    if (info.location.startsWith('/') && !info.location.startsWith('//')) {
+    if (location.startsWith('/') && !location.startsWith('//')) {
       const target = {
         path: pathnameToRoutePath(parsed.pathname),
         query: parsed.searchParams.toString(),
         hash: parsed.hash,
       };
       return { type: 'route', target, url: getRouteUrl(target) };
+    }
+    if (!isInsideBase(parsed)) {
+      return { type: 'leave', url: parsed };
     }
     return { type: 'route', target: parseRoute(parsed), url: parsed };
   }

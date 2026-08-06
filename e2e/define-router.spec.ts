@@ -172,7 +172,7 @@ test.describe(`define-router`, () => {
     expect(await res.text()).toBe('');
   });
 
-  test('a redirected rsc request hands the page to the browser', async ({
+  test('a pre render redirect resolves as a soft navigation', async ({
     page,
   }) => {
     await page.goto(`http://localhost:${port}/`);
@@ -185,12 +185,41 @@ test.describe(`define-router`, () => {
 
     await expect(page.getByTestId('foo-title')).toHaveText('Foo');
     expect(page.url()).toBe(`http://localhost:${port}/foo`);
-    // the marker is gone only if the document was replaced, not soft navigated
+    // the marker survives only if the document was kept, not replaced
     expect(
       await page.evaluate(
         () => (window as unknown as { __beforeMoved?: true }).__beforeMoved,
       ),
-    ).toBeUndefined();
+    ).toBe(true);
+  });
+
+  test('leaving replaces the entry, so back does not bounce', async ({
+    page,
+  }) => {
+    await page.goto(`http://localhost:${port}/`);
+    await waitForHydration(page);
+    const before = await page.evaluate(() => history.length);
+
+    await page.locator("a[href='/moved-hash']").click();
+    await page.waitForURL(`http://localhost:${port}/foo#bottom`);
+
+    // the entry the reader never saw is replaced, not stacked
+    expect(await page.evaluate(() => history.length)).toBe(before + 1);
+    await page.goBack();
+    await expect(page.getByRole('heading').first()).not.toHaveText('Foo');
+  });
+
+  test('a redirect no route can answer navigates the document', async ({
+    page,
+  }) => {
+    await page.goto(`http://localhost:${port}/`);
+    await waitForHydration(page);
+
+    await page.locator("a[href='/moved-hash']").click();
+
+    // the router cannot resolve it, so the browser has to go there itself
+    await page.waitForURL(`http://localhost:${port}/foo#bottom`);
+    await expect(page.getByTestId('foo-title')).toHaveText('Foo');
   });
 
   test('api hi with POST', async () => {

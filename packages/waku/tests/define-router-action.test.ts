@@ -333,13 +333,55 @@ describe('unstable_redirect', () => {
     });
   });
 
+  it('accepts an absolute http or https redirect', () => {
+    expect(getRedirectInfo('https://example.com/next')).toEqual({
+      status: 303,
+      location: 'https://example.com/next',
+    });
+  });
+
+  it('accepts a backslash the url parser keeps in a query', () => {
+    try {
+      unstable_redirect(new URL('https://example.com/s?q=a\\b'), 303);
+    } catch (e) {
+      expect(getErrorInfo(e)).toEqual({
+        status: 303,
+        location: 'https://example.com/s?q=a\\b',
+      });
+    }
+  });
+
+  it('does not carry credentials into the error it throws', () => {
+    // a redirect thrown mid stream reaches the client as this digest
+    try {
+      unstable_redirect(new URL('https://user:pw@other.example/x'), 303);
+    } catch (e) {
+      expect(getErrorInfo(e)).toEqual({
+        status: 303,
+        location: 'https://other.example/x',
+      });
+    }
+  });
+
+  it('accepts a URL, which is how a variable gets through', () => {
+    try {
+      unstable_redirect(new URL('https://example.com/next?a=1'), 303);
+    } catch (e) {
+      expect(getErrorInfo(e)).toEqual({
+        status: 303,
+        location: 'https://example.com/next?a=1',
+      });
+    }
+  });
+
   it.each([
-    'https://example.com/',
     '//example.com/',
     '/\\example.com/',
     'login',
     '/bad\npath',
     '/bad\x7fpath',
+    'https://',
+    'https://[',
   ])('rejects invalid redirect location %s', (location) => {
     expect(() => unstable_redirect(location)).toThrow(
       'Invalid redirect location',

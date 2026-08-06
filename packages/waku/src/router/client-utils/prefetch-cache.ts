@@ -156,6 +156,8 @@ const startPrefetch = (
       mergePrefetchedElements(store, rscPath, resolved);
     },
     () => {
+      // TODO a negative ttl, so a route that answers with a document location
+      // is not fetched again on every hover
       if (cache.get(key) === entry) {
         cache.delete(key);
       }

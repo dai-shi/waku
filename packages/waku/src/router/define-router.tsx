@@ -52,23 +52,56 @@ export function unstable_notFound(): never {
 }
 
 /**
- * Redirect within the current application. Accepts the same target as
- * `router.push` / `router.replace`: a typed route href or a structured
- * `{ to, params, search, hash }`. The resolved location must start with a
- * single `/`.
+ * Redirect within the app, or away from it with an absolute http or https url.
+ * A `URL` is the way to pass one that is not a literal. Where it points is not
+ * validated, so check a target built from user input against your own
+ * allowlist.
+ *
+ * An absolute url navigates the document even when it names this origin, so
+ * pass a path to stay within the app. A form submission without JavaScript is
+ * followed by the browser, which resends the body on 307 and 308, so those
+ * answer 303 instead.
  */
 export function unstable_redirect<Path extends RoutePath = RoutePath>(
-  to: RouteHref | BuildRouteHrefTarget<Path>,
+  to:
+    | RouteHref
+    | `http://${string}`
+    | `https://${string}`
+    | URL
+    | BuildRouteHrefTarget<Path>,
   status: 303 | 307 | 308 = 307,
 ): never {
-  const location =
-    typeof to === 'string' ? to : buildRouteHref(to, getResolveSearchCodec());
-  if (!location.startsWith('/') || location.startsWith('//')) {
+  let location =
+    typeof to === 'string'
+      ? to
+      : to instanceof URL
+        ? to.href
+        : buildRouteHref(to, getResolveSearchCodec());
+  const leavesTheApp =
+    location.startsWith('http://') || location.startsWith('https://');
+  if (
+    leavesTheApp
+      ? !URL.canParse(location)
+      : !location.startsWith('/') || location.startsWith('//')
+  ) {
     throw new Error(`Invalid redirect location: ${JSON.stringify(location)}`);
+  }
+  if (leavesTheApp) {
+    // a redirect thrown mid stream reaches the client as this digest, before
+    // anything resolves it
+    const url = new URL(location);
+    url.username = '';
+    url.password = '';
+    location = url.href;
   }
   for (let i = 0; i < location.length; ++i) {
     const charCode = location.charCodeAt(i);
-    if (charCode < 0x20 || charCode === 0x7f || charCode === 0x5c) {
+    const isBackslash = charCode === 0x5c;
+    if (
+      charCode < 0x20 ||
+      charCode === 0x7f ||
+      (isBackslash && !leavesTheApp)
+    ) {
       throw new Error(`Invalid redirect location: ${JSON.stringify(location)}`);
     }
   }

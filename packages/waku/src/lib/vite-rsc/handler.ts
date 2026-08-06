@@ -20,8 +20,9 @@ import type {
 } from '../types.js';
 import { getErrorInfo } from '../utils/custom-errors.js';
 import { sanitizeLog } from '../utils/log.js';
-import { addBase, joinPath } from '../utils/path.js';
+import { joinPath } from '../utils/path.js';
 import { DEBUG_ID_HEADER } from '../utils/react-debug-channel.js';
+import { resolveRedirectLocation } from '../utils/redirect.js';
 import { createRenderUtils } from '../utils/render.js';
 import { getInput } from '../utils/request.js';
 import { encodeRscPath } from '../utils/rsc-path.js';
@@ -76,7 +77,26 @@ const toProcessRequest =
       });
     } catch (e) {
       const info = getErrorInfo(e);
-      const status = info?.status || 500;
+      const documentLocation = info?.location
+        ? resolveRedirectLocation(info.location, req.url, config.basePath)
+        : undefined;
+      // a document request is a real navigation, so it keeps the 3xx
+      if (documentLocation && input.type !== 'http') {
+        return new Response(
+          await renderUtils.renderRsc({}, { documentLocation }),
+          // a 200 that a shared cache must not hand to the next user
+          { headers: { 'cache-control': 'private, no-store' } },
+        );
+      }
+      const isRefusedLocation = !!info?.location && !documentLocation;
+      const isDocumentPost = input.type === 'http' && req.method === 'POST';
+      // 307 and 308 resend the body to the destination
+      const redirectStatus = isDocumentPost ? 303 : info?.status || 307;
+      const status = isRefusedLocation
+        ? 500
+        : documentLocation
+          ? redirectStatus
+          : info?.status || 500;
       let message: string;
       if (info) {
         message = (e as { message?: string } | undefined)?.message || String(e);
@@ -85,10 +105,12 @@ const toProcessRequest =
         message = 'Internal Server Error';
       }
       const body = stringToStream(message);
-      const headers: { location?: string } = {};
-      if (info?.location) {
-        headers.location = addBase(info.location, config.basePath);
-      }
+      const headers = documentLocation
+        ? {
+            location: documentLocation,
+            'cache-control': 'private, no-store',
+          }
+        : {};
       return new Response(body, { status, headers });
     }
 

@@ -10,6 +10,9 @@ export const pathnameToCurrentRoutePath = (pathname: string) =>
     removeBase(pathname, import.meta.env.WAKU_CONFIG_BASE_PATH),
   );
 
+export const isInsideBase = (url: URL) =>
+  url.pathname.startsWith(import.meta.env.WAKU_CONFIG_BASE_PATH);
+
 export const parseRoute = (url: URL): RouteProps => {
   const { pathname, searchParams, hash } = url;
   return {
@@ -38,8 +41,24 @@ export const isSameRscRoute = (next: RscRoute, prev: RscRoute) =>
   next.path === prev.path && next.query === prev.query;
 
 export const parseRedirectUrl = (location: string, base: string | URL) => {
-  const url = new URL(location, base);
-  return url.protocol === 'http:' || url.protocol === 'https:'
-    ? url
-    : undefined;
+  let url: URL;
+  try {
+    url = new URL(location, base);
+  } catch {
+    return undefined;
+  }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    return undefined;
+  }
+  url.username = '';
+  url.password = '';
+  // a location the server never resolved can name this host over plaintext,
+  // and the browser is the one that knows the scheme it is on
+  if (url.protocol === 'http:' && url.host === window.location.host) {
+    url.protocol = window.location.protocol;
+  }
+  return url;
 };
+
+export const redactCredentials = (location: string) =>
+  location.replace(/\/\/[^/@]*@/, '//');

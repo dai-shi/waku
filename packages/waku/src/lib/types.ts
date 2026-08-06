@@ -9,6 +9,7 @@ export type Unstable_RenderRsc = (
   options?: {
     value?: unknown;
     etags?: Etags;
+    documentLocation?: string;
     unstable_clientModuleCallback?: (ids: string[]) => void;
   },
 ) => Promise<ReadableStream>;

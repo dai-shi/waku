@@ -1,6 +1,5 @@
 import {
   unstable_base64ToBytes as base64ToBytes,
-  unstable_createCustomError as createCustomError,
   unstable_getErrorInfo as getErrorInfo,
 } from '../../minimal/server.js';
 import type { unstable_defineHandlers as defineHandlers } from '../../minimal/server.js';
@@ -120,6 +119,33 @@ export const createRequestHandler = ({
         }
       };
 
+      const getEntriesForRedirect = async (location: string) => {
+        const redirectRoute = resolveInternalRoute(location, input.req.url);
+        if (!redirectRoute) {
+          return null;
+        }
+        const url = new URL(input.req.url);
+        const base = url.pathname.slice(
+          0,
+          url.pathname.length - input.pathname.length,
+        );
+        const headers = new Headers(input.req.headers);
+        for (const name of ['content-type', 'content-length']) {
+          headers.delete(name);
+        }
+        const destination = new Request(new URL(base + location, url), {
+          headers,
+        });
+        return runHandled(destination, () =>
+          routeEntries.getEntriesForRoute(
+            encodeRoutePath(redirectRoute.path),
+            new URLSearchParams({ query: redirectRoute.query }),
+            clientEtags,
+            requestElementCache,
+          ),
+        ).catch(() => null);
+      };
+
       const handleRscRequest = async ({
         rscPath,
         rscParams,
@@ -144,7 +170,15 @@ export const createRequestHandler = ({
             requestElementCache,
           );
         } catch (e) {
-          if (getErrorInfo(e)?.status !== 404) {
+          const info = getErrorInfo(e);
+          if (info?.location && info.status !== 404) {
+            const redirected = await getEntriesForRedirect(info.location);
+            if (!redirected) {
+              throw e;
+            }
+            return renderRsc(redirected.elements, { etags: redirected.etags });
+          }
+          if (info?.status !== 404) {
             throw e;
           }
         }
@@ -181,26 +215,9 @@ export const createRequestHandler = ({
           if (!location) {
             throw e;
           }
-          const redirectRoute = resolveInternalRoute(location, input.req.url);
-          const entries =
-            redirectRoute &&
-            (await routeEntries
-              .getEntriesForRoute(
-                encodeRoutePath(redirectRoute.path),
-                new URLSearchParams({ query: redirectRoute.query }),
-                clientEtags,
-                requestElementCache,
-              )
-              .catch((e: unknown) => {
-                const info = getErrorInfo(e);
-                if (info?.location || info?.status === 404) {
-                  return null;
-                }
-                throw e;
-              }));
+          const entries = await getEntriesForRedirect(location);
           if (!entries) {
-            // 303 keeps the browser from sending the action body along
-            throw createCustomError('Redirect', { status: 303, location });
+            throw e;
           }
           return renderRsc(entries.elements, { etags: entries.etags });
         }

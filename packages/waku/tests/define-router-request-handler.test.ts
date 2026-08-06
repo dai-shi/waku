@@ -166,8 +166,7 @@ describe('request dispatch', () => {
         }),
         utils,
       ).catch((e: unknown) => e);
-      // 303 so the follow is a GET and the action body is not replayed
-      expect(unstable_getErrorInfo(err)).toEqual({ status: 303, location });
+      expect(unstable_getErrorInfo(err)).toEqual({ status: 307, location });
       expect(utils.renderRsc).not.toHaveBeenCalled();
     },
   );
@@ -318,6 +317,155 @@ describe('request dispatch', () => {
     ).rejects.toThrow('the 404 page is broken');
   });
 
+  it('responds to a route redirect with the destination route', async () => {
+    const moved = {
+      ...dynamicRoute('/moved'),
+      routeElement: {
+        isStatic: false,
+        renderer: () => {
+          unstable_redirect('/dest?a=1' as never);
+        },
+      },
+    };
+    const { handleRequest } = unstable_defineRouter({
+      getConfigs: async () => [moved, dynamicRoute('/dest')],
+    });
+    const utils = makeUtils();
+
+    await handleRequest(rscInput(encodeRoutePath('/moved')), utils);
+
+    expect(utils.renderRsc).toHaveBeenCalledWith(
+      expect.objectContaining({ [ROUTE_ID]: ['/dest', 'a=1'] }),
+      { etags: {} },
+    );
+  });
+
+  it('asks interceptors about the destination, not the route that moved', async () => {
+    const seen: string[] = [];
+    const moved = {
+      ...dynamicRoute('/moved'),
+      routeElement: {
+        isStatic: false,
+        renderer: () => {
+          unstable_redirect('/dest' as never);
+        },
+      },
+    };
+    const { handleRequest } = unstable_defineRouter({
+      getConfigs: async () => [moved, dynamicRoute('/dest')],
+      unstable_interceptors: [
+        async (next) => {
+          seen.push(new URL(unstable_getRequest().url).pathname);
+          return next();
+        },
+      ],
+    });
+
+    await handleRequest(rscInput(encodeRoutePath('/moved')), makeUtils());
+
+    // a guard on /dest would never run if it only saw the request for /moved
+    expect(seen[seen.length - 1]).toBe('/dest');
+  });
+
+  it('keeps the base path on the destination it asks about', async () => {
+    const seen: string[] = [];
+    const moved = {
+      ...dynamicRoute('/moved'),
+      routeElement: {
+        isStatic: false,
+        renderer: () => {
+          unstable_redirect('/dest' as never);
+        },
+      },
+    };
+    const { handleRequest } = unstable_defineRouter({
+      getConfigs: async () => [moved, dynamicRoute('/dest')],
+      unstable_interceptors: [
+        async (next) => {
+          seen.push(new URL(unstable_getRequest().url).pathname);
+          return next();
+        },
+      ],
+    });
+    const rscPath = encodeRoutePath('/moved');
+
+    await handleRequest(
+      {
+        type: 'rsc' as const,
+        // the app is mounted under /docs, so getInput strips it from pathname
+        pathname: '/RSC/' + rscPath,
+        rscPath,
+        rscParams: undefined,
+        req: new Request('http://localhost/docs/RSC/' + rscPath),
+      },
+      makeUtils(),
+    );
+
+    expect(seen[seen.length - 1]).toBe('/docs/dest');
+  });
+
+  it('hands off a route redirect whose destination fails to render', async () => {
+    const moved = {
+      ...dynamicRoute('/moved'),
+      routeElement: {
+        isStatic: false,
+        renderer: () => {
+          unstable_redirect('/dest' as never);
+        },
+      },
+    };
+    const broken = {
+      ...dynamicRoute('/dest'),
+      routeElement: {
+        isStatic: false,
+        renderer: () => {
+          throw new Error('the destination is broken');
+        },
+      },
+    };
+    const { handleRequest } = unstable_defineRouter({
+      getConfigs: async () => [moved, broken],
+    });
+    const utils = makeUtils();
+
+    const err = await handleRequest(
+      rscInput(encodeRoutePath('/moved')),
+      utils,
+    ).catch((e: unknown) => e);
+
+    // the browser goes to /dest and meets the error there, at its own url
+    expect(unstable_getErrorInfo(err)).toEqual({
+      status: 307,
+      location: '/dest',
+    });
+  });
+
+  it('hands off a route redirect the destination cannot answer', async () => {
+    const moved = {
+      ...dynamicRoute('/moved'),
+      routeElement: {
+        isStatic: false,
+        renderer: () => {
+          unstable_redirect('/gone' as never);
+        },
+      },
+    };
+    const { handleRequest } = unstable_defineRouter({
+      getConfigs: async () => [moved],
+    });
+    const utils = makeUtils();
+
+    const err = await handleRequest(rscInput(encodeRoutePath('/moved')), utils)
+      // the client leaves for /gone, which answers for itself
+      .catch((e: unknown) => e);
+
+    expect(unstable_getErrorInfo(err)).toEqual({
+      status: 307,
+      location: '/gone',
+    });
+    expect(utils.renderRsc).not.toHaveBeenCalled();
+  });
+
   it('hands off a server-function redirect whose destination is not found', async () => {
     const gone = {
       ...dynamicRoute('/dest'),
@@ -340,7 +488,7 @@ describe('request dispatch', () => {
     ).catch((e: unknown) => e);
     // the browser still lands on /dest, which renders its own 404 there
     expect(unstable_getErrorInfo(err)).toEqual({
-      status: 303,
+      status: 307,
       location: '/dest',
     });
   });
@@ -365,9 +513,8 @@ describe('request dispatch', () => {
       }),
       utils,
     ).catch((e: unknown) => e);
-    // still 303, so the action body is not replayed onto the next hop either
     expect(unstable_getErrorInfo(err)).toEqual({
-      status: 303,
+      status: 307,
       location: '/dest',
     });
   });

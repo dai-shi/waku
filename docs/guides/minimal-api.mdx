@@ -317,7 +317,7 @@ Important details:
 - RSC IDs starting with `_` are reserved for Waku internals.
 - `rscPath` and `rscParams` are opaque application data. Waku does not assign them semantics.
 - On the client, RSC caching and prefetch reuse compare `rscParams` by identity. Reuse the same object or `URLSearchParams` instance if you want reuse; creating a fresh object each time is treated as different input.
-- Throwing from `handleRequest` turns into an HTTP error response. If you throw one of Waku's custom errors, status and location are preserved.
+- Throwing from `handleRequest` turns into an HTTP error response, and a custom error keeps its status. A location is a redirect a document request answers with a 3xx, but a fetch cannot follow one it is unable to read, so an RSC or server function request answers 200 and the client throws an error whose info carries the location and `unstable_leave`, for you to navigate to.
 
 #### `handleBuild(utils)`
 

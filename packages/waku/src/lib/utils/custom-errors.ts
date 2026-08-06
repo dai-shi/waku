@@ -1,7 +1,7 @@
 type ErrorInfo = {
   status?: number;
   location?: string;
-  unstable_redirected?: boolean;
+  unstable_leave?: boolean;
   // set by the client, read by no one in waku: an app decides its own recovery
   unstable_networkError?: boolean;
 };
@@ -17,14 +17,14 @@ const isErrorInfo = (x: unknown): x is ErrorInfo => {
     return false;
   }
   if (
-    'unstable_networkError' in x &&
-    typeof (x as ErrorInfo).unstable_networkError !== 'boolean'
+    'unstable_leave' in x &&
+    typeof (x as ErrorInfo).unstable_leave !== 'boolean'
   ) {
     return false;
   }
   if (
-    'unstable_redirected' in x &&
-    typeof (x as ErrorInfo).unstable_redirected !== 'boolean'
+    'unstable_networkError' in x &&
+    typeof (x as ErrorInfo).unstable_networkError !== 'boolean'
   ) {
     return false;
   }

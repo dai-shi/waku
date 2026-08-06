@@ -47,6 +47,12 @@ const HomeLayout = ({ children }: { children: ReactNode }) => (
           <Pending />
         </Link>
       </li>
+      <li>
+        <Link to="/moved-hash">
+          Moved Hash
+          <Pending />
+        </Link>
+      </li>
     </ul>
     {children}
   </div>
