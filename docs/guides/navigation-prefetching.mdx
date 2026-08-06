@@ -202,6 +202,8 @@ export const PendingIndicator = () => {
 ```
 
 ```tsx
+'use client';
+
 import { Link as WakuLink } from 'waku';
 import type {
   LinkProps,
@@ -226,7 +228,7 @@ Use `PendingLink` where a link needs an indicator. Keep the indicator non-intera
 
 ## Observe Route Changes
 
-`useRouter()` updates when the committed route changes. Observe its route fields to log route changes:
+`useRouter().unstable_events` was removed. For pending UI on a link, use `useNavigationStatus_UNSTABLE()` above. For view tracking, observe the committed route fields:
 
 ```tsx
 'use client';
@@ -243,9 +245,9 @@ export const NavigationLogger = () => {
 };
 ```
 
-The effect runs for the initial route and whenever the current route fields change. It does not run again for `reload()` or navigation to the same URL, and it does not observe the start or failure of a navigation.
+The effect runs for the initial route and whenever the current route fields change. It does not run again for `reload()` or navigation to the same URL, and it does not observe the start of a navigation. Instant navigation commits the requested route before reconciliation, so a redirected instant navigation logs the optimistic route and then the reconciled one; keep the previous value if you only want landings.
 
-Catch the promises returned by programmatic `push`, `replace`, and `reload` calls to handle their direct errors. There is no global observer for failures from `<Link>` or browser back and forward. Do not treat promise resolution as a committed-route signal: a newer navigation can supersede the request, and redirects or other follows may continue after it settles. Observe the route fields above when you need the destination that was committed.
+Catch the promises returned by programmatic `push`, `replace`, and `reload` calls to handle their direct errors. There is no global failure callback for `<Link>` or browser back and forward; failed navigations still surface through `ErrorBoundary` from `waku/router/client` (or your own boundary around the router). Do not treat promise resolution as a committed-route signal: a newer navigation can supersede the request, and redirects or other follows may continue after it settles. Observe the route fields above when you need the destination that was committed.
 
 ## Custom Transitions
 
