@@ -302,22 +302,4 @@ test.describe('useRouter', () => {
       await expect(page.getByTestId('hash')).toHaveText('Hash: 2');
     });
   });
-
-  test.describe('calls route change event handlers', () => {
-    test(`on dynamic pages`, async ({ page }) => {
-      await page.goto(`http://localhost:${port}/dynamic`);
-      const msgs: string[] = [];
-      const prefix = '[router event] ';
-      page.on('console', (msg) => {
-        const text = msg.text();
-        if (text.startsWith(prefix)) {
-          msgs.push(text.slice(prefix.length));
-        }
-      });
-      await waitForHydration(page);
-      await page.locator('text=Static router.push button').click();
-      await expect(page.getByRole('heading', { name: 'Static' })).toBeVisible();
-      expect(msgs).toEqual(['Route change started', 'Route change completed']);
-    });
-  });
 });

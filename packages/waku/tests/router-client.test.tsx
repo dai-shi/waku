@@ -711,7 +711,6 @@ describe('useRouter + Link with context', () => {
     };
     const changeRoute = vi.fn(async () => {});
     const prefetchRoute = vi.fn();
-    const routeChangeEvents = { on: vi.fn(), off: vi.fn() };
 
     const Probe = () => {
       setRouter(useRouter() as unknown as RouterApi);
@@ -724,7 +723,6 @@ describe('useRouter + Link with context', () => {
           route: { path: '/start', query: '', hash: '' },
           changeRoute,
           prefetchRoute,
-          routeChangeEvents,
           fetchingSlices: new Set<string>(),
         }}
       >
@@ -800,7 +798,6 @@ describe('useRouter + Link with context', () => {
       },
       undefined,
     );
-    expect(capture.router.unstable_events).toBe(routeChangeEvents);
 
     view.unmount();
   });
@@ -824,7 +821,6 @@ describe('useRouter + Link with context', () => {
             route: { path: '/start', query: '', hash: '' },
             changeRoute,
             prefetchRoute: vi.fn(),
-            routeChangeEvents: { on: vi.fn(), off: vi.fn() },
             fetchingSlices: new Set<string>(),
           }}
         >
@@ -894,7 +890,6 @@ describe('useRouter + Link with context', () => {
               route: { path: '/start', query: '', hash: '' },
               changeRoute: vi.fn(async () => {}),
               prefetchRoute,
-              routeChangeEvents: { on: vi.fn(), off: vi.fn() },
               fetchingSlices: new Set<string>(),
             }}
           >
@@ -953,7 +948,6 @@ describe('useRouter + Link with context', () => {
           route: { path: '/posts/a%20b', query: '', hash: '' },
           changeRoute: vi.fn(async () => {}),
           prefetchRoute: vi.fn(),
-          routeChangeEvents: { on: vi.fn(), off: vi.fn() },
           fetchingSlices: new Set<string>(),
         }}
       >
@@ -978,7 +972,6 @@ describe('useRouter + Link with context', () => {
           route: { path: '/about', query: '', hash: '' },
           changeRoute: vi.fn(async () => {}),
           prefetchRoute: vi.fn(),
-          routeChangeEvents: { on: vi.fn(), off: vi.fn() },
           fetchingSlices: new Set<string>(),
         }}
       >
@@ -1034,7 +1027,6 @@ describe('useRouter + Link with context', () => {
             route,
             changeRoute: vi.fn(async () => {}),
             prefetchRoute: vi.fn(),
-            routeChangeEvents: { on: vi.fn(), off: vi.fn() },
             fetchingSlices: new Set<string>(),
           }}
         >
@@ -1064,7 +1056,6 @@ describe('useRouter + Link with context', () => {
           route: { path: '/start', query: '', hash: '' },
           changeRoute,
           prefetchRoute,
-          routeChangeEvents: { on: vi.fn(), off: vi.fn() },
           fetchingSlices: new Set<string>(),
         }}
       >
@@ -1148,7 +1139,6 @@ describe('useRouter + Link with context', () => {
           route: { path: '/start', query: '', hash: '#target' },
           changeRoute,
           prefetchRoute,
-          routeChangeEvents: { on: vi.fn(), off: vi.fn() },
           fetchingSlices: new Set<string>(),
         }}
       >
@@ -1205,7 +1195,6 @@ describe('useRouter + Link with context', () => {
           route: { path: '/start', query: '', hash: '#target' },
           changeRoute,
           prefetchRoute,
-          routeChangeEvents: { on: vi.fn(), off: vi.fn() },
           fetchingSlices: new Set<string>(),
         }}
       >
@@ -1248,7 +1237,6 @@ describe('useRouter + Link with context', () => {
           route: { path: '/start', query: '', hash: '' },
           changeRoute,
           prefetchRoute,
-          routeChangeEvents: { on: vi.fn(), off: vi.fn() },
           fetchingSlices: new Set<string>(),
         }}
       >
@@ -1323,7 +1311,6 @@ describe('useRouter + Link with context', () => {
           route: { path: '/start', query: '', hash: '' },
           changeRoute: vi.fn(async () => {}),
           prefetchRoute,
-          routeChangeEvents: { on: vi.fn(), off: vi.fn() },
           fetchingSlices: new Set<string>(),
         }}
       >
@@ -1380,7 +1367,6 @@ describe('useRouter + Link with context', () => {
           route: { path: '/start', query: '', hash: '' },
           changeRoute: vi.fn(async () => {}),
           prefetchRoute,
-          routeChangeEvents: { on: vi.fn(), off: vi.fn() },
           fetchingSlices: new Set<string>(),
         }}
       >
@@ -1423,7 +1409,6 @@ describe('useRouter + Link with context', () => {
           route: { path: '/start', query: '', hash: '' },
           changeRoute,
           prefetchRoute,
-          routeChangeEvents: { on: vi.fn(), off: vi.fn() },
           fetchingSlices: new Set<string>(),
         }}
       >
@@ -1462,7 +1447,6 @@ describe('useRouter + Link with context', () => {
       route: { path: '/start', query: '', hash: '' },
       changeRoute: vi.fn(async () => {}),
       prefetchRoute: vi.fn(),
-      routeChangeEvents: { on: vi.fn(), off: vi.fn() },
       fetchingSlices: new Set<string>(),
     };
 
@@ -1503,7 +1487,6 @@ describe('useRouter + Link with context', () => {
           route: { path: '/start', query: '', hash: '' },
           changeRoute: vi.fn(async () => {}),
           prefetchRoute: vi.fn(),
-          routeChangeEvents: { on: vi.fn(), off: vi.fn() },
           fetchingSlices: new Set<string>(),
         }}
       >
@@ -1543,7 +1526,6 @@ describe('Slice', () => {
           route: { path: '/start', query: '', hash: '' },
           changeRoute: vi.fn(async () => {}),
           prefetchRoute: vi.fn(),
-          routeChangeEvents: { on: vi.fn(), off: vi.fn() },
           fetchingSlices: new Set<string>(),
         }}
       >
@@ -1564,7 +1546,6 @@ describe('Slice', () => {
           route: { path: '/start', query: '', hash: '' },
           changeRoute: vi.fn(async () => {}),
           prefetchRoute: vi.fn(),
-          routeChangeEvents: { on: vi.fn(), off: vi.fn() },
           fetchingSlices,
         }}
       >
@@ -1608,7 +1589,6 @@ describe('Slice', () => {
           route: { path: '/start', query: '', hash: '' },
           changeRoute: vi.fn(async () => {}),
           prefetchRoute: vi.fn(),
-          routeChangeEvents: { on: vi.fn(), off: vi.fn() },
           fetchingSlices: new Set<string>(),
         }}
       >
@@ -1637,7 +1617,6 @@ describe('Slice', () => {
           route: { path: '/start', query: '', hash: '' },
           changeRoute: vi.fn(async () => {}),
           prefetchRoute: vi.fn(),
-          routeChangeEvents: { on: vi.fn(), off: vi.fn() },
           fetchingSlices: new Set<string>(),
         }}
       >
@@ -1668,7 +1647,6 @@ describe('Slice', () => {
           route: { path: '/start', query: '', hash: '' },
           changeRoute: vi.fn(async () => {}),
           prefetchRoute: vi.fn(),
-          routeChangeEvents: { on: vi.fn(), off: vi.fn() },
           fetchingSlices,
         }}
       >
@@ -1816,6 +1794,40 @@ describe('Router integration', () => {
     }
   });
 
+  test('a server function update for the settled route does not navigate', async () => {
+    window.history.replaceState({}, '', '/start#section');
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const view = await renderRouter(
+      { initialRoute: { path: '/start', query: '', hash: '#section' } },
+      {
+        [unstable_getRouteSlotId('/start')]: <Probe />,
+        [ROUTE_ID]: ['/start', ''],
+        [IS_STATIC_ID]: false,
+      },
+    );
+    const pushStateSpy = vi.spyOn(window.history, 'pushState');
+
+    try {
+      const store = fetchRscStore as unknown as Record<string, unknown>;
+      const listeners = store.l as Set<
+        (elements: Record<string, unknown>) => void
+      >;
+      await act(async () => {
+        for (const listener of listeners) {
+          listener({ [ROUTE_ID]: ['/start', ''], [IS_STATIC_ID]: false });
+        }
+        await flush();
+      });
+
+      expect(capture.router?.hash).toBe('#section');
+      expect(pushStateSpy).not.toHaveBeenCalled();
+    } finally {
+      pushStateSpy.mockRestore();
+      view.unmount();
+    }
+  });
+
   test('a server function response marks a static route as static', async () => {
     const capture = { router: null as RouterApi | null };
     const Probe = makeProbe(capture);
@@ -1896,486 +1908,7 @@ describe('Router integration', () => {
     view.unmount();
   });
 
-  test('a failed navigation ends with an error event', async () => {
-    const capture = { router: null as RouterApi | null };
-    const Probe = makeProbe(capture);
-    const refetch = vi.fn<ReturnType<typeof useRefetch>>((() =>
-      Promise.reject(
-        createCustomError('boom', { status: 500 }),
-      )) as unknown as ReturnType<typeof useRefetch>);
-    installRefetch(refetch);
-
-    testHoisted.elements = {
-      [unstable_getRouteSlotId('/start')]: <Probe />,
-      [ROUTE_ID]: ['/start', ''],
-      [IS_STATIC_ID]: false,
-    };
-    const consoleErrorSpy = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => {});
-    const view = await renderApp(
-      <ErrorBoundary>
-        <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
-      </ErrorBoundary>,
-    );
-    try {
-      const events: string[] = [];
-      for (const name of ['start', 'complete', 'error'] as const) {
-        capture.router!.unstable_events.on(name, (route) =>
-          events.push(`${name} ${route.path}`),
-        );
-      }
-
-      await act(async () => {
-        await capture.router!.push('/next' as never).catch(() => {});
-        await flushUntil(() => events.length >= 2);
-      });
-
-      expect(events).toEqual(['start /next', 'error /next']);
-    } finally {
-      consoleErrorSpy.mockRestore();
-      view.unmount();
-    }
-  });
-
-  test('a superseded navigation ends with an error event', async () => {
-    const { view, capture, router } = await renderFollowRouter({
-      responses: [
-        { resolve: { [ROUTE_ID]: ['/slow', ''], [IS_STATIC_ID]: false } },
-        { resolve: { [ROUTE_ID]: ['/fast', ''], [IS_STATIC_ID]: false } },
-      ],
-      slots: ['/slow', '/fast'],
-    });
-    try {
-      const events: string[] = [];
-      for (const name of ['start', 'complete', 'error'] as const) {
-        capture.router!.unstable_events.on(name, (route) =>
-          events.push(`${name} ${route.path}`),
-        );
-      }
-
-      await act(async () => {
-        const slow = router.push('/slow').catch(() => {});
-        await router.push('/fast').catch(() => {});
-        await slow;
-        await flushUntil(() => events.length >= 4);
-      });
-
-      // the superseded one closes before the winner announces itself, so a
-      // listener that flips a boolean is never left showing the wrong state
-      expect(events).toEqual([
-        'start /slow',
-        'error /slow',
-        'start /fast',
-        'complete /fast',
-      ]);
-    } finally {
-      view.unmount();
-    }
-  });
-
-  test('an error listener that navigates does not double the terminal', async () => {
-    const capture = { router: null as RouterApi | null };
-    const Probe = makeProbe(capture);
-    const refetch = vi.fn<ReturnType<typeof useRefetch>>(((rscPath: string) => {
-      const path = ['/a', '/b', '/c'].find(
-        (p) => rscPath === unstable_encodeRoutePath(p),
-      );
-      return Promise.resolve({
-        [unstable_getRouteSlotId(path!)]: <Probe />,
-        [ROUTE_ID]: [path, ''],
-        [IS_STATIC_ID]: false,
-      });
-    }) as unknown as ReturnType<typeof useRefetch>);
-    installRefetch(refetch);
-
-    testHoisted.elements = {
-      [unstable_getRouteSlotId('/start')]: <Probe />,
-      [ROUTE_ID]: ['/start', ''],
-      [IS_STATIC_ID]: false,
-    };
-    const view = await renderApp(
-      <Router initialRoute={{ path: '/start', query: '', hash: '' }} />,
-    );
-    try {
-      const events: string[] = [];
-      for (const name of ['start', 'complete', 'error'] as const) {
-        capture.router!.unstable_events.on(name, (route) =>
-          events.push(`${name} ${route.path}`),
-        );
-      }
-      capture.router!.unstable_events.on('error', () => {
-        void capture.router!.push('/c' as never).catch(() => {});
-      });
-
-      await act(async () => {
-        const a = capture.router!.push('/a' as never).catch(() => {});
-        await capture.router!.push('/b' as never).catch(() => {});
-        await a;
-        await flushUntil(() => events.some((e) => e.startsWith('complete')));
-      });
-
-      // /a closes once, and /b never announces itself because /c replaced it
-      expect(events.filter((e) => e === 'error /a')).toHaveLength(1);
-      expect(events).not.toContain('start /b');
-      expect(events.filter((e) => e.startsWith('complete'))).toEqual([
-        'complete /c',
-      ]);
-    } finally {
-      view.unmount();
-    }
-  });
-
-  test('a 404 follow that fails closes both navigations', async () => {
-    const capture = { router: null as RouterApi | null };
-    const Probe = makeProbe(capture);
-    const refetch = vi.fn<ReturnType<typeof useRefetch>>();
-    refetch
-      .mockImplementationOnce(() =>
-        Promise.reject(createCustomError('nf', { status: 404 })),
-      )
-      .mockImplementationOnce(() =>
-        Promise.reject(createCustomError('boom', { status: 500 })),
-      );
-    installRefetch(refetch);
-
-    testHoisted.elements = {
-      [unstable_getRouteSlotId('/start')]: <Probe />,
-      [unstable_getRouteSlotId('/404')]: <Probe />,
-      [ROUTE_ID]: ['/start', ''],
-      [IS_STATIC_ID]: false,
-      [HAS404_ID]: true,
-    };
-    const consoleErrorSpy = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => {});
-    const view = await renderApp(
-      <ErrorBoundary>
-        <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
-      </ErrorBoundary>,
-    );
-    try {
-      const events: string[] = [];
-      for (const name of ['start', 'complete', 'error'] as const) {
-        capture.router!.unstable_events.on(name, (route) =>
-          events.push(`${name} ${route.path}`),
-        );
-      }
-
-      await act(async () => {
-        await capture.router!.push('/missing' as never).catch(() => {});
-        await flushUntil(() => events.length >= 4);
-      });
-
-      // the follow is a navigation of its own, so it opens and closes too
-      expect(events).toEqual([
-        'start /missing',
-        'error /missing',
-        'start /404',
-        'error /404',
-      ]);
-    } finally {
-      consoleErrorSpy.mockRestore();
-      view.unmount();
-    }
-  });
-
-  test('a navigation after a finished one reports no error', async () => {
-    const { view, capture, router } = await renderFollowRouter({
-      responses: [
-        { resolve: { [ROUTE_ID]: ['/a', ''], [IS_STATIC_ID]: false } },
-        { resolve: { [ROUTE_ID]: ['/b', ''], [IS_STATIC_ID]: false } },
-      ],
-      slots: ['/a', '/b'],
-    });
-    try {
-      const events: string[] = [];
-      for (const name of ['start', 'complete', 'error'] as const) {
-        capture.router!.unstable_events.on(name, (route) =>
-          events.push(`${name} ${route.path}`),
-        );
-      }
-
-      await act(async () => {
-        await router.push('/a').catch(() => {});
-        await flushUntil(() => events.includes('complete /a'));
-        await router.push('/b').catch(() => {});
-        await flushUntil(() => events.includes('complete /b'));
-      });
-
-      // the first one already closed, so the second must not supersede it
-      expect(events).toEqual([
-        'start /a',
-        'complete /a',
-        'start /b',
-        'complete /b',
-      ]);
-    } finally {
-      view.unmount();
-    }
-  });
-
-  test('a listener that navigates does not reorder events for others', async () => {
-    const capture = { router: null as RouterApi | null };
-    const Probe = makeProbe(capture);
-    const refetch = vi.fn<ReturnType<typeof useRefetch>>(((rscPath: string) => {
-      const path = rscPath === unstable_encodeRoutePath('/b') ? '/b' : '/a';
-      return Promise.resolve({
-        [unstable_getRouteSlotId(path)]: <Probe />,
-        [ROUTE_ID]: [path, ''],
-        [IS_STATIC_ID]: false,
-      });
-    }) as unknown as ReturnType<typeof useRefetch>);
-    installRefetch(refetch);
-
-    testHoisted.elements = {
-      [unstable_getRouteSlotId('/start')]: <Probe />,
-      [ROUTE_ID]: ['/start', ''],
-      [IS_STATIC_ID]: false,
-    };
-    const view = await renderApp(
-      <Router initialRoute={{ path: '/start', query: '', hash: '' }} />,
-    );
-    try {
-      const events: string[] = [];
-      let redirected = false;
-      capture.router!.unstable_events.on('start', (route) => {
-        if (route.path === '/a' && !redirected) {
-          redirected = true;
-          void capture.router!.push('/b' as never).catch(() => {});
-        }
-      });
-      for (const name of ['start', 'complete', 'error'] as const) {
-        capture.router!.unstable_events.on(name, (route) =>
-          events.push(`${name} ${route.path}`),
-        );
-      }
-
-      await act(async () => {
-        await capture.router!.push('/a' as never).catch(() => {});
-        await flushUntil(() => events.includes('complete /b'));
-      });
-
-      // the nested navigation's events queue behind the emit that caused them,
-      // so this listener sees the same order as one registered first
-      expect(events).toEqual([
-        'start /a',
-        'error /a',
-        'start /b',
-        'complete /b',
-      ]);
-    } finally {
-      view.unmount();
-    }
-  });
-
-  test('an async listener that rejects is reported like a sync one', async () => {
-    const { view, capture, router } = await renderFollowRouter({
-      responses: [
-        { resolve: { [ROUTE_ID]: ['/next', ''], [IS_STATIC_ID]: false } },
-      ],
-      slots: ['/next'],
-    });
-    const consoleErrorSpy = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => {});
-    try {
-      const events: string[] = [];
-      capture.router!.unstable_events.on('start', async () => {
-        throw new Error('async listener blew up');
-      });
-      capture.router!.unstable_events.on('complete', (route) =>
-        events.push(`complete ${route.path}`),
-      );
-
-      await act(async () => {
-        await router.push('/next').catch(() => {});
-        await flushUntil(() => events.length > 0);
-      });
-
-      expect(events).toEqual(['complete /next']);
-      expect(consoleErrorSpy).toHaveBeenCalled();
-    } finally {
-      consoleErrorSpy.mockRestore();
-      view.unmount();
-    }
-  });
-
-  test('a listener removed during an emit is not called', async () => {
-    const { view, capture, router } = await renderFollowRouter({
-      responses: [
-        { resolve: { [ROUTE_ID]: ['/next', ''], [IS_STATIC_ID]: false } },
-      ],
-      slots: ['/next'],
-    });
-    const called: string[] = [];
-    const doomed = () => called.push('doomed');
-    capture.router!.unstable_events.on('start', () => {
-      called.push('first');
-      capture.router!.unstable_events.off('start', doomed);
-    });
-    capture.router!.unstable_events.on('start', doomed);
-
-    await act(async () => {
-      await router.push('/next').catch(() => {});
-      await flushUntil(() => called.length > 0);
-    });
-
-    expect(called).toEqual(['first']);
-
-    view.unmount();
-  });
-
-  test('a listener that throws does not break the navigation', async () => {
-    const { view, capture, router } = await renderFollowRouter({
-      responses: [
-        { resolve: { [ROUTE_ID]: ['/next', ''], [IS_STATIC_ID]: false } },
-      ],
-      slots: ['/next'],
-    });
-    const consoleErrorSpy = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => {});
-    try {
-      const events: string[] = [];
-      capture.router!.unstable_events.on('start', () => {
-        throw new Error('listener blew up');
-      });
-      for (const name of ['start', 'complete', 'error'] as const) {
-        capture.router!.unstable_events.on(name, (route) =>
-          events.push(`${name} ${route.path}`),
-        );
-      }
-
-      await act(async () => {
-        await router.push('/next').catch(() => {});
-        await flushUntil(() => events.length >= 2);
-      });
-
-      // the thrower is reported and the other listeners still see the whole run
-      expect(events).toEqual(['start /next', 'complete /next']);
-      expect(capture.router!.path).toBe('/next');
-      expect(consoleErrorSpy).toHaveBeenCalled();
-    } finally {
-      consoleErrorSpy.mockRestore();
-      view.unmount();
-    }
-  });
-
-  test('a 404 follow reports a navigation of its own', async () => {
-    const { view, capture, router } = await renderFollowRouter({
-      responses: [
-        { reject: { status: 404 } },
-        { resolve: { [ROUTE_ID]: ['/404', ''], [IS_STATIC_ID]: false } },
-      ],
-      slots: ['/404'],
-      meta: { [HAS404_ID]: true },
-    });
-    try {
-      const events: string[] = [];
-      for (const name of ['start', 'complete', 'error'] as const) {
-        capture.router!.unstable_events.on(name, (route) =>
-          events.push(`${name} ${route.path}`),
-        );
-      }
-
-      await act(async () => {
-        await router.push('/missing').catch(() => {});
-        await flushUntil(() => events.length >= 4);
-      });
-
-      expect(events).toEqual([
-        'start /missing',
-        'error /missing',
-        'start /404',
-        'complete /404',
-      ]);
-    } finally {
-      view.unmount();
-    }
-  });
-
-  test('a followed redirect emits events for the attempt and the follow', async () => {
-    const { view, capture, router } = await renderFollowRouter({
-      responses: [
-        { redirect: { from: '/moved', location: '/next' } },
-        { resolve: { [ROUTE_ID]: ['/next', ''], [IS_STATIC_ID]: false } },
-      ],
-      slots: ['/next'],
-    });
-    const events: string[] = [];
-    capture.router!.unstable_events.on('start', (route) =>
-      events.push(`start ${route.path}`),
-    );
-    capture.router!.unstable_events.on('complete', (route) =>
-      events.push(`complete ${route.path}`),
-    );
-
-    await act(async () => {
-      await router.push('/moved').catch(() => {});
-      for (let i = 0; i < 4; i += 1) {
-        await flush();
-      }
-    });
-
-    // the attempt reports its own fetch, then the follow reports the landing
-    expect(events).toEqual([
-      'start /moved',
-      'complete /moved',
-      'start /next',
-      'complete /next',
-    ]);
-
-    view.unmount();
-  });
-
-  test('a start listener that navigates beats the navigation it interrupted', async () => {
-    const capture = { router: null as RouterApi | null };
-    const Probe = makeProbe(capture);
-    const view = await renderRouter(
-      { initialRoute: { path: '/start', query: '', hash: '' } },
-      {
-        [unstable_getRouteSlotId('/start')]: <Probe />,
-        [unstable_getRouteSlotId('/a')]: <Probe />,
-        [unstable_getRouteSlotId('/b')]: <Probe />,
-        [ROUTE_ID]: ['/start', ''],
-        [IS_STATIC_ID]: false,
-      },
-    );
-    const refetch = getRefetchMock();
-    for (const path of ['/a', '/b']) {
-      refetch.mockResolvedValueOnce({
-        [ROUTE_ID]: [path, ''],
-        [IS_STATIC_ID]: true,
-      });
-      await act(async () => {
-        await capture.router!.push(path as never);
-      });
-    }
-
-    const events: string[] = [];
-    capture.router!.unstable_events.on('start', (route) => {
-      events.push(`start ${route.path}`);
-      if (route.path === '/a') {
-        void capture.router!.push('/b' as never);
-      }
-    });
-    capture.router!.unstable_events.on('complete', (route) =>
-      events.push(`complete ${route.path}`),
-    );
-
-    await act(async () => {
-      await capture.router!.push('/a' as never);
-      await flush();
-    });
-
-    expect(events).toEqual(['start /a', 'start /b', 'complete /b']);
-    expect(capture.router!.path).toBe('/b');
-    expect(window.location.pathname).toBe('/b');
-    view.unmount();
-  });
-
-  test('push performs refetch for dynamic routes and emits start/complete events', async () => {
+  test('push performs refetch for dynamic routes', async () => {
     const capture = { router: null as RouterApi | null };
     const Probe = makeProbe(capture);
 
@@ -2398,12 +1931,6 @@ describe('Router integration', () => {
     }
     const refetch = getRefetchMock();
 
-    const events: string[] = [];
-    capture.router.unstable_events.on('start', () => events.push('start'));
-    capture.router.unstable_events.on('complete', () =>
-      events.push('complete'),
-    );
-
     await act(async () => {
       await capture.router!.push('/next?x=1#h');
     });
@@ -2412,7 +1939,6 @@ describe('Router integration', () => {
     expect(refetch.mock.calls[0]?.[0]).toBe(unstable_encodeRoutePath('/next'));
     const params = refetch.mock.calls[0]?.[1] as URLSearchParams;
     expect(params.get('query')).toBe('x=1');
-    expect(events).toEqual(['start', 'complete']);
     expect(capture.router.path).toBe('/next');
     expect(capture.router.query).toBe('x=1');
     expect(capture.router.hash).toBe('#h');
@@ -3621,7 +3147,6 @@ describe('Router integration', () => {
           route: { path: '/start', query: '', hash: '' },
           changeRoute: vi.fn(async () => {}),
           prefetchRoute,
-          routeChangeEvents: { on: vi.fn(), off: vi.fn() },
           fetchingSlices: new Set<string>(),
         }}
       >
@@ -3653,7 +3178,6 @@ describe('Router integration', () => {
           route: { path: '/start', query: '', hash: '' },
           changeRoute: vi.fn(async () => {}),
           prefetchRoute,
-          routeChangeEvents: { on: vi.fn(), off: vi.fn() },
           fetchingSlices: new Set<string>(),
         }}
       >
@@ -4941,6 +4465,9 @@ describe('Router integration', () => {
     responses: (
       | { reject: { status: number; location?: string } }
       | { redirect: { from: string; fromQuery?: string; location: string } }
+      | {
+          deferred: ReturnType<typeof createDeferred<Record<string, unknown>>>;
+        }
       | { resolve: Record<string, unknown> }
     )[];
     slots?: string[];
@@ -4972,6 +4499,8 @@ describe('Router integration', () => {
         refetch.mockImplementationOnce(() =>
           Promise.reject(createCustomError('follow-error', info)),
         );
+      } else if ('deferred' in response) {
+        refetch.mockImplementationOnce(() => response.deferred.promise);
       } else {
         refetch.mockResolvedValueOnce(response.resolve);
       }
@@ -4999,6 +4528,41 @@ describe('Router integration', () => {
       throw new Error('router not initialized');
     }
     return { view, refetch, capture, router: capture.router };
+  };
+
+  const renderInterruptedFollow = async (caughtSlot: ReactNode) => {
+    const pendingFollow = createDeferred<Record<string, unknown>>();
+    const refetch = vi
+      .fn<ReturnType<typeof useRefetch>>()
+      .mockResolvedValueOnce({
+        [unstable_getRouteSlotId('/a')]: caughtSlot,
+        [ROUTE_ID]: ['/a', ''],
+        [IS_STATIC_ID]: false,
+      })
+      .mockImplementation(() => pendingFollow.promise);
+    installRefetch(refetch);
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    testHoisted.elements = {
+      [unstable_getRouteSlotId('/start')]: <Probe />,
+      [ROUTE_ID]: ['/start', ''],
+      [IS_STATIC_ID]: false,
+    };
+    const view = await renderApp(
+      <ErrorBoundary>
+        <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+          <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
+        </Unstable_SearchCodecsProvider>
+      </ErrorBoundary>,
+    );
+    if (!capture.router) {
+      throw new Error('router not initialized');
+    }
+    await act(async () => {
+      await capture.router!.push('/a').catch(() => {});
+      await flushUntil(() => refetch.mock.calls.length === 2);
+    });
+    return { view, router: capture.router, refetch, pendingFollow };
   };
 
   test('a rejected fetch redirect hard navigates with a new entry', async () => {
@@ -5905,6 +5469,83 @@ describe('Router integration', () => {
     view.unmount();
   });
 
+  test('a hash change lets the caught route render again', async () => {
+    const redirect = createCustomError('redirect', {
+      status: 307,
+      location: '/next',
+    });
+    const ThrowUntilHash = () => {
+      const router = useRouter() as unknown as RouterApi;
+      if (!router.hash) {
+        throw redirect;
+      }
+      return <div>ready</div>;
+    };
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    const { view, router, pendingFollow } = await renderInterruptedFollow(
+      <ThrowUntilHash />,
+    );
+
+    try {
+      await act(async () => {
+        await router.push('/a#ready').catch(() => {});
+        pendingFollow.resolve({
+          [ROUTE_ID]: ['/a', ''],
+          [IS_STATIC_ID]: false,
+        });
+        await flushUntil(() =>
+          (view.container.textContent ?? '').includes('ready'),
+        );
+      });
+
+      expect(view.container.textContent).toContain('ready');
+      expect(view.container.textContent).not.toContain('navigation loop');
+    } finally {
+      consoleErrorSpy.mockRestore();
+      view.unmount();
+    }
+  });
+
+  test('an interrupted redirect follow reports a navigation loop', async () => {
+    const redirect = createCustomError('redirect', {
+      status: 307,
+      location: '/next',
+    });
+    const ThrowRedirect = () => {
+      throw redirect;
+    };
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    const { view, router, refetch, pendingFollow } =
+      await renderInterruptedFollow(<ThrowRedirect />);
+
+    try {
+      await act(async () => {
+        await router.push('/a').catch(() => {});
+        pendingFollow.resolve({
+          [ROUTE_ID]: ['/a', ''],
+          [IS_STATIC_ID]: false,
+        });
+        await flushUntil(() =>
+          (view.container.textContent ?? '').includes(
+            'detected a navigation loop',
+          ),
+        );
+      });
+
+      expect(view.container.textContent).toContain(
+        'detected a navigation loop',
+      );
+      expect(refetch).toHaveBeenCalledTimes(2);
+    } finally {
+      consoleErrorSpy.mockRestore();
+      view.unmount();
+    }
+  });
+
   test('a 404 error on navigation goes to the 404 route inline', async () => {
     const { view, refetch, capture, router } = await renderFollowRouter({
       responses: [
@@ -6117,123 +5758,6 @@ describe('Router integration', () => {
         'detected a navigation loop',
       );
       expect(refetch.mock.calls.length).toBeLessThan(5);
-    } finally {
-      consoleErrorSpy.mockRestore();
-      view.unmount();
-    }
-  });
-
-  test('a hash change gives the caught route another render', async () => {
-    const capture = { router: null as RouterApi | null };
-    const Probe = makeProbe(capture);
-    const toNext = createCustomError('redirect', {
-      status: 307,
-      location: '/next',
-    });
-    const ThrowUntilHash = () => {
-      const router = useRouter() as unknown as RouterApi;
-      if (!router.hash) {
-        throw toNext;
-      }
-      return <div>ready</div>;
-    };
-    const refetch = vi.fn<ReturnType<typeof useRefetch>>((() =>
-      Promise.resolve({
-        [unstable_getRouteSlotId('/a')]: <ThrowUntilHash />,
-        [ROUTE_ID]: ['/a', ''],
-        [IS_STATIC_ID]: false,
-      })) as unknown as ReturnType<typeof useRefetch>);
-    installRefetch(refetch);
-
-    testHoisted.elements = {
-      [unstable_getRouteSlotId('/start')]: <Probe />,
-      [unstable_getRouteSlotId('/next')]: <Probe />,
-      [ROUTE_ID]: ['/start', ''],
-      [IS_STATIC_ID]: false,
-    };
-    const consoleErrorSpy = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => {});
-    const view = await renderApp(
-      <ErrorBoundary>
-        <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
-      </ErrorBoundary>,
-    );
-    try {
-      capture.router?.unstable_events.on('start', (route) => {
-        if (route.path === '/next') {
-          void capture.router!.push('/a#ready' as never).catch(() => {});
-        }
-      });
-      await act(async () => {
-        await capture.router!.push('/a' as never).catch(() => {});
-        await flushUntil(() =>
-          (view.container.textContent ?? '').includes('ready'),
-        );
-      });
-
-      expect(view.container.textContent).toContain('ready');
-      expect(view.container.textContent).not.toContain('navigation loop');
-    } finally {
-      consoleErrorSpy.mockRestore();
-      view.unmount();
-    }
-  });
-
-  test('a start listener navigating back does not spin the boundary', async () => {
-    const capture = { router: null as RouterApi | null };
-    const Probe = makeProbe(capture);
-    const toNext = createCustomError('redirect', {
-      status: 307,
-      location: '/next',
-    });
-    const ThrowToNext = () => {
-      throw toNext;
-    };
-    const refetch = vi.fn<ReturnType<typeof useRefetch>>((() =>
-      Promise.resolve({
-        [unstable_getRouteSlotId('/a')]: <ThrowToNext />,
-        [ROUTE_ID]: ['/a', ''],
-        [IS_STATIC_ID]: false,
-      })) as unknown as ReturnType<typeof useRefetch>);
-    installRefetch(refetch);
-
-    testHoisted.elements = {
-      [unstable_getRouteSlotId('/start')]: <Probe />,
-      [unstable_getRouteSlotId('/next')]: <Probe />,
-      [ROUTE_ID]: ['/start', ''],
-      [IS_STATIC_ID]: false,
-    };
-    const consoleErrorSpy = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => {});
-    const view = await renderApp(
-      <ErrorBoundary>
-        <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
-      </ErrorBoundary>,
-    );
-    try {
-      let dispatches = 0;
-      capture.router?.unstable_events.on('start', (route) => {
-        if (route.path === '/next') {
-          dispatches += 1;
-          void capture.router!.push('/a' as never).catch(() => {});
-        }
-      });
-      await act(async () => {
-        await capture.router!.push('/a' as never).catch(() => {});
-        await flushUntil(() =>
-          (view.container.textContent ?? '').includes(
-            'detected a navigation loop',
-          ),
-        );
-      });
-
-      // the interrupted follow must stop, and say so instead of going blank
-      expect(dispatches).toBeLessThan(4);
-      expect(view.container.textContent).toContain(
-        'detected a navigation loop',
-      );
     } finally {
       consoleErrorSpy.mockRestore();
       view.unmount();
@@ -6978,50 +6502,6 @@ describe('Router integration', () => {
     }
   });
 
-  test('the strict mode replay reports a superseded follow', async () => {
-    const capture = { router: null as RouterApi | null };
-    const Probe = makeProbe(capture);
-    const ThrowNotFoundErrorObject = createCustomError('not-found', {
-      status: 404,
-    });
-    const ThrowNotFound = () => {
-      throw ThrowNotFoundErrorObject;
-    };
-    const view = await renderRouterInStrictMode(
-      { initialRoute: { path: '/start', query: '', hash: '' } },
-      {
-        [unstable_getRouteSlotId('/start')]: <ThrowNotFound />,
-        [unstable_getRouteSlotId('/404')]: <Probe />,
-        [ROUTE_ID]: ['/start', ''],
-        [IS_STATIC_ID]: false,
-        [HAS404_ID]: true,
-      },
-    );
-    await flush();
-    try {
-      const events: string[] = [];
-      for (const name of ['start', 'complete', 'error'] as const) {
-        capture.router!.unstable_events.on(name, (route) =>
-          events.push(`${name} ${route.path}`),
-        );
-      }
-      await act(async () => {
-        await capture.router!.push('/start').catch(() => {});
-        await flush();
-        await flush();
-      });
-
-      // the replayed dispatch supersedes the first, so listeners see an
-      // error for a follow that then succeeds. dev only, and bounded.
-      expect(
-        events.filter((e) => e.startsWith('error')).length,
-      ).toBeLessThanOrEqual(2);
-      expect(events[events.length - 1]).toBe('complete /404');
-    } finally {
-      view.unmount();
-    }
-  });
-
   test('redirect error triggers same-origin client navigation', async () => {
     const capture = { router: null as RouterApi | null };
     const Probe = makeProbe(capture);
@@ -7579,19 +7059,81 @@ describe('Router integration', () => {
     view.unmount();
   });
 
+  test('a non-fetching navigation aborts an active fetch', async () => {
+    const pending = createDeferred<Record<string, unknown>>();
+    const { view, router, refetch } = await renderFollowRouter({
+      responses: [{ deferred: pending }],
+    });
+    const pushes: Promise<void>[] = [];
+
+    await act(async () => {
+      pushes.push(router.push('/slow'));
+      await Promise.resolve();
+    });
+    const { signal } = refetch.mock.calls[0]![2]!;
+    await act(async () => {
+      await router.push('/start');
+    });
+
+    expect(signal?.aborted).toBe(true);
+
+    pending.resolve({ [ROUTE_ID]: ['/slow', ''], [IS_STATIC_ID]: false });
+    await pushes[0];
+    view.unmount();
+  });
+
+  test('a late superseded response cannot release the active fetch', async () => {
+    const first = createDeferred<Record<string, unknown>>();
+    const second = createDeferred<Record<string, unknown>>();
+    const third = createDeferred<Record<string, unknown>>();
+    const { view, router, refetch } = await renderFollowRouter({
+      responses: [
+        { deferred: first },
+        { deferred: second },
+        { deferred: third },
+      ],
+      slots: ['/first', '/second', '/third'],
+    });
+    const pushes: Promise<void>[] = [];
+    const startPush = async (path: string) => {
+      await act(async () => {
+        pushes.push(router.push(path));
+        await Promise.resolve();
+      });
+    };
+
+    await startPush('/first');
+    const firstSignal = refetch.mock.calls[0]![2]!.signal!;
+    await startPush('/second');
+    const secondSignal = refetch.mock.calls[1]![2]!.signal!;
+    expect(firstSignal.aborted).toBe(true);
+
+    await act(async () => {
+      first.resolve({ [ROUTE_ID]: ['/first', ''], [IS_STATIC_ID]: false });
+      await pushes[0];
+      await flush();
+    });
+    await startPush('/third');
+
+    expect(secondSignal.aborted).toBe(true);
+    expect(refetch.mock.calls[2]![2]!.signal?.aborted).toBe(false);
+
+    await act(async () => {
+      second.resolve({ [ROUTE_ID]: ['/second', ''], [IS_STATIC_ID]: false });
+      third.resolve({ [ROUTE_ID]: ['/third', ''], [IS_STATIC_ID]: false });
+      await Promise.all(pushes);
+      await flush();
+    });
+    view.unmount();
+  });
+
   test('a cross origin rejected redirect hard navigates on push', async () => {
-    const { view, capture, router } = await renderFollowRouter({
+    const { view, router } = await renderFollowRouter({
       responses: [
         { reject: { status: 307, location: 'http://elsewhere.test/login' } },
       ],
       slots: [],
     });
-    const events: string[] = [];
-    for (const name of ['start', 'complete', 'error'] as const) {
-      capture.router!.unstable_events.on(name, (route) =>
-        events.push(`${name} ${route.path}`),
-      );
-    }
     const replaceLocationSpy = vi
       .spyOn(window.location, 'replace')
       .mockImplementation(() => {});
@@ -7605,8 +7147,6 @@ describe('Router integration', () => {
     // the requested entry is written, then the browser leaves from it
     expect(window.location.pathname).toBe('/protected');
     expect(window.history.length).toBe(lengthBefore + 1);
-    // leaving still closes the navigation it was asked for
-    expect(events).toEqual(['start /protected', 'error /protected']);
     expect(replaceLocationSpy).toHaveBeenCalledWith(
       'http://elsewhere.test/login',
     );
@@ -7914,18 +7454,6 @@ describe('INTERNAL_ServerRouter', () => {
     expect(() => capture.router!.prefetch('/next')).toThrow(
       'prefetchRoute is not in the server',
     );
-    const onResult = capture.router!.unstable_events.on(
-      'start',
-      () => {},
-    ) as unknown as (() => never) | undefined;
-    expect(typeof onResult).toBe('function');
-    expect(() => onResult?.()).toThrow('routeChange:on is not in the server');
-    const offResult = capture.router!.unstable_events.off(
-      'start',
-      () => {},
-    ) as unknown as (() => never) | undefined;
-    expect(typeof offResult).toBe('function');
-    expect(() => offResult?.()).toThrow('routeChange:off is not in the server');
 
     view.unmount();
   });

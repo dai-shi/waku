@@ -41,7 +41,6 @@ import {
 } from '../minimal/client.js';
 import {
   getRouteFromElements,
-  getServerRedirect,
   has404FromElements,
   isStaticFromElements,
 } from './client-utils/elements-meta.js';
@@ -192,83 +191,15 @@ type ChangeRoute = (
   options: ChangeRouteOptions,
 ) => Promise<void>;
 
-type ChangeRouteEvent = 'start' | 'complete' | 'error';
-
-type ChangeRouteCallback = (route: RouteProps) => void;
-
 type PrefetchRoute = (route: RouteProps, options?: PrefetchOptions) => void;
 
 type SliceId = string;
-
-const createRouteChangeListeners = (): [
-  Record<
-    'on' | 'off',
-    (event: ChangeRouteEvent, handler: ChangeRouteCallback) => void
-  >,
-  (event: ChangeRouteEvent, route: RouteProps) => void,
-] => {
-  const listeners: Record<ChangeRouteEvent, Set<ChangeRouteCallback>> = {
-    start: new Set(),
-    complete: new Set(),
-    error: new Set(),
-  };
-  const queued: [ChangeRouteEvent, RouteProps][] = [];
-  let dispatching = false;
-  const emit = (event: ChangeRouteEvent, route: RouteProps) => {
-    queued.push([event, route]);
-    if (dispatching) {
-      return;
-    }
-    dispatching = true;
-    try {
-      let next = queued.shift();
-      while (next) {
-        const [queuedEvent, queuedRoute] = next;
-        const eventListenersSet = listeners[queuedEvent];
-        const report = (e: unknown) => {
-          console.error(
-            `Error in a route change '${queuedEvent}' listener:`,
-            e,
-          );
-        };
-        for (const listener of [...eventListenersSet]) {
-          if (!eventListenersSet.has(listener)) {
-            continue;
-          }
-          try {
-            Promise.resolve(listener(queuedRoute)).catch(report);
-          } catch (e) {
-            report(e);
-          }
-        }
-        next = queued.shift();
-      }
-    } finally {
-      dispatching = false;
-    }
-  };
-  return [
-    {
-      on: (event: ChangeRouteEvent, handler: ChangeRouteCallback) => {
-        listeners[event].add(handler);
-      },
-      off: (event: ChangeRouteEvent, handler: ChangeRouteCallback) => {
-        listeners[event].delete(handler);
-      },
-    },
-    emit,
-  ];
-};
 
 const RouterContext = createContext<{
   route: RouteProps;
   routerState?: RouterState | undefined;
   changeRoute: ChangeRoute;
   prefetchRoute: PrefetchRoute;
-  routeChangeEvents: Record<
-    'on' | 'off',
-    (event: ChangeRouteEvent, handler: ChangeRouteCallback) => void
-  >;
   fetchingSlices: Set<SliceId>;
 } | null>(null);
 
@@ -398,7 +329,6 @@ export function useRouter() {
     back,
     forward,
     prefetch,
-    unstable_events: router.routeChangeEvents,
   };
 }
 
@@ -1115,41 +1045,14 @@ const InnerRouter = ({
     }
   }, [refetch, addToStaticPathSet, routeFallback]);
 
-  const [[routeChangeEvents, emitRouteChangeEvent]] = useState(
-    createRouteChangeListeners,
-  );
-
   // state, not a ref: it is read during render (passed through context)
   const [fetchingSlices] = useState(() => new Set<SliceId>());
-  const pendingNavigationRef = useRef<{
-    controller: AbortController;
-    route: RouteProps;
-    startEmitted: boolean;
-  } | null>(null);
+  const pendingNavigationRef = useRef<AbortController | null>(null);
 
   const changeRoute: ChangeRoute = useCallback(
     async function changeRoute(nextRoute, options) {
-      const superseded = pendingNavigationRef.current;
-      superseded?.controller.abort();
-      const pending = {
-        controller: new AbortController(),
-        route: nextRoute,
-        startEmitted: false,
-      };
-      pendingNavigationRef.current = pending;
-      const isAborted = () => pending.controller.signal.aborted;
-      if (superseded?.startEmitted) {
-        emitRouteChangeEvent('error', superseded.route);
-      }
-      // a start listener can navigate synchronously, which aborts this one
-      if (isAborted()) {
-        return;
-      }
-      pending.startEmitted = true;
-      emitRouteChangeEvent('start', nextRoute);
-      if (isAborted()) {
-        return;
-      }
+      pendingNavigationRef.current?.abort();
+      pendingNavigationRef.current = null;
       const settledRoute = getSettledRoute(
         resolvedElementsRef.current,
         routeFallback,
@@ -1170,10 +1073,10 @@ const InnerRouter = ({
           [ROUTE_ID]: [nextRoute.path, nextRoute.query],
           [ROUTER_STATE_ID]: routerState,
         });
-        pendingNavigationRef.current = null;
-        emitRouteChangeEvent('complete', nextRoute);
         return;
       }
+      const controller = new AbortController();
+      pendingNavigationRef.current = controller;
       const rscPath = encodeRoutePath(nextRoute.path);
       const cached = prefetchManagerRef.current!.get(rscPath, nextRoute.query);
       const prefetchedElements =
@@ -1186,7 +1089,7 @@ const InnerRouter = ({
           prefetchedElements,
         );
       const dataPromise = refetch(rscPath, createRscParams(nextRoute.query), {
-        signal: pending.controller.signal,
+        signal: controller.signal,
         unstable_overlay: {
           [ROUTER_STATE_ID]: routerState,
           // meta is pinned, so an instant nav has to carry it or it goes stale
@@ -1212,17 +1115,13 @@ const InnerRouter = ({
       });
       try {
         const resolved = await dataPromise;
-        if (isAborted()) {
+        if (controller.signal.aborted) {
           return;
         }
         pendingNavigationRef.current = null;
         addToStaticPathSet(resolved);
-        emitRouteChangeEvent(
-          'complete',
-          getServerRedirect(resolved, nextRoute) ?? nextRoute,
-        );
       } catch (e) {
-        if (isAborted()) {
+        if (controller.signal.aborted) {
           return;
         }
         pendingNavigationRef.current = null;
@@ -1235,17 +1134,10 @@ const InnerRouter = ({
             failure: { error: e, committedHash: settledRoute.hash },
           },
         });
-        emitRouteChangeEvent('error', nextRoute);
         throw e;
       }
     },
-    [
-      routeFallback,
-      refetch,
-      mergeElements,
-      emitRouteChangeEvent,
-      addToStaticPathSet,
-    ],
+    [routeFallback, refetch, mergeElements, addToStaticPathSet],
   );
 
   const applyChangeRouteData = useCallback(
@@ -1355,7 +1247,6 @@ const InnerRouter = ({
         changeRoute,
         prefetchRoute,
         fetchingSlices,
-        routeChangeEvents,
       }}
     >
       {rootElement}
@@ -1382,14 +1273,6 @@ export function Router({
   );
 }
 
-const MOCK_ROUTE_CHANGE_LISTENER: Record<
-  'on' | 'off',
-  (event: ChangeRouteEvent, handler: ChangeRouteCallback) => void
-> = {
-  on: () => notAvailableInServer('routeChange:on'),
-  off: () => notAvailableInServer('routeChange:off'),
-};
-
 export function INTERNAL_ServerRouter({ route }: { route: RouteProps }) {
   const routeElement = <Slot id={getRouteSlotId(route.path)} />;
   const rootElement = <Slot id="root">{routeElement}</Slot>;
@@ -1400,7 +1283,6 @@ export function INTERNAL_ServerRouter({ route }: { route: RouteProps }) {
           route,
           changeRoute: notAvailableInServer('changeRoute'),
           prefetchRoute: notAvailableInServer('prefetchRoute'),
-          routeChangeEvents: MOCK_ROUTE_CHANGE_LISTENER,
           fetchingSlices: new Set<SliceId>(),
         }}
       >
@@ -1425,8 +1307,6 @@ export const unstable_addBase = addBase;
 export const unstable_removeBase = removeBase;
 export const unstable_RouterContext = RouterContext;
 export type Unstable_ChangeRoute = ChangeRoute;
-export type Unstable_ChangeRouteEvent = ChangeRouteEvent;
-export type Unstable_ChangeRouteCallback = ChangeRouteCallback;
 export type Unstable_PrefetchRoute = PrefetchRoute;
 export type Unstable_PrefetchOptions = PrefetchOptions;
 export type Unstable_SliceId = SliceId;

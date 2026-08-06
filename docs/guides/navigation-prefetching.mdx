@@ -191,7 +191,10 @@ import { useNavigationStatus_UNSTABLE as useNavigationStatus } from 'waku/router
 export const PendingIndicator = () => {
   const { pending } = useNavigationStatus();
   return (
-    <span aria-hidden style={{ opacity: pending ? 1 : 0 }}>
+    <span
+      aria-hidden
+      style={{ opacity: pending ? 1 : 0, pointerEvents: 'none' }}
+    >
       Loading...
     </span>
   );
@@ -199,63 +202,50 @@ export const PendingIndicator = () => {
 ```
 
 ```tsx
-import { Link } from 'waku';
+import { Link as WakuLink } from 'waku';
+import type {
+  LinkProps,
+  Unstable_RoutePath as RoutePath,
+} from 'waku/router/client';
 import { PendingIndicator } from './pending-indicator';
 
-export const NavLink = () => (
-  <Link to="/reports">
-    Reports
+export const PendingLink = <Path extends RoutePath>({
+  children,
+  ...props
+}: LinkProps<Path>) => (
+  <WakuLink {...props}>
+    {children}
     <PendingIndicator />
-  </Link>
+  </WakuLink>
 );
 ```
 
-`useNavigationStatus_UNSTABLE()` must be called from a Client Component rendered inside the `<Link>`, which means the indicator lives inside the `<a>`. Keep it non-interactive and `aria-hidden` (as above), since it becomes part of the link's accessible name and click target; there is no supported way yet to render it outside the anchor, because a navigation runs in a transition that deliberately keeps the current page on screen until the destination is ready. Called outside any `<Link>`, the hook returns an empty object (not `{ pending: false }`).
+Use `PendingLink` where a link needs an indicator. Keep the indicator non-interactive and `aria-hidden` (as above) so it does not affect the link's accessible name or introduce a nested interactive target.
 
-## Route Change Events
+`useNavigationStatus_UNSTABLE()` must be called from a Client Component rendered inside the `<Link>` because the status belongs to the nearest link. It does not observe programmatic navigation, browser back and forward, instant navigation, or a link with a custom transition. Called outside any `<Link>`, the hook returns an empty object (not `{ pending: false }`).
 
-Subscribe to route change events to observe navigations, for example to log them or to report them to analytics:
+## Observe Route Changes
+
+`useRouter()` updates when the committed route changes. Observe its route fields to log route changes:
 
 ```tsx
 'use client';
 
 import { useEffect } from 'react';
 import { useRouter } from 'waku';
-import type { Unstable_RouteProps } from 'waku/router/client';
 
 export const NavigationLogger = () => {
-  const { unstable_events } = useRouter();
+  const { path, query, hash } = useRouter();
   useEffect(() => {
-    const started = (route: Unstable_RouteProps) =>
-      console.log('navigating to', route.path);
-    const landed = (route: Unstable_RouteProps) =>
-      console.log('landed on', route.path);
-    const gaveUp = (route: Unstable_RouteProps) =>
-      console.log('gave up on', route.path);
-    unstable_events.on('start', started);
-    unstable_events.on('complete', landed);
-    unstable_events.on('error', gaveUp);
-    return () => {
-      unstable_events.off('start', started);
-      unstable_events.off('complete', landed);
-      unstable_events.off('error', gaveUp);
-    };
-  }, [unstable_events]);
+    console.log('viewed route', { path, query, hash });
+  }, [path, query, hash]);
   return null;
 };
 ```
 
-Every `start` is followed by exactly one `complete` or `error`, and they never interleave: when a second navigation supersedes one that is still running, the first one's `error` arrives before the second one's `start`.
+The effect runs for the initial route and whenever the current route fields change. It does not run again for `reload()` or navigation to the same URL, and it does not observe the start or failure of a navigation.
 
-`complete` carries the route the response landed on, which is not always the one you asked for, because the server can answer with the destination of a redirect or with the 404 page. It fires when the response has been handled, not when React has finished rendering it. `error` means the navigation failed or was superseded, and reports the route it announced.
-
-A follow is a navigation of its own, so it opens its own `start`. A late `unstable_redirect()` reports `complete` for the page that threw it and then a second pair for the destination. A navigation that fails first, such as a 404 with no Waku server to answer it, reports `error` and then the follow's own pair.
-
-A listener that throws is reported to the console and does not affect the navigation or the other listeners. A listener that navigates gets a navigation right away, and its events queue behind the one being delivered, so every listener sees the same order whenever it subscribed.
-
-A redirect carried by the response hands the page to the browser. It still reports `error` for the navigation it was asked to make, and the full page load follows.
-
-For a spinner, prefer `useNavigationStatus_UNSTABLE()` above. A `start` listener runs inside the navigation's transition, so state you set there is batched with the navigation itself and may not paint on its own.
+Catch the promises returned by programmatic `push`, `replace`, and `reload` calls to handle their direct errors. There is no global observer for failures from `<Link>` or browser back and forward. Do not treat promise resolution as a committed-route signal: a newer navigation can supersede the request, and redirects or other follows may continue after it settles. Observe the route fields above when you need the destination that was committed.
 
 ## Custom Transitions
 
@@ -264,8 +254,11 @@ For advanced navigation effects, pass `unstable_startTransition` to control how 
 ```tsx
 'use client';
 
-import type { ComponentProps } from 'react';
 import { Link as WakuLink } from 'waku';
+import type {
+  LinkProps,
+  Unstable_RoutePath as RoutePath,
+} from 'waku/router/client';
 
 const startViewTransition =
   typeof document !== 'undefined' && document.startViewTransition
@@ -274,9 +267,9 @@ const startViewTransition =
       }
     : undefined;
 
-export const Link = (props: ComponentProps<typeof WakuLink>) => (
-  <WakuLink {...props} unstable_startTransition={startViewTransition} />
-);
+export const ViewTransitionLink = <Path extends RoutePath>(
+  props: LinkProps<Path>,
+) => <WakuLink {...props} unstable_startTransition={startViewTransition} />;
 ```
 
 Because `unstable_startTransition` replaces React's transition, `useNavigationStatus_UNSTABLE()` stays `{ pending: false }` for links that use it.
