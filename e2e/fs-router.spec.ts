@@ -77,7 +77,7 @@ test.describe('fs-router', () => {
     mode,
   }) => {
     // https://github.com/wakujs/waku/issues/2238
-    // The dev bootstrap imports a virtual module, not a hashed asset.
+    // Dev bootstrap is a virtual module, not a hashed asset.
     // eslint-disable-next-line playwright/no-skipped-test
     test.skip(mode === 'DEV', 'covers the production bootstrap import only');
     const staleEntry = '/assets/index-stale-build.js';
@@ -97,11 +97,8 @@ test.describe('fs-router', () => {
         currentEntryRequests++;
       }
     });
-    // Model a deploy-window skew. The first document is the old build, so it
-    // points at an entry chunk that is no longer deployed. The reload gets the
-    // current document, pointing at the chunk that really is deployed. The
-    // entry hash appears in a modulepreload link as well as in the bootstrap
-    // import, so rewrite every occurrence.
+    // First document: rewrite every entry url to a missing chunk; reload gets
+    // the current document (preload + bootstrap both use the hash).
     let firstDocument = true;
     await page.route(`http://localhost:${port}/`, async (route) => {
       if (!firstDocument) {
@@ -148,10 +145,7 @@ test.describe('fs-router', () => {
         navigations++;
       }
     });
-    // Unlike the test above, every document points at the missing chunk, so
-    // recovery can never succeed. Without the retry marker this reloads
-    // forever, so what matters is that the count settles rather than its
-    // exact value.
+    // Every document keeps the missing chunk; assert navigations settle (no loop).
     await page.route(`http://localhost:${port}/`, async (route) => {
       const response = await route.fetch();
       const html = await response.text();

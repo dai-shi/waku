@@ -9,10 +9,10 @@ function getRecoveryBuildId(): string | undefined {
   return buildId;
 }
 
-// Must run before the bootstrap `import()`. https://github.com/wakujs/waku/issues/2238
-// Reloading while the SSR HTML is still streaming is unreliable.
-// Recovery is skipped unless the retry marker persists, because without it a
-// broken build would reload forever.
+// https://github.com/wakujs/waku/issues/2238
+// Must run before the bootstrap import. Defer reload until DOMContentLoaded
+// (streaming HTML is unreliable). Persist a build-id marker so a broken build
+// cannot loop forever.
 function getVersionSkewRecoveryCode(): string {
   const buildId = getRecoveryBuildId();
   if (!buildId) {
@@ -44,9 +44,8 @@ function getVersionSkewRecoveryCode(): string {
   `;
 }
 
-// A bare `import()` dispatches no `vite:preloadError` on failure, so mirror
-// Vite's `__vitePreload` semantics to reach the recovery listener above.
-// https://github.com/wakujs/waku/issues/2238
+// Bare import() does not fire vite:preloadError; mirror __vitePreload so the
+// recovery listener above runs. https://github.com/wakujs/waku/issues/2238
 export function createBootstrapScriptContent(entryUrl: string): string {
   const entryImport = `import(${JSON.stringify(entryUrl)})`;
   if (!getRecoveryBuildId()) {

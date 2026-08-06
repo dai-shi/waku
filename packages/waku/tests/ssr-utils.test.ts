@@ -14,7 +14,6 @@ describe('createBootstrapScriptContent', () => {
     const content = createBootstrapScriptContent('/assets/index-abc123.js');
     expect(content).toContain('import("/assets/index-abc123.js").catch');
     expect(content).toContain('vite:preloadError');
-    // must be valid JS
     expect(() => new Function(content)).not.toThrow();
   });
 
@@ -25,8 +24,7 @@ describe('createBootstrapScriptContent', () => {
   });
 
   it('emits a terminated bare import without a build id', () => {
-    // The trailing semicolon guards the concatenated extraScriptContent
-    // against continuing the import expression.
+    // Trailing semicolon: extraScriptContent must not continue the import.
     expect(createBootstrapScriptContent('/assets/index-abc123.js')).toBe(
       'import("/assets/index-abc123.js");',
     );
@@ -132,8 +130,7 @@ describe('version skew recovery code', () => {
     expect(backing.get('waku:preload-error-build-id')).toBe('test-build');
   });
 
-  // Failing open here would reload forever, because the next document load
-  // cannot tell that it already retried.
+  // Without a marker the next load cannot tell it already retried.
   it('does not reload when sessionStorage is unavailable', () => {
     const throwing = () => {
       throw new Error('sessionStorage is disabled');
@@ -195,7 +192,6 @@ describe('getBootstrapPreamble', () => {
       debugId: 'debug-1',
     });
     expect(preamble).toContain('globalThis.__WAKU_INITIAL_RSC__ = (() =>');
-    // The initial entry carries the streamed Response and its debug id.
     expect(preamble).toContain('e.response = Promise.resolve(new Response(');
     expect(preamble).toContain('e.debugId = "debug-1";');
   });
@@ -208,8 +204,7 @@ describe('getBootstrapPreamble', () => {
   });
 
   it('strips indentation but keeps line boundaries', () => {
-    // Joining the lines without a separator would let a line comment in any
-    // emitted snippet comment out the rest of the script.
+    // Keep newlines so a // in a snippet cannot comment out the rest.
     vi.stubEnv('WAKU_BUILD_ID', 'test-build');
     const preamble = getBootstrapPreamble({
       hydrate: true,
