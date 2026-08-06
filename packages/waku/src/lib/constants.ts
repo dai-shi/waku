@@ -1,4 +1,6 @@
 export const EXTENSIONS = ['.js', '.ts', '.tsx', '.jsx', '.mjs', '.cjs'];
+
+export const DEV_BUILD_ID = 'dev'; // truthy on purpose
 export const SRC_CLIENT_ENTRY = 'waku.client';
 export const SRC_SERVER_ENTRY = 'waku.server';
 export const SRC_PAGES = 'pages'; // only for managed mode

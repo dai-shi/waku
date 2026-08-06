@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import type { Plugin } from 'vite';
+import { DEV_BUILD_ID } from '../constants.js';
 
 const KEY = 'import.meta.env.WAKU_BUILD_ID';
 
@@ -13,7 +14,9 @@ export function buildIdPlugin(): Plugin {
       }
       return {
         define: {
-          [KEY]: JSON.stringify(env.command === 'serve' ? 'dev' : buildId),
+          [KEY]: JSON.stringify(
+            env.command === 'serve' ? DEV_BUILD_ID : buildId,
+          ),
         },
       };
     },

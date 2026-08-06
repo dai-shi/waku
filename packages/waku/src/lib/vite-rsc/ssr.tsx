@@ -1,5 +1,8 @@
 import { type ReactNode, captureOwnerStack, use } from 'react';
-import { createFromReadableStream as createFromReadableStreamBase } from '@vitejs/plugin-rsc/ssr';
+import {
+  createFromReadableStream as createFromReadableStreamBase,
+  getClientEntryUrl,
+} from '@vitejs/plugin-rsc/ssr';
 import type { ReactFormState } from 'react-dom/client';
 import { renderToReadableStream } from 'react-dom/server.edge';
 import { injectRSCPayload } from 'rsc-html-stream/server';
@@ -7,7 +10,10 @@ import htmlShell from 'virtual:vite-rsc-waku/html-shell';
 import { INTERNAL_ServerRoot } from '../../minimal/client.js';
 import { getErrorInfo } from '../utils/custom-errors.js';
 import { sanitizeLog } from '../utils/log.js';
-import { getBootstrapPreamble } from '../utils/ssr.js';
+import {
+  createBootstrapScriptContent,
+  getBootstrapPreamble,
+} from '../utils/ssr.js';
 import { batchReadableStream } from '../utils/stream.js';
 
 function createFromReadableStream<T>(
@@ -70,7 +76,8 @@ export const renderHtmlStream: RenderHtmlStream = async (
   }
 
   // render html
-  const bootstrapScriptContent = await loadBootstrapScriptContent();
+  const bootstrapScriptContent =
+    createBootstrapScriptContent(getClientEntryUrl());
   let htmlStream: Awaited<ReturnType<typeof renderToReadableStream>>;
   let status: number | undefined;
   try {
@@ -78,6 +85,7 @@ export const renderHtmlStream: RenderHtmlStream = async (
       bootstrapScriptContent:
         getBootstrapPreamble({
           hydrate: true,
+          initialRsc: true,
           debugId: options.debugId,
         }) +
         bootstrapScriptContent +
@@ -118,6 +126,7 @@ export const renderHtmlStream: RenderHtmlStream = async (
       bootstrapScriptContent:
         getBootstrapPreamble({
           hydrate: false,
+          initialRsc: true,
         }) +
         bootstrapScriptContent +
         (options.extraScriptContent || ''),
@@ -135,14 +144,15 @@ export const renderHtmlStream: RenderHtmlStream = async (
 };
 
 export async function renderHtmlFallback() {
-  const bootstrapScriptContent = await loadBootstrapScriptContent();
+  const bootstrapScriptContent =
+    createBootstrapScriptContent(getClientEntryUrl());
   const html = htmlShell.replace(
     '</body>',
-    () => `<script>${bootstrapScriptContent}</script></body>`,
+    () =>
+      `<script>${getBootstrapPreamble({
+        hydrate: false,
+        initialRsc: false,
+      })}${bootstrapScriptContent}</script></body>`,
   );
   return html;
-}
-
-function loadBootstrapScriptContent(): Promise<string> {
-  return import.meta.viteRsc.loadBootstrapScriptContent('index');
 }

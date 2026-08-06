@@ -72,6 +72,113 @@ test.describe('fs-router', () => {
     await expect(page).toHaveURL(`http://localhost:${port}/foo`);
   });
 
+  test('recovers when the entry chunk itself fails to load', async ({
+    page,
+    mode,
+  }) => {
+    // https://github.com/wakujs/waku/issues/2238
+    // The dev bootstrap imports a virtual module, not a hashed asset.
+    // eslint-disable-next-line playwright/no-skipped-test
+    test.skip(mode === 'DEV', 'covers the production bootstrap import only');
+    const staleEntry = '/assets/index-stale-build.js';
+    let navigations = 0;
+    let staleEntryRequests = 0;
+    let currentEntryRequests = 0;
+    page.on('framenavigated', (frame) => {
+      if (frame === page.mainFrame()) {
+        navigations++;
+      }
+    });
+    page.on('request', (request) => {
+      const { pathname } = new URL(request.url());
+      if (pathname === staleEntry) {
+        staleEntryRequests++;
+      } else if (/^\/assets\/index-[\w-]+\.js$/.test(pathname)) {
+        currentEntryRequests++;
+      }
+    });
+    // Model a deploy-window skew. The first document is the old build, so it
+    // points at an entry chunk that is no longer deployed. The reload gets the
+    // current document, pointing at the chunk that really is deployed. The
+    // entry hash appears in a modulepreload link as well as in the bootstrap
+    // import, so rewrite every occurrence.
+    let firstDocument = true;
+    await page.route(`http://localhost:${port}/`, async (route) => {
+      if (!firstDocument) {
+        await route.continue();
+        return;
+      }
+      firstDocument = false;
+      const response = await route.fetch();
+      const html = await response.text();
+      await route.fulfill({
+        response,
+        headers: { ...response.headers(), 'cache-control': 'no-store' },
+        body: html.replaceAll(/\/assets\/index-[\w-]+\.js/g, staleEntry),
+      });
+    });
+    await page.route(`**${staleEntry}`, (route) =>
+      route.fulfill({
+        status: 404,
+        headers: { 'cache-control': 'no-store' },
+        body: '',
+      }),
+    );
+    await page.goto(`http://localhost:${port}`);
+    await expect
+      .poll(() => navigations, { timeout: 10_000 })
+      .toBeGreaterThanOrEqual(2);
+    await waitForHydration(page);
+    await expect(page.getByRole('heading', { name: 'Home' })).toBeVisible();
+    expect(staleEntryRequests).toBeGreaterThanOrEqual(1);
+    expect(currentEntryRequests).toBeGreaterThanOrEqual(1);
+  });
+
+  test('stops reloading when the entry chunk stays broken', async ({
+    page,
+    mode,
+  }) => {
+    // https://github.com/wakujs/waku/issues/2238
+    // eslint-disable-next-line playwright/no-skipped-test
+    test.skip(mode === 'DEV', 'covers the production bootstrap import only');
+    const staleEntry = '/assets/index-stale-build.js';
+    let navigations = 0;
+    page.on('framenavigated', (frame) => {
+      if (frame === page.mainFrame()) {
+        navigations++;
+      }
+    });
+    // Unlike the test above, every document points at the missing chunk, so
+    // recovery can never succeed. Without the retry marker this reloads
+    // forever, so what matters is that the count settles rather than its
+    // exact value.
+    await page.route(`http://localhost:${port}/`, async (route) => {
+      const response = await route.fetch();
+      const html = await response.text();
+      await route.fulfill({
+        response,
+        headers: { ...response.headers(), 'cache-control': 'no-store' },
+        body: html.replaceAll(/\/assets\/index-[\w-]+\.js/g, staleEntry),
+      });
+    });
+    await page.route(`**${staleEntry}`, (route) =>
+      route.fulfill({
+        status: 404,
+        headers: { 'cache-control': 'no-store' },
+        body: '',
+      }),
+    );
+    await page.goto(`http://localhost:${port}`);
+    // eslint-disable-next-line playwright/no-wait-for-timeout
+    await page.waitForTimeout(2000);
+    const settled = navigations;
+    // eslint-disable-next-line playwright/no-wait-for-timeout
+    await page.waitForTimeout(2000);
+    expect(navigations).toBe(settled);
+    expect(settled).toBeGreaterThanOrEqual(2);
+    expect(settled).toBeLessThan(5);
+  });
+
   test('foo with trailing slash', async ({ page }) => {
     await page.goto(`http://localhost:${port}/foo/`);
     await expect(page.getByRole('heading', { name: 'Foo' })).toBeVisible();
