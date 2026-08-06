@@ -1,6 +1,9 @@
 import { createElement } from 'react';
 import type { FunctionComponent, ReactElement, ReactNode } from 'react';
-import { Children, Slot } from '../minimal/client.js';
+import {
+  Children_UNSTABLE as Children,
+  Slot_UNSTABLE as Slot,
+} from '../minimal/client.js';
 import {
   unstable_createCustomError as createCustomError,
   unstable_getGrouplessPath as getGrouplessPath,
@@ -102,11 +105,7 @@ const forEachConcreteStaticPath = (
 
 // createPages API (a wrapper around unstable_defineRouter)
 
-/** Assumes that the path is a part of a slug path. */
 type IsValidPathItem<T> = T extends `/${string}` | '[]' | '' ? false : true;
-/**
- * This is a helper type to check if a path is valid in a slug path.
- */
 export type IsValidPathInSlugPath<T> = T extends `/${infer L}/${infer R}`
   ? IsValidPathItem<L> extends true
     ? IsValidPathInSlugPath<`/${R}`>
@@ -114,7 +113,6 @@ export type IsValidPathInSlugPath<T> = T extends `/${infer L}/${infer R}`
   : T extends `/${infer U}`
     ? IsValidPathItem<U>
     : false;
-/** Checks if a particular slug name exists in a path. */
 export type HasSlugInPath<
   T,
   K extends string,
@@ -158,7 +156,6 @@ type StaticSlugRoutePaths<T extends string> =
       ? readonly string[]
       : StaticSlugRoutePathsTuple<T>[];
 
-/** Remove Slug from Path */
 export type PathWithoutSlug<T> = T extends '/'
   ? T
   : IsValidPathInSlugPath<T> extends true
@@ -397,15 +394,6 @@ export type CreateRoot = (
 
 export type CreateInterceptor = (interceptor: HandlerInterceptor) => void;
 
-/**
- * Root component for all pages
- * ```tsx
- *   <html>
- *     <head></head>
- *     <body>{children}</body>
- *   </html>
- * ```
- */
 const DefaultRoot = ({ children }: { children: ReactNode }) => (
   <ErrorBoundary>
     <html>
@@ -559,7 +547,6 @@ export const createPages = <
     dynamicPageEntryByRoutePath.has(path) ||
     wildcardPageEntryByRoutePath.has(path);
 
-  /** Creates a function to map pathname to component props */
   const createPathPropsMapper = (path: string) => {
     const layoutMatchPath = groupedRoutePathByRoutePath.get(path) ?? path;
     const routePathSpec = parsePathWithSlug(layoutMatchPath);
@@ -588,7 +575,6 @@ export const createPages = <
     );
   };
 
-  /** Builds the routeElement renderer from layouts and page slots */
   const buildRouteElement = (
     layouts: { layoutPath: string; layoutIdPath: string }[],
     path: string,
@@ -601,7 +587,6 @@ export const createPages = <
       createNestedElements(layoutElements, <Slot id={getPageSlotId(path)} />);
   };
 
-  /** Renders the root component */
   const renderRoot = () =>
     createElement(
       rootItem ? rootItem.component : DefaultRoot,

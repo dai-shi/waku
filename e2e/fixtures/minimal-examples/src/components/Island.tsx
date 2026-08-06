@@ -3,9 +3,9 @@
 import { use, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import {
-  Slot,
+  Slot_UNSTABLE as Slot,
   useElementsPromise_UNSTABLE as useElementsPromise,
-  useRefetch,
+  useRefetch_UNSTABLE as useRefetch,
 } from 'waku/minimal/client';
 import { Counter } from './Counter';
 

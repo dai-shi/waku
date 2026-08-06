@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { unstable_allowServer as allowServer } from 'waku/client';
-import { useRefetch } from 'waku/minimal/client';
+import { useRefetch_UNSTABLE as useRefetch } from 'waku/minimal/client';
 import { ClientBox } from './Box.js';
 
 export const ClientCounter = ({ params }: { params: unknown }) => {

@@ -3,7 +3,10 @@ import fs from 'node:fs/promises';
 import * as cookie from 'cookie';
 import { contextStorage } from 'hono/context-storage';
 import adapter from 'waku/adapters/default';
-import { Children, Slot } from 'waku/minimal/client';
+import {
+  Children_UNSTABLE as Children,
+  Slot_UNSTABLE as Slot,
+} from 'waku/minimal/client';
 import { DynamicIsland } from './components/DynamicIsland';
 // eslint-disable-next-line import/no-unresolved
 import { App } from '@/components/App';

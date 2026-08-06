@@ -10,7 +10,7 @@ import { buildMetadata } from 'virtual:vite-rsc-waku/build-metadata';
 import { config, isBuild } from 'virtual:vite-rsc-waku/config';
 import notFoundHtml from 'virtual:vite-rsc-waku/not-found';
 import { BUILD_METADATA_FILE, DIST_PUBLIC, DIST_SERVER } from '../constants.js';
-import { setAllEnv } from '../env.js';
+import { unstable_setAllEnv } from '../env.js';
 import type {
   Unstable_CreateServerEntryAdapter as CreateServerEntryAdapter,
   Unstable_HandleBuild as HandleBuild,
@@ -178,7 +178,7 @@ export const createServerEntryAdapter: CreateServerEntryAdapter =
         handlers,
         processRequest,
         processBuild,
-        setAllEnv,
+        unstable_setAllEnv,
         config,
         isBuild,
         notFoundHtml,

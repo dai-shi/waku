@@ -1,5 +1,5 @@
 import serverEntry from 'virtual:vite-rsc-waku/server-entry';
-import { setAllEnv } from '../env.js';
+import { unstable_setAllEnv } from '../env.js';
 
 export { serverEntry as unstable_serverEntry };
 
@@ -8,7 +8,7 @@ export async function INTERNAL_runFetch(
   req: Request,
   ...args: any[]
 ) {
-  setAllEnv(env);
+  unstable_setAllEnv(env);
   return serverEntry.fetch(req, ...args);
 }
 

@@ -1,8 +1,5 @@
 import { loadGuides, loadReadme } from '../../lib/load-docs';
 
-/**
- * Serves consolidated documentation as plain text for LLMs
- */
 export const GET = async () => {
   let readme = loadReadme();
   readme = readme.replace(

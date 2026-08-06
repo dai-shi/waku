@@ -48,7 +48,10 @@ Then define the server router in `src/waku.server.tsx`:
 ```tsx
 // src/waku.server.tsx
 import adapter from 'waku/adapters/default';
-import { Children, Slot } from 'waku/minimal/client';
+import {
+  Children_UNSTABLE as Children,
+  Slot_UNSTABLE as Slot,
+} from 'waku/minimal/client';
 import { unstable_defineRouter as defineRouter } from 'waku/router/server';
 import AppLayout from './components/app-layout';
 import HomePage from './components/home-page';

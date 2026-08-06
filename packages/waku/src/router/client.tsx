@@ -26,8 +26,8 @@ import type {
 } from 'react';
 import { preloadModule } from 'react-dom';
 import {
-  Root,
-  Slot,
+  Root_UNSTABLE as Root,
+  Slot_UNSTABLE as Slot,
   unstable_addBase as addBase,
   unstable_getErrorInfo as getErrorInfo,
   unstable_isImmutableElement as isImmutableElement,
@@ -37,7 +37,7 @@ import {
   unstable_upsertRscReloadListener as upsertRscReloadListener,
   useElementsPromise_UNSTABLE as useElementsPromise,
   useMergeElements_UNSTABLE as useMergeElements,
-  useRefetch,
+  useRefetch_UNSTABLE as useRefetch,
 } from '../minimal/client.js';
 import {
   getRouteFromElements,
@@ -1122,8 +1122,7 @@ const InnerRouter = ({
     createRouteChangeListeners,
   );
 
-  // FIXME this "fetchingSlices" hack feels suboptimal.
-  // state, not a ref: it is read during render
+  // state, not a ref: it is read during render (passed through context)
   const [fetchingSlices] = useState(() => new Set<SliceId>());
   const pendingNavigationRef = useRef<{
     controller: AbortController;
@@ -1394,10 +1393,6 @@ const MOCK_ROUTE_CHANGE_LISTENER: Record<
   off: () => notAvailableInServer('routeChange:off'),
 };
 
-/**
- * ServerRouter for SSR
- * This is not a public API.
- */
 export function INTERNAL_ServerRouter({ route }: { route: RouteProps }) {
   const routeElement = <Slot id={getRouteSlotId(route.path)} />;
   const rootElement = <Slot id="root">{routeElement}</Slot>;

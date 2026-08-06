@@ -2,7 +2,10 @@ import type { ReactNode } from 'react';
 import { readFile } from 'node:fs/promises';
 // NOTE: I think we need one spec to use non-default adapter
 import adapter from 'waku/adapters/node';
-import { Children, Slot } from 'waku/minimal/client';
+import {
+  Children_UNSTABLE as Children,
+  Slot_UNSTABLE as Slot,
+} from 'waku/minimal/client';
 import {
   unstable_defineRouter as defineRouter,
   unstable_redirect as redirect,

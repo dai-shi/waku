@@ -20,10 +20,10 @@ import {
   fetchRscStore,
 } from '../src/minimal/client-utils/fetch-store.js';
 import {
-  Root,
+  Root_UNSTABLE as Root,
   unstable_isImmutableElement as isImmutableElement,
   unstable_prefetchRsc as prefetchRsc,
-  useRefetch,
+  useRefetch_UNSTABLE as useRefetch,
 } from '../src/minimal/client.js';
 import { unstable_buildElements as buildElements } from '../src/minimal/server.js';
 

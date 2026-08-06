@@ -1,9 +1,5 @@
 import { loadCreatePages, loadReadme } from './load-docs';
 
-/**
- * Extracts file-based routing documentation from README.md
- * Returns content from "### Overview" through the end of the Routing section
- */
 export const loadRoutingFileBased = (): string => {
   const readme = loadReadme();
   const routingSectionMatch = readme.match(
@@ -21,10 +17,6 @@ export const loadRoutingFileBased = (): string => {
   return contentAfterOverview.trim();
 };
 
-/**
- * Extracts config-based routing documentation from create-pages.mdx
- * Removes frontmatter and adjusts the main heading
- */
 export const loadRoutingConfigBased = (): string => {
   const createPages = loadCreatePages();
   const withoutFrontmatter = createPages.replace(/^---[\s\S]*?---\n*/, '');
@@ -35,10 +27,6 @@ export const loadRoutingConfigBased = (): string => {
   return withoutMainHeading.trim();
 };
 
-/**
- * Extracts everything before the Routing section from README.md
- * Used to render Introduction, Getting started, and Rendering sections
- */
 export const loadBeforeRouting = (): string => {
   const readme = loadReadme();
   const match = readme.match(/(^## Introduction[\s\S]*?)(?=^## Routing)/m);
@@ -49,10 +37,6 @@ export const loadBeforeRouting = (): string => {
   return content.trim();
 };
 
-/**
- * Extracts everything after the Routing section from README.md
- * Used to render Navigation and all subsequent sections
- */
 export const loadAfterRouting = (): string => {
   const readme = loadReadme();
   const match = readme.match(

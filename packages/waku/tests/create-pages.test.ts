@@ -4,7 +4,7 @@ import type { TypeEqual } from 'ts-expect';
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MockedFunction } from 'vitest';
 import { getErrorInfo } from '../src/lib/utils/custom-errors.js';
-import { Children } from '../src/minimal/client.js';
+import { Children_UNSTABLE as Children } from '../src/minimal/client.js';
 import type { PathsForPages } from '../src/router/base-types.js';
 import type { GetSlugs } from '../src/router/create-pages-utils/inferred-path-types.js';
 import {

@@ -17,8 +17,8 @@ import { getErrorInfo } from '../src/lib/utils/custom-errors.js';
 import { ETAG_ID_PREFIX, IMMUTABLE_ETAG } from '../src/lib/utils/etags.js';
 import { fetchRscStore } from '../src/minimal/client-utils/fetch-store.js';
 import {
-  Root,
-  Slot,
+  Root_UNSTABLE as Root,
+  Slot_UNSTABLE as Slot,
   unstable_callServerRsc,
   unstable_fetchRsc,
   unstable_prefetchRsc,
@@ -26,7 +26,7 @@ import {
   unstable_registerFetchEnhancer,
   unstable_registerFetchRscInputTransformer,
   useElementsPromise_UNSTABLE,
-  useRefetch,
+  useRefetch_UNSTABLE as useRefetch,
 } from '../src/minimal/client.js';
 
 type CallServer = (funcId: string, args: unknown[]) => Promise<unknown>;

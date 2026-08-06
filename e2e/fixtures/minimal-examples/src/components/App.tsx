@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Children } from 'waku/minimal/client';
+import { Children_UNSTABLE as Children } from 'waku/minimal/client';
 import { CookieInfo } from './CookieInfo';
 import { Island } from './Island';
 import { JotaiApp } from './JotaiApp';

@@ -20,12 +20,9 @@ async function isUrlOk(url: string): Promise<boolean> {
   }
 }
 
-/**
- * this is a part of the response type for github "Get a repository" API
- * @see {@link https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#get-a-repository|GitHub REST API}
- */
+// Part of the GitHub "Get a repository" API response type.
+// https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#get-a-repository
 interface GetRepoInfo {
-  /** A default branch of the repository */
   default_branch: string;
 }
 async function getRepoInfo(url: URL): Promise<RepoInfo | undefined> {

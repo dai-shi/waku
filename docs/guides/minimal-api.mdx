@@ -23,7 +23,7 @@ If you are building an application, use `waku/router` instead. The minimal API d
 
 If you need programmatic routing while keeping Waku's router behavior, see the [`createPages` reference](/create-pages) or [Custom Router](/guides/custom-router). If you are implementing a deployment/runtime adapter, start with [Adapter Authoring](/guides/adapter-authoring).
 
-All `unstable_*` exports in this document are genuinely unstable and may change.
+Exports marked `unstable_*` or `*_UNSTABLE` in this document may still change.
 
 ### API Surface
 
@@ -33,13 +33,15 @@ The minimal API is small, but it exposes both server-side handlers and client-si
 | --------------------- | ---------------------------- | --------------------------------------------------------------------- |
 | `waku/minimal/server` | `unstable_defineHandlers`    | Defining `handleRequest` and `handleBuild`.                           |
 | `waku/minimal/server` | `unstable_defineServerEntry` | Writing server entries directly, usually for adapters.                |
-| `waku/minimal/client` | `Root`                       | Installing the minimal client runtime.                                |
-| `waku/minimal/client` | `Slot`                       | Rendering a server element by RSC ID.                                 |
-| `waku/minimal/client` | `Children`                   | Placing client-side `Slot` children inside a server-rendered element. |
-| `waku/minimal/client` | `useRefetch`                 | Fetching and merging another RSC payload.                             |
+| `waku/minimal/client` | `Root_UNSTABLE`              | Installing the minimal client runtime.                                |
+| `waku/minimal/client` | `Slot_UNSTABLE`              | Rendering a server element by RSC ID.                                 |
+| `waku/minimal/client` | `Children_UNSTABLE`          | Placing client-side `Slot` children inside a server-rendered element. |
+| `waku/minimal/client` | `useRefetch_UNSTABLE`        | Fetching and merging another RSC payload.                             |
 | `waku/minimal/client` | `unstable_*` helpers         | Building router-like abstractions.                                    |
 
-`Root`, `Slot`, and `Children` are the stable minimal client primitives. This guide does not document every exported helper from `waku/minimal/client`; undocumented exports are for Waku internals or custom integrations and should be treated as unstable.
+Examples below often import these as shorter names.
+This guide does not document every exported helper from `waku/minimal/client`;
+undocumented exports are for Waku internals or custom integrations.
 
 ### Mental Model
 
@@ -87,7 +89,7 @@ A minimal SSR setup has two entry points:
 ```tsx
 import { unstable_defineHandlers as defineHandlers } from 'waku/minimal/server';
 import adapter from 'waku/adapters/default';
-import { Slot } from 'waku/minimal/client';
+import { Slot_UNSTABLE as Slot } from 'waku/minimal/client';
 import App from './components/App.js';
 
 const handlers = defineHandlers({
@@ -129,7 +131,10 @@ export default adapter(handlers);
 ```tsx
 import { StrictMode } from 'react';
 import { createRoot, hydrateRoot } from 'react-dom/client';
-import { Root, Slot } from 'waku/minimal/client';
+import {
+  Root_UNSTABLE as Root,
+  Slot_UNSTABLE as Slot,
+} from 'waku/minimal/client';
 
 const rootElement = (
   <StrictMode>
@@ -408,7 +413,7 @@ The minimal client API lives in `waku/minimal/client`.
 `Root` is the top-level provider for the minimal client runtime.
 
 ```tsx
-import { Root } from 'waku/minimal/client';
+import { Root_UNSTABLE as Root } from 'waku/minimal/client';
 ```
 
 Props:
@@ -431,7 +436,10 @@ A standard bootstrap looks like this:
 ```tsx
 import { StrictMode } from 'react';
 import { createRoot, hydrateRoot } from 'react-dom/client';
-import { Root, Slot } from 'waku/minimal/client';
+import {
+  Root_UNSTABLE as Root,
+  Slot_UNSTABLE as Slot,
+} from 'waku/minimal/client';
 
 const rootElement = (
   <StrictMode>
@@ -453,7 +461,7 @@ if ((globalThis as any).__WAKU_HYDRATE__) {
 `Slot` renders a server element by RSC ID.
 
 ```tsx
-import { Slot } from 'waku/minimal/client';
+import { Slot_UNSTABLE as Slot } from 'waku/minimal/client';
 ```
 
 ```tsx
@@ -473,11 +481,13 @@ Rules:
 
 `Children` lets a server element render the client children passed to `Slot`.
 
+```tsx
+import { Children_UNSTABLE as Children } from 'waku/minimal/client';
+```
+
 Server:
 
 ```tsx
-import { Children } from 'waku/minimal/client';
-
 return renderRsc({
   App: (
     <App>
@@ -497,9 +507,9 @@ Client:
 
 This is useful for nested layouts and composition patterns where the server tree decides where client-provided children should appear.
 
-#### `useRefetch()`
+#### `useRefetch`
 
-`useRefetch()` returns a function that fetches a new RSC payload and merges it into the current element map:
+`useRefetch` returns a function that fetches a new RSC payload and merges it into the current element map:
 
 ```tsx
 refetch(
@@ -513,7 +523,7 @@ Example:
 
 ```tsx
 import { useTransition } from 'react';
-import { useRefetch } from 'waku/minimal/client';
+import { useRefetch_UNSTABLE as useRefetch } from 'waku/minimal/client';
 
 const Counter = () => {
   const [isPending, startTransition] = useTransition();

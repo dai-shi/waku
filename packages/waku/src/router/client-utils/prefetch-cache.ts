@@ -7,7 +7,9 @@ type Elements = Record<string | symbol, unknown>;
 export type PrefetchMode = 'always' | 'once';
 
 export type PrefetchOptions = {
+  /** Default: dedupe by TTL only. `'once'` also skips if this path was already stored. */
   mode?: PrefetchMode;
+  /** Milliseconds; defaults to `PREFETCH_TTL`. */
   ttl?: number;
 };
 
@@ -31,7 +33,6 @@ export const PREFETCH_LIMIT = 100;
 const prefetchCacheKey = (rscPath: string, query: string): string =>
   rscPath + '\0' + query;
 
-/** Return a still-fresh entry for the key, evicting it if it has expired. */
 const getPrefetch = (
   cache: PrefetchCache,
   key: string,
@@ -45,7 +46,6 @@ const getPrefetch = (
   return entry;
 };
 
-/** Insert an entry, evicting the oldest ones once the size limit is reached. */
 const setPrefetch = (
   cache: PrefetchCache,
   key: string,
@@ -61,7 +61,6 @@ const setPrefetch = (
   cache.set(key, entry);
 };
 
-/** Reserve a route in the store while its first prefetch is in flight. */
 const reservePrefetchedElements = (
   store: PrefetchedElementsStore,
   rscPath: string,
@@ -78,7 +77,6 @@ const reservePrefetchedElements = (
   store.set(rscPath, null);
 };
 
-/** Release a reservation that was never fulfilled. */
 const releasePrefetchedElements = (
   store: PrefetchedElementsStore,
   rscPath: string,
@@ -88,7 +86,6 @@ const releasePrefetchedElements = (
   }
 };
 
-/** Merge a prefetched response into the session store. */
 const mergePrefetchedElements = (
   store: PrefetchedElementsStore,
   rscPath: string,
@@ -99,7 +96,6 @@ const mergePrefetchedElements = (
   store.set(rscPath, existing ? { ...existing, ...elements } : elements);
 };
 
-/** One store for prefetched routes; the router does not see the two caches. */
 type PrefetchManager = {
   prefetch: (
     rscPath: string,
@@ -129,7 +125,6 @@ export const createPrefetchManager = (): PrefetchManager => {
   };
 };
 
-/** Start a prefetch unless the mode or an entry within its ttl dedupes it. */
 const startPrefetch = (
   cache: PrefetchCache,
   store: PrefetchedElementsStore,

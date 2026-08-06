@@ -146,7 +146,7 @@ The callback passed to `createServerEntryAdapter` receives:
 - `handlers`: the original `handleRequest` and `handleBuild` object.
 - `processRequest`: a Waku request processor that returns `Response | null`.
 - `processBuild`: a Waku build processor that emits generated files.
-- `setAllEnv`: updates Waku's server-side environment map.
+- `unstable_setAllEnv`: updates Waku's server-side environment map.
 - `config`: resolved Waku config without the Vite config.
 - `isBuild`: `true` while Vite is running the build environment.
 - `notFoundHtml`: prerendered not-found HTML, when available.
@@ -162,14 +162,14 @@ The returned server entry can include:
 
 ## Platform Environment Bindings
 
-Some platforms pass environment bindings as extra arguments to `fetch` instead of using `process.env`. Use `setAllEnv` before delegating to Waku so `getEnv()` and related server code see the platform values.
+Some platforms pass environment bindings as extra arguments to `fetch` instead of using `process.env`. Use `unstable_setAllEnv` before delegating to Waku so `getEnv()` and related server code see the platform values.
 
 ```ts
 export default createServerEntryAdapter(
-  ({ processRequest, processBuild, setAllEnv }) => {
+  ({ processRequest, processBuild, unstable_setAllEnv }) => {
     return {
       fetch: async (req: Request, env: Record<string, string>) => {
-        setAllEnv(env);
+        unstable_setAllEnv(env);
         const res = await processRequest(req);
         return res || new Response('Not Found', { status: 404 });
       },
@@ -188,11 +188,11 @@ Some runtimes need the module's default export to have a platform-specific shape
 ```ts
 export default createServerEntryAdapter(
   (
-    { processRequest, processBuild, setAllEnv },
+    { processRequest, processBuild, unstable_setAllEnv },
     options?: { handlers?: Record<string, unknown> },
   ) => {
     const fetch = async (req: Request, env: Record<string, string>) => {
-      setAllEnv(env);
+      unstable_setAllEnv(env);
       const res = await processRequest(req);
       return res || new Response('Not Found', { status: 404 });
     };

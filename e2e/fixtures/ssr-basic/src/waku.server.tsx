@@ -1,5 +1,5 @@
 import adapter from 'waku/adapters/default';
-import { Slot } from 'waku/minimal/client';
+import { Slot_UNSTABLE as Slot } from 'waku/minimal/client';
 import App from './components/App.js';
 import { MixedForms, receivePlainPost } from './components/MixedForms.js';
 import TestApp from './components/test-app.js';

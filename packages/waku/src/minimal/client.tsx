@@ -587,11 +587,8 @@ const ElementsContext = createContext<Promise<Elements> | null>(null);
 /**
  * Client root. Seeds the initial elements, bridges the store to React state,
  * and provides the elements to `Slot` descendants.
- *
- * This API is technically unstable and may change or be removed,
- * even though it does not carry the `unstable_` prefix.
  */
-export const Root = ({
+export const Root_UNSTABLE = ({
   initialRscPath,
   initialRscParams,
   children,
@@ -663,22 +660,16 @@ export const Root = ({
   );
 };
 
-/**
- * This API is technically unstable and may change or be removed,
- * even though it does not carry the `unstable_` prefix.
- */
-export const useRefetch = () => use(RefetchContext);
+/** Fetch and merge another RSC payload into the current element map. */
+export const useRefetch_UNSTABLE = () => use(RefetchContext);
 
 export const useMergeElements_UNSTABLE = () => use(MergeElementsContext);
 
 const ChildrenContext = createContext<ReactNode>(undefined);
 const ChildrenContextProvider = memo(ChildrenContext);
 
-/**
- * This API is technically unstable and may change or be removed,
- * even though it does not carry the `unstable_` prefix.
- */
-export const Children = () => use(ChildrenContext);
+/** Render the client children passed to the enclosing Slot. */
+export const Children_UNSTABLE = () => use(ChildrenContext);
 
 export const useElementsPromise_UNSTABLE = () => {
   const elementsPromise = use(ElementsContext);
@@ -701,11 +692,8 @@ export const useElementsPromise_UNSTABLE = () => {
  * ```
  *   <Root><Slot id="foo" /><Slot id="bar" /></Root>
  * ```
- *
- * This API is technically unstable and may change or be removed,
- * even though it does not carry the `unstable_` prefix.
  */
-export const Slot = ({
+export const Slot_UNSTABLE = ({
   id,
   children,
 }: {
@@ -729,10 +717,15 @@ export const Slot = ({
   );
 };
 
-/**
- * ServerRoot for SSR
- * This is not a public API.
- */
+/** @deprecated Use `Root_UNSTABLE`. */
+export const Root = Root_UNSTABLE;
+/** @deprecated Use `Slot_UNSTABLE`. */
+export const Slot = Slot_UNSTABLE;
+/** @deprecated Use `Children_UNSTABLE`. */
+export const Children = Children_UNSTABLE;
+/** @deprecated Use `useRefetch_UNSTABLE`. */
+export const useRefetch = useRefetch_UNSTABLE;
+
 export const INTERNAL_ServerRoot = ({
   elementsPromise,
   children,

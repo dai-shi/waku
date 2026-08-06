@@ -20,12 +20,12 @@ import { createCustomError } from '../src/lib/utils/custom-errors.js';
 import { ETAG_ID_PREFIX, IMMUTABLE_ETAG } from '../src/lib/utils/etags.js';
 import { fetchRscStore } from '../src/minimal/client-utils/fetch-store.js';
 import {
-  Children,
+  Children_UNSTABLE as Children,
   INTERNAL_ServerRoot,
-  Root,
-  Slot,
+  Root_UNSTABLE as Root,
+  Slot_UNSTABLE as Slot,
   unstable_prefetchRsc as prefetchRsc,
-  useRefetch,
+  useRefetch_UNSTABLE as useRefetch,
 } from '../src/minimal/client.js';
 import { PREFETCH_LIMIT } from '../src/router/client-utils/prefetch-cache.js';
 import {
@@ -283,7 +283,7 @@ vi.mock('../src/minimal/client.js', async () => {
     const valueRef = React.useRef<Record<string, unknown>>(undefined);
     if (!valueRef.current) {
       valueRef.current = {
-        root: React.createElement(actual.Children),
+        root: React.createElement(actual.Children_UNSTABLE),
         ...testHoisted.elements,
       };
     }
@@ -390,7 +390,7 @@ vi.mock('../src/minimal/client.js', async () => {
 
   return {
     ...actual,
-    Root: vi.fn((props: Parameters<typeof actual.Root>[0]) =>
+    Root_UNSTABLE: vi.fn((props: Parameters<typeof actual.Root_UNSTABLE>[0]) =>
       React.createElement(StatefulRoot, props),
     ),
     // The router writes route metadata here when no fetch carries it; route it
@@ -400,7 +400,7 @@ vi.mock('../src/minimal/client.js', async () => {
       return store ? store.applySync : noopMergeElements;
     },
     unstable_prefetchRsc: vi.fn(),
-    useRefetch: vi.fn(useMockRefetch),
+    useRefetch_UNSTABLE: vi.fn(useMockRefetch),
   };
 });
 
