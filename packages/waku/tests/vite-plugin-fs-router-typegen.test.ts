@@ -210,7 +210,9 @@ import type { getConfig as File_ØnéTwoThree_getConfig } from './pages/øné_tw
     );
     // layout files are not imported and their filename is never leaked
     expect(generated).not.toContain('_layout');
+    expect(generated).not.toContain('_actions');
     expect(generated).not.toContain('_components');
+    expect(generated).not.toContain('_hooks');
     expect(generated).toContain(
       "| ({ path: '/landing' } & GetConfigResponse<typeof File_GroupLandingIndex_getConfig>)",
     );

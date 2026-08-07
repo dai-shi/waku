@@ -376,6 +376,11 @@ test.describe('fs-router', () => {
     await expect(page.getByText('404 Not Found')).toBeVisible();
   });
 
+  test('_actions', async ({ page }) => {
+    await page.goto(`http://localhost:${port}/_actions/hello-world`);
+    await expect(page.getByText('404 Not Found')).toBeVisible();
+  });
+
   test('alt click', async ({ page }) => {
     await page.goto(`http://localhost:${port}`);
     await waitForHydration(page);

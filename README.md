@@ -524,6 +524,7 @@ Group routes are especially powerful for organizing complex applications where d
 
 The following directories are ignored by the router:
 
+- `_actions`
 - `_components`
 - `_hooks`
 
