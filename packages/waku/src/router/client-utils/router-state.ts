@@ -26,21 +26,6 @@ export const has404FromElements = (elements: Record<string, unknown>) =>
 export const isMetaKey = (key: string) =>
   key === ROUTE_ID || key === HAS404_ID || key === IS_STATIC_ID;
 
-export const getServerRedirect = (
-  elements: Record<string, unknown>,
-  route: RouteProps,
-): RouteProps | undefined => {
-  const serverRoute = getRouteFromElements(elements);
-  if (
-    serverRoute &&
-    (serverRoute.path !== route.path ||
-      (!isStaticFromElements(elements) && serverRoute.query !== route.query))
-  ) {
-    return serverRoute;
-  }
-  return undefined;
-};
-
 // the client owned router state; the server's ROUTE_ID owns the path
 export const ROUTER_STATE_ID = Symbol('waku-router-state');
 
@@ -86,13 +71,16 @@ export const resolveServerRedirect = (
   fallbackPath: string,
 ): { route: RouteProps; url: URL } => {
   const stateUrl = new URL(routerState.url, window.location.href);
-  const redirect = routerState.failure
+  const serverRoute = routerState.failure
     ? undefined
-    : getServerRedirect(elements, {
-        path: routerState.requested[0],
-        query: routerState.requested[1],
-        hash: '',
-      });
+    : getRouteFromElements(elements);
+  const redirect =
+    serverRoute &&
+    (serverRoute.path !== routerState.requested[0] ||
+      (!isStaticFromElements(elements) &&
+        serverRoute.query !== routerState.requested[1]))
+      ? serverRoute
+      : undefined;
   if (redirect && redirect.path !== '/404') {
     return { route: redirect, url: getRouteUrl(redirect) };
   }

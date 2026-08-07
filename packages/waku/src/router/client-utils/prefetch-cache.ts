@@ -20,12 +20,12 @@ export type PrefetchEntry = {
 
 type PrefetchCache = Map<string, PrefetchEntry>;
 
-// Session store of prefetched responses, keyed by rscPath alone. Entries are
+// Session cache of prefetched responses, keyed by rscPath alone. Entries are
 // only served under the etag protocol: they paint immutable slots (which
 // cannot vary by query) and fall back for a dynamic slot only when the
 // server omits it, which proves the stored copy current. A null entry marks
 // a route whose first prefetch is still in flight.
-type PrefetchedElementsStore = Map<string, Elements | null>;
+type PrefetchedElementsCache = Map<string, Elements | null>;
 
 export const PREFETCH_TTL = 1000 * 60;
 export const PREFETCH_LIMIT = 100;
@@ -34,66 +34,69 @@ const prefetchCacheKey = (rscPath: string, query: string): string =>
   rscPath + '\0' + query;
 
 const getPrefetch = (
-  cache: PrefetchCache,
+  prefetchCache: PrefetchCache,
   key: string,
   now: number,
 ): PrefetchEntry | undefined => {
-  const entry = cache.get(key);
+  const entry = prefetchCache.get(key);
   if (entry && entry.expireAt <= now) {
-    cache.delete(key);
+    prefetchCache.delete(key);
     return undefined;
   }
   return entry;
 };
 
 const setPrefetch = (
-  cache: PrefetchCache,
+  prefetchCache: PrefetchCache,
   key: string,
   entry: PrefetchEntry,
 ): void => {
-  while (cache.size >= PREFETCH_LIMIT) {
-    const oldest = cache.keys().next().value;
+  while (prefetchCache.size >= PREFETCH_LIMIT) {
+    const oldest = prefetchCache.keys().next().value;
     if (oldest === undefined) {
       break;
     }
-    cache.delete(oldest);
+    prefetchCache.delete(oldest);
   }
-  cache.set(key, entry);
+  prefetchCache.set(key, entry);
 };
 
 const reservePrefetchedElements = (
-  store: PrefetchedElementsStore,
+  prefetchedElementsCache: PrefetchedElementsCache,
   rscPath: string,
 ): void => {
-  if (store.has(rscPath)) {
+  if (prefetchedElementsCache.has(rscPath)) {
     return;
   }
-  if (store.size >= PREFETCH_LIMIT) {
-    const oldestKey = store.keys().next().value;
+  if (prefetchedElementsCache.size >= PREFETCH_LIMIT) {
+    const oldestKey = prefetchedElementsCache.keys().next().value;
     if (oldestKey !== undefined) {
-      store.delete(oldestKey);
+      prefetchedElementsCache.delete(oldestKey);
     }
   }
-  store.set(rscPath, null);
+  prefetchedElementsCache.set(rscPath, null);
 };
 
 const releasePrefetchedElements = (
-  store: PrefetchedElementsStore,
+  prefetchedElementsCache: PrefetchedElementsCache,
   rscPath: string,
 ): void => {
-  if (store.get(rscPath) === null) {
-    store.delete(rscPath);
+  if (prefetchedElementsCache.get(rscPath) === null) {
+    prefetchedElementsCache.delete(rscPath);
   }
 };
 
 const mergePrefetchedElements = (
-  store: PrefetchedElementsStore,
+  prefetchedElementsCache: PrefetchedElementsCache,
   rscPath: string,
   elements: Elements,
 ): void => {
-  reservePrefetchedElements(store, rscPath);
-  const existing = store.get(rscPath);
-  store.set(rscPath, existing ? { ...existing, ...elements } : elements);
+  reservePrefetchedElements(prefetchedElementsCache, rscPath);
+  const existing = prefetchedElementsCache.get(rscPath);
+  prefetchedElementsCache.set(
+    rscPath,
+    existing ? { ...existing, ...elements } : elements,
+  );
 };
 
 type PrefetchManager = {
@@ -109,59 +112,66 @@ type PrefetchManager = {
 };
 
 export const createPrefetchManager = (): PrefetchManager => {
-  let cache: PrefetchCache = new Map();
-  let store: PrefetchedElementsStore = new Map();
+  let prefetchCache: PrefetchCache = new Map();
+  let prefetchedElementsCache: PrefetchedElementsCache = new Map();
   return {
     prefetch: (rscPath, query, fetchElements, options) =>
-      startPrefetch(cache, store, rscPath, query, fetchElements, options),
+      startPrefetch(
+        prefetchCache,
+        prefetchedElementsCache,
+        rscPath,
+        query,
+        fetchElements,
+        options,
+      ),
     get: (rscPath, query) =>
-      getPrefetch(cache, prefetchCacheKey(rscPath, query), Date.now()),
-    getElements: (rscPath) => store.get(rscPath) ?? undefined,
+      getPrefetch(prefetchCache, prefetchCacheKey(rscPath, query), Date.now()),
+    getElements: (rscPath) => prefetchedElementsCache.get(rscPath) ?? undefined,
     clear: () => {
       // replace the maps so an in-flight prefetch completes into detached ones
-      cache = new Map();
-      store = new Map();
+      prefetchCache = new Map();
+      prefetchedElementsCache = new Map();
     },
   };
 };
 
 const startPrefetch = (
-  cache: PrefetchCache,
-  store: PrefetchedElementsStore,
+  prefetchCache: PrefetchCache,
+  prefetchedElementsCache: PrefetchedElementsCache,
   rscPath: string,
   query: string,
   fetchElements: (base: Elements | undefined) => Promise<Elements>,
   options: PrefetchOptions | undefined,
 ): void => {
-  if (options?.mode === 'once' && store.has(rscPath)) {
+  if (options?.mode === 'once' && prefetchedElementsCache.has(rscPath)) {
     return;
   }
-  // Dedupe per (path, query), so a repeat trigger within the ttl keeps an
-  // already-resolved response instead of replacing it with an in-flight one.
+  // Keep an already-resolved response within the ttl instead of replacing it
+  // with an in-flight one.
   const key = prefetchCacheKey(rscPath, query);
   const now = Date.now();
-  if (getPrefetch(cache, key, now)) {
+  if (getPrefetch(prefetchCache, key, now)) {
     return;
   }
-  const base = store.get(rscPath) ?? undefined;
+  const base = prefetchedElementsCache.get(rscPath) ?? undefined;
   const promise = fetchElements(base);
   const entry: PrefetchEntry = {
     promise,
     expireAt: now + (options?.ttl ?? PREFETCH_TTL),
   };
-  setPrefetch(cache, key, entry);
-  reservePrefetchedElements(store, rscPath);
+  setPrefetch(prefetchCache, key, entry);
+  reservePrefetchedElements(prefetchedElementsCache, rscPath);
   promise.then(
     (resolved) => {
-      mergePrefetchedElements(store, rscPath, resolved);
+      mergePrefetchedElements(prefetchedElementsCache, rscPath, resolved);
     },
     () => {
       // TODO a negative ttl, so a route that answers with a document location
       // is not fetched again on every hover
-      if (cache.get(key) === entry) {
-        cache.delete(key);
+      if (prefetchCache.get(key) === entry) {
+        prefetchCache.delete(key);
       }
-      releasePrefetchedElements(store, rscPath);
+      releasePrefetchedElements(prefetchedElementsCache, rscPath);
     },
   );
 };

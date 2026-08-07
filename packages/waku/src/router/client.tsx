@@ -140,9 +140,6 @@ type Prefetch = {
   ): void;
 };
 
-const parseRouteFromLocation = (): RouteProps =>
-  parseRoute(new URL(window.location.href));
-
 const commitHistory = (url: URL, mode: 'push' | 'replace' | null): void => {
   if (window.location.href === url.href) {
     return;
@@ -256,11 +253,6 @@ const resolveRouteHref = <Path extends RoutePath>(
     import.meta.env.WAKU_CONFIG_BASE_PATH,
   );
 
-const resolveRouteUrl = <Path extends RoutePath>(
-  to: RouteHref | BuildRouteHrefTarget<Path>,
-  resolveCodec: ReturnType<typeof useResolveSearchCodec>,
-): URL => new URL(resolveRouteHref(to, resolveCodec), window.location.href);
-
 /**
  * Current route fields plus navigation helpers (`push`, `replace`, `reload`,
  * `back`, `forward`, `prefetch`).
@@ -280,7 +272,10 @@ export function useRouter() {
       to: RouteHref | BuildRouteHrefTarget<RoutePath>,
       options?: NavigateOptions,
     ) => {
-      const url = resolveRouteUrl(to, resolveCodec);
+      const url = new URL(
+        resolveRouteHref(to, resolveCodec),
+        window.location.href,
+      );
       return dispatchChangeRoute(changeRoute, parseRoute(url), {
         shouldScroll: options?.scroll ?? shouldScrollByDefault(url),
         history,
@@ -305,11 +300,12 @@ export function useRouter() {
     [navigate],
   ) as Navigate;
   const reload = useCallback(async () => {
-    await dispatchChangeRoute(changeRoute, parseRouteFromLocation(), {
+    const url = new URL(window.location.href);
+    await dispatchChangeRoute(changeRoute, parseRoute(url), {
       shouldScroll: true,
       refetch: true,
       history: 'replace',
-      url: new URL(window.location.href), // reloading moves nothing
+      url, // reloading moves nothing
     });
   }, [changeRoute]);
   const back = useCallback(() => {
@@ -323,7 +319,10 @@ export function useRouter() {
       to: RouteHref | BuildRouteHrefTarget<RoutePath>,
       options?: PrefetchOptions,
     ) => {
-      const url = resolveRouteUrl(to, resolveCodec);
+      const url = new URL(
+        resolveRouteHref(to, resolveCodec),
+        window.location.href,
+      );
       prefetchRoute(parseRoute(url), options);
     },
     [prefetchRoute, resolveCodec],
@@ -712,6 +711,11 @@ function renderError(message: string) {
   );
 }
 
+/**
+ * Catches render errors from its children and shows a fallback page. Used by
+ * the default root layout; apps can wrap their own root with it too. Followable
+ * navigation failures are handled inside the router before this boundary.
+ */
 export class ErrorBoundary extends Component<
   { children: ReactNode },
   { error?: unknown }
@@ -774,13 +778,13 @@ const FollowError = ({
       routerState !== dispatched.from &&
       !routerState.failure
     ) {
-      const landed =
+      const sameRequest =
         routerState.requested[0] === dispatched.route.path &&
         routerState.requested[1] === dispatched.route.query;
-      const arrived = landed
+      const followCompleted = sameRequest
         ? dispatched.route.path === routePath
         : routerState.url === dispatched.url;
-      if (arrived) {
+      if (followCompleted) {
         reset();
       } else {
         fail(error, new Error('detected a navigation loop', { cause: error }));
@@ -911,6 +915,12 @@ const preloadRouteModules = (path: string) => {
   });
 };
 
+/**
+ * Renders a named slice slot from the current RSC elements. With `lazy`, the
+ * first visit fetches the slice if it is missing or mutable; later visits reuse
+ * an immutable copy. The lazy `fallback` is shown only while the slot is absent
+ * from the elements map (it does not reappear on a later refetch — see FIXME).
+ */
 export function Slice({
   id,
   children,
@@ -955,11 +965,9 @@ export function Slice({
   return <Slot id={slotId}>{children}</Slot>;
 }
 
-const defaultRouteInterceptor = (route: RouteProps) => route;
-
 const InnerRouter = ({
   fallbackRoute,
-  routeInterceptor = defaultRouteInterceptor,
+  routeInterceptor,
 }: {
   fallbackRoute: RouteProps;
   routeInterceptor: ((route: RouteProps) => RouteProps | false) | undefined;
@@ -1067,7 +1075,7 @@ const InnerRouter = ({
     }
   }, [refetch, addToStaticPathSet, routeFallback]);
 
-  // state, not a ref: it is read during render (passed through context)
+  // starts empty so hydration matches; filled when a lazy Slice fetches
   const [fetchingSlices] = useState(() => new Set<SliceId>());
   const pendingNavigationRef = useRef<AbortController | null>(null);
 
@@ -1162,7 +1170,7 @@ const InnerRouter = ({
     [routeFallback, refetch, mergeElements, addToStaticPathSet],
   );
 
-  const applyChangeRouteData = useCallback(
+  const changeRouteFromServer = useCallback(
     async (routeData: unknown, isStatic: unknown) => {
       if (!routeData) {
         return;
@@ -1194,14 +1202,14 @@ const InnerRouter = ({
     const listener = (elements: Record<string, unknown>) => {
       addToStaticPathSet(elements);
       const { [ROUTE_ID]: routeData, [IS_STATIC_ID]: isStatic } = elements;
-      applyChangeRouteData(routeData, isStatic).catch((err) => {
+      changeRouteFromServer(routeData, isStatic).catch((err) => {
         if (!isFollowable(err)) {
           console.error('Error while handling route updates:', err);
         }
       });
     };
     return registerCallServerElementsListener(listener);
-  }, [applyChangeRouteData, addToStaticPathSet]);
+  }, [changeRouteFromServer, addToStaticPathSet]);
 
   const prefetchRoute: PrefetchRoute = useCallback((route, options) => {
     preloadRouteModules(route.path);
@@ -1222,8 +1230,8 @@ const InnerRouter = ({
 
   useEffect(() => {
     const callback = () => {
-      const popped = parseRouteFromLocation();
-      const nextRoute = routeInterceptor(popped);
+      const popped = parseRoute(new URL(window.location.href));
+      const nextRoute = routeInterceptor ? routeInterceptor(popped) : popped;
       if (!nextRoute) {
         return;
       }
@@ -1285,7 +1293,7 @@ const InnerRouter = ({
  * browser location.
  */
 export function Router({
-  initialRoute = parseRouteFromLocation(),
+  initialRoute = parseRoute(new URL(window.location.href)),
   unstable_routeInterceptor,
 }: {
   initialRoute?: RouteProps;
