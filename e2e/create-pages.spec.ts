@@ -817,6 +817,32 @@ test.describe(`create-pages`, () => {
     },
   );
 
+  test('no ssr with render=dynamic and no client component', async ({
+    page,
+    request,
+  }) => {
+    // nothing else about this page says the server skipped it
+    const response = await request.get(
+      `http://localhost:${port}/no-ssr-server-only`,
+    );
+    expect(await response.text()).not.toContain('No SSR Server Only');
+
+    await page.goto(`http://localhost:${port}/no-ssr-server-only`);
+    await expect(
+      page.getByRole('heading', { name: 'No SSR Server Only', exact: true }),
+    ).toBeVisible();
+  });
+
+  test('no ssr with render=dynamic', async ({ page }) => {
+    await page.goto(`http://localhost:${port}/no-ssr-dynamic`);
+    await expect(
+      page.getByRole('heading', { name: 'No SSR Dynamic', exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Only client component', exact: true }),
+    ).toBeVisible();
+  });
+
   test('no ssr', async ({ page }) => {
     await page.goto(`http://localhost:${port}/no-ssr`);
     await expect(

@@ -1256,8 +1256,9 @@ const InnerRouter = ({
   ) : (
     <Slot id={getRouteSlotId(currentRoute.path)} />
   );
-  // TODO the root layout renders outside this, so a followable error thrown by
-  // an action it calls is never followed
+  // TODO a followable error thrown by the root layout, or by an action it
+  // calls, is not followed. The layout's own ErrorBoundary catches it first,
+  // so wrapping this slot in another handler does not reach it
   const rootElement = (
     <Slot id="root">
       <CustomErrorHandler has404={has404}>{routeElement}</CustomErrorHandler>

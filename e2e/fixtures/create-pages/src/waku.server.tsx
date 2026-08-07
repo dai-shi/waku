@@ -17,6 +17,7 @@ import {
 import NestedBazPage from './components/NestedBazPage.js';
 import NestedLayout from './components/NestedLayout.js';
 import NoSsr from './components/NoSsr.js';
+import NoSsrDynamic from './components/NoSsrDynamic.js';
 import RedirectToSearchPage from './components/RedirectToSearchPage.js';
 import { RerenderActionPage } from './components/RerenderActionPage.js';
 import SearchPage from './components/SearchPage.js';
@@ -519,6 +520,20 @@ const pages: ReturnType<typeof createPages> = createPages(
       render: 'static',
       path: '/no-ssr',
       component: NoSsr,
+      unstable_disableSSR: true,
+    }),
+
+    createPage({
+      render: 'dynamic',
+      path: '/no-ssr-dynamic',
+      component: NoSsrDynamic,
+      unstable_disableSSR: true,
+    }),
+
+    createPage({
+      render: 'dynamic',
+      path: '/no-ssr-server-only',
+      component: () => <h2>No SSR Server Only</h2>,
       unstable_disableSSR: true,
     }),
 
