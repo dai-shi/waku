@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 
-import { Suspense, act, useState } from 'react';
+import { StrictMode, Suspense, act, useState } from 'react';
 import type { ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
@@ -21,12 +21,11 @@ import {
   Slot_UNSTABLE as Slot,
   unstable_callServerRsc,
   unstable_fetchRsc,
-  unstable_prefetchRsc,
   unstable_registerCallServerElementsListener,
   unstable_registerFetchEnhancer,
   unstable_registerFetchRscInputTransformer,
   useElementsPromise_UNSTABLE,
-  useRefetch_UNSTABLE as useRefetch,
+  useRefetch,
 } from '../src/minimal/client.js';
 
 type CallServer = (funcId: string, args: unknown[]) => Promise<unknown>;
@@ -98,39 +97,67 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-describe('minimal/client prefetch', () => {
-  test('unstable_prefetchRsc returns a decoded Promise<Elements>', async () => {
-    // Minimal no longer parks or reuses prefetches; it just fetches + decodes
-    // and hands the promise back to the caller (the router holds it).
+describe('minimal/client fetch', () => {
+  test('unstable_fetchRsc returns fetched elements', async () => {
+    // Minimal only fetches + decodes and hands the promise back to the caller.
     const fetchMock = vi.fn<typeof fetch>(
       async () => new Response('prefetched'),
     );
     track(unstable_registerFetchEnhancer(() => fetchMock));
     const rscParams = new URLSearchParams({ query: 'x=1' });
 
-    const elements = await unstable_prefetchRsc('R/next.txt', rscParams);
+    const elements = await unstable_fetchRsc('R/next.txt', rscParams);
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(mocks.createFromFetch).toHaveBeenCalledTimes(1);
     expect(elements).toEqual({ _value: null, text: 'prefetched' });
   });
 
-  test('a fetch after a prefetch issues its own request (minimal holds nothing)', async () => {
-    // No prefetch cache: each prefetch and each fetch is an independent
-    // request. Reuse of the prefetched shell is the router's job.
+  test('each fetch issues a new request for the same input', async () => {
     const fetchMock = vi.fn<typeof fetch>(async () => new Response('x'));
     track(unstable_registerFetchEnhancer(() => fetchMock));
     const rscParams = new URLSearchParams({ query: 'x=1' });
 
-    await unstable_prefetchRsc('R/next.txt', rscParams);
+    await unstable_fetchRsc('R/next.txt', rscParams);
     await unstable_fetchRsc('R/next.txt', rscParams);
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(mocks.createFromFetch).toHaveBeenCalledTimes(2);
   });
 
-  test('server actions use the current fetch, not the one a prefetch decoded with', async () => {
-    // Capture the callServer baked into the prefetch-decoded elements.
+  test('Root caches its initial fetch', async () => {
+    mocks.createFromFetch.mockReturnValue(
+      resolvedThenable({ _value: null, App: 'app' }),
+    );
+    stubFetch();
+    const rscParams = { value: 1 };
+    const render = async () => {
+      const root = createRoot(document.createElement('div'));
+      await act(async () => {
+        root.render(
+          <StrictMode>
+            <Root initialRscPath="R/app.txt" initialRscParams={rscParams}>
+              <Suspense fallback={null}>
+                <Slot id="App" />
+              </Suspense>
+            </Root>
+          </StrictMode>,
+        );
+      });
+      return root;
+    };
+
+    const firstRoot = await render();
+    expect(mocks.createFromFetch).toHaveBeenCalledTimes(1);
+    act(() => firstRoot.unmount());
+
+    const secondRoot = await render();
+    expect(mocks.createFromFetch).toHaveBeenCalledTimes(1);
+    act(() => secondRoot.unmount());
+  });
+
+  test('server actions use the current fetch, not the one elements decoded with', async () => {
+    // Capture the callServer baked into the fetched elements.
     let callServer: CallServer | undefined;
     mocks.createFromFetch.mockImplementation((_responsePromise, options) => {
       callServer ??= options?.callServer;
@@ -140,11 +167,11 @@ describe('minimal/client prefetch', () => {
     const prefetchFetch = vi.fn<typeof fetch>(async () => new Response('p'));
     const actionFetch = vi.fn<typeof fetch>(async () => new Response('n'));
 
-    // Prefetch with one fetch...
+    // Fetch elements with one fetch...
     const unregisterPrefetch = unstable_registerFetchEnhancer(
       () => prefetchFetch,
     );
-    await unstable_prefetchRsc('R/page.txt', undefined);
+    await unstable_fetchRsc('R/page.txt');
     unregisterPrefetch();
     // ...then the app registers a different fetch.
     track(unstable_registerFetchEnhancer(() => actionFetch));
@@ -297,24 +324,6 @@ describe('minimal/client server actions', () => {
     act(() => root.unmount());
   });
 
-  test('a document location fails the prefetch that decoded it', async () => {
-    // the router holds this promise, and its rejection is what makes the
-    // click leave rather than commit a payload that is not elements
-    mocks.createFromFetch.mockResolvedValueOnce({
-      _location: 'https://other.example/prefetched',
-    });
-    stubFetch();
-
-    const error = await unstable_prefetchRsc('R/next.txt').catch(
-      (e: unknown) => e,
-    );
-
-    expect(getErrorInfo(error)).toEqual({
-      location: 'https://other.example/prefetched',
-      unstable_leave: true,
-    });
-  });
-
   test('a document location is reported as an error, not merged', async () => {
     // minimal only tags it; deciding what a location means is the router's
     mocks.createFromFetch.mockResolvedValueOnce({
@@ -341,46 +350,6 @@ describe('minimal/client server actions', () => {
     await expect(unstable_callServerRsc('actions#do', [])).rejects.toThrow(
       'Missing Root',
     );
-  });
-
-  test('a server action from a consumed prefetched tree updates the active Root', async () => {
-    // The old per-Root store rebound a prefetched tree's actions to the
-    // consuming store; with a single store, the action must still update the
-    // mounted Root.
-    let callServer: CallServer | undefined;
-    mocks.createFromFetch.mockImplementation((_responsePromise, options) => {
-      callServer ??= options?.callServer;
-      return resolvedThenable({ App: 'prefetched' });
-    });
-    stubFetch();
-    void unstable_prefetchRsc('R/page.txt', undefined);
-
-    const container = document.createElement('div');
-    const root = createRoot(container);
-    await act(async () => {
-      root.render(
-        <Root initialRscPath="R/page.txt">
-          <Suspense fallback={null}>
-            <Slot id="App" />
-          </Suspense>
-        </Root>,
-      );
-    });
-    expect(container.textContent).toBe('prefetched');
-
-    mocks.createFromFetch.mockResolvedValueOnce({
-      _value: 'ok',
-      App: 'updated',
-    });
-    let value: unknown;
-    await act(async () => {
-      value = await callServer!('actions#do', []);
-    });
-
-    expect(value).toBe('ok');
-    expect(container.textContent).toBe('updated');
-
-    act(() => root.unmount());
   });
 });
 
@@ -422,15 +391,34 @@ describe('minimal/client input transformer', () => {
     const fetchMock = vi.fn<typeof fetch>(async () => new Response('{}'));
     track(unstable_registerFetchEnhancer(() => fetchMock));
     const transform = vi.fn(
+      (_rscPath: string, _rscParams: unknown) =>
+        ['R/rewritten.txt', { x: 1 }] as const,
+    );
+    track(unstable_registerFetchRscInputTransformer(transform));
+
+    await unstable_fetchRsc('R/original.txt', undefined);
+
+    expect(transform).toHaveBeenCalledOnce();
+    expect(transform.mock.calls[0]?.slice(0, 2)).toEqual([
+      'R/original.txt',
+      undefined,
+    ]);
+    expect(String(fetchMock.mock.calls[0]?.[0])).toContain('rewritten');
+  });
+
+  test('supports the deprecated transformer signature', async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () => new Response('{}'));
+    track(unstable_registerFetchEnhancer(() => fetchMock));
+    const transform = vi.fn(
       (_rscPath: string, _rscParams: unknown, prefetchOnly: boolean) =>
-        ['R/rewritten.txt', { x: 1 }, prefetchOnly] as const,
+        ['R/legacy.txt', { x: 1 }, prefetchOnly] as const,
     );
     track(unstable_registerFetchRscInputTransformer(transform));
 
     await unstable_fetchRsc('R/original.txt', undefined);
 
     expect(transform).toHaveBeenCalledWith('R/original.txt', undefined, false);
-    expect(String(fetchMock.mock.calls[0]?.[0])).toContain('rewritten');
+    expect(String(fetchMock.mock.calls[0]?.[0])).toContain('legacy');
   });
 });
 
@@ -1225,26 +1213,6 @@ describe('minimal/client refetch scenarios', () => {
     view.unmount();
   });
 
-  test('prefetched elements are adopted as the data source without fetching', async () => {
-    const view = await mount({ _value: null, page: 'P1' }, () => (
-      <Suspense fallback={null}>
-        <Slot id="page" />
-      </Suspense>
-    ));
-    expect(view.container.textContent).toBe('P1');
-
-    mocks.createFromFetch.mockClear();
-    await act(async () => {
-      await view.refetch()('R/done.txt', undefined, {
-        unstable_prefetched: Promise.resolve({ _value: null, page: 'P2' }),
-      });
-    });
-    expect(view.container.textContent).toBe('P2');
-    expect(mocks.createFromFetch).not.toHaveBeenCalled();
-
-    view.unmount();
-  });
-
   // createFromFetch says it returns a promise, but hands back a pending
   // thenable whose `then` returns nothing
   const pendingThenable = (value: Record<string, unknown>) => {
@@ -1272,101 +1240,6 @@ describe('minimal/client refetch scenarios', () => {
     settle();
 
     await expect(chained).resolves.toMatchObject({ page: 'P2' });
-  });
-
-  test('aborting a navigation releases the prefetch it adopted', async () => {
-    const view = await mount({ _value: null, page: 'P1' }, () => (
-      <Suspense fallback={null}>
-        <Slot id="page" />
-      </Suspense>
-    ));
-    const controller = new AbortController();
-    const pending = new Promise<Record<string, unknown>>(() => {});
-    await act(async () => {
-      view
-        .refetch()('R/pending.txt', undefined, {
-          unstable_prefetched: pending,
-          signal: controller.signal,
-        })
-        .catch(() => {});
-      await wait();
-    });
-
-    controller.abort();
-    await act(async () => {
-      await view.refetch()('R/next.txt', undefined, {
-        unstable_prefetched: Promise.resolve({ _value: null, page: 'P2' }),
-      });
-      await wait();
-    });
-
-    // the abandoned prefetch never settles, so the chain must not wait on it
-    expect(view.container.textContent).toBe('P2');
-    view.unmount();
-  });
-
-  test('an aborted navigation does not act on its prefetch build id', async () => {
-    vi.stubEnv('WAKU_BUILD_ID', 'build-1');
-    const view = await mount(
-      { _value: null, page: 'P1', _buildId: 'build-1' },
-      () => (
-        <Suspense fallback={null}>
-          <Slot id="page" />
-        </Suspense>
-      ),
-    );
-    const onBuildIdMismatch = vi.fn();
-    const controller = new AbortController();
-    let settle = () => {};
-    const prefetched = new Promise<Record<string, unknown>>((resolve) => {
-      settle = () => resolve({ _value: null, page: 'P2', _buildId: 'build-2' });
-    });
-    await act(async () => {
-      view
-        .refetch()('R/done.txt', undefined, {
-          unstable_prefetched: prefetched,
-          signal: controller.signal,
-          onBuildIdMismatch,
-        })
-        .catch(() => {});
-      await wait();
-    });
-
-    controller.abort();
-    await act(async () => {
-      // the stale build arrives after the user moved on
-      settle();
-      await wait();
-    });
-
-    expect(onBuildIdMismatch).not.toHaveBeenCalled();
-    view.unmount();
-  });
-
-  test('adopting prefetched elements re-checks the build id', async () => {
-    vi.stubEnv('WAKU_BUILD_ID', 'build-1');
-    const view = await mount(
-      { _value: null, page: 'P1', _buildId: 'build-1' },
-      () => (
-        <Suspense fallback={null}>
-          <Slot id="page" />
-        </Suspense>
-      ),
-    );
-    const onBuildIdMismatch = vi.fn();
-    await act(async () => {
-      await view.refetch()('R/done.txt', undefined, {
-        unstable_prefetched: Promise.resolve({
-          _value: null,
-          page: 'P2',
-          _buildId: 'build-2',
-        }),
-        onBuildIdMismatch,
-      });
-      await wait();
-    });
-    expect(onBuildIdMismatch).toHaveBeenCalledTimes(1);
-    view.unmount();
   });
 
   test('new key: a slot b introduces suspends, then shows b', async () => {

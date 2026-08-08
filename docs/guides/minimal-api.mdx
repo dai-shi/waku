@@ -36,7 +36,8 @@ The minimal API is small, but it exposes both server-side handlers and client-si
 | `waku/minimal/client` | `Root_UNSTABLE`              | Installing the minimal client runtime.                                |
 | `waku/minimal/client` | `Slot_UNSTABLE`              | Rendering a server element by RSC ID.                                 |
 | `waku/minimal/client` | `Children_UNSTABLE`          | Placing client-side `Slot` children inside a server-rendered element. |
-| `waku/minimal/client` | `useRefetch_UNSTABLE`        | Fetching and merging another RSC payload.                             |
+| `waku/minimal/client` | `unstable_fetchRsc`          | Fetching and decoding an RSC payload.                                 |
+| `waku/minimal/client` | `useMergeElements_UNSTABLE`  | Merging an RSC payload into the current element map.                  |
 | `waku/minimal/client` | `unstable_*` helpers         | Building router-like abstractions.                                    |
 
 Examples below often import these as shorter names.
@@ -50,7 +51,7 @@ At this level, Waku gives you rendering primitives and very little policy.
 - `handleRequest` decides how each incoming request is handled.
 - `renderRsc` renders a React Server Components payload as a `ReadableStream`.
 - `renderHtml` renders the HTML shell that boots the client.
-- `Root` fetches and caches RSC payloads on the client.
+- `Root` fetches and owns the current RSC payload on the client.
 - `Slot` renders a named element from the RSC payload.
 - `handleBuild` decides which files are emitted during `waku build`.
 
@@ -199,7 +200,7 @@ The `input` argument is one of the following shapes:
 
 | `input.type` | When it is used                                                                          | Extra fields           |
 | ------------ | ---------------------------------------------------------------------------------------- | ---------------------- |
-| `rsc`        | RSC payload fetches initiated by `Root` or `useRefetch`                                  | `rscPath`, `rscParams` |
+| `rsc`        | RSC payload fetches initiated by `Root` or `fetchRsc`                                    | `rscPath`, `rscParams` |
 | `call`       | Server function calls                                                                    | `fn`, `args`           |
 | `http`       | Ordinary HTTP requests such as document requests, custom endpoints, and form submissions | `tryAction?`           |
 
@@ -316,7 +317,7 @@ Important details:
 - `renderHtml` expects an options object such as `{ rscPath: '' }`.
 - RSC IDs starting with `_` are reserved for Waku internals.
 - `rscPath` and `rscParams` are opaque application data. Waku does not assign them semantics.
-- On the client, RSC caching and prefetch reuse compare `rscParams` by identity. Reuse the same object or `URLSearchParams` instance if you want reuse; creating a fresh object each time is treated as different input.
+- Each `fetchRsc` call issues a new request. A router-like abstraction can own prefetching and response reuse.
 - Throwing from `handleRequest` turns into an HTTP error response, and a custom error keeps its status. A location is a redirect a document request answers with a 3xx, but a fetch cannot follow one it is unable to read, so an RSC or server function request answers 200 and the client throws an error whose info carries the location and `unstable_leave`, for you to navigate to.
 
 #### `handleBuild(utils)`
@@ -425,7 +426,7 @@ Props:
 Important behavior:
 
 - `initialRscPath` defaults to `''`.
-- `Root` is required for `Slot`, `Children`, and `useRefetch`.
+- `Root` is required for `Slot`, `Children`, and `useMergeElements`.
 - The client store is a module-level singleton (normally one per document), so mounting multiple `Root` instances is not supported.
 - `Root` injects default head tags for charset, viewport, and generator.
 - For SSR or SSG, use `hydrateRoot(document, rootElement)` when `globalThis.__WAKU_HYDRATE__` is set.
@@ -507,23 +508,34 @@ Client:
 
 This is useful for nested layouts and composition patterns where the server tree decides where client-provided children should appear.
 
-#### `useRefetch`
+#### Refetching
 
-`useRefetch` returns a function that fetches a new RSC payload and merges it into the current element map:
-
-```tsx
-refetch(
-  rscPath: string,
-  rscParams?: unknown,
-  options?: { signal?: AbortSignal; onBuildIdMismatch?: () => void },
-)
-```
-
-Example:
+The Minimal API exposes fetching and merging separately. Define a hook for the behavior your application needs:
 
 ```tsx
-import { useTransition } from 'react';
-import { useRefetch_UNSTABLE as useRefetch } from 'waku/minimal/client';
+import { useCallback, useTransition } from 'react';
+import {
+  unstable_fetchRsc as fetchRsc,
+  unstable_registerRscReloadListener as registerRscReloadListener,
+  useMergeElements_UNSTABLE as useMergeElements,
+} from 'waku/minimal/client';
+
+const useRefetch = () => {
+  const mergeElements = useMergeElements();
+  return useCallback(
+    (rscPath: string, rscParams?: unknown) => {
+      const refetch = () => mergeElements(fetchRsc(rscPath, rscParams));
+      registerRscReloadListener(
+        () => {
+          void refetch();
+        },
+        { replace: true },
+      );
+      return refetch();
+    },
+    [mergeElements],
+  );
+};
 
 const Counter = () => {
   const [isPending, startTransition] = useTransition();
@@ -546,8 +558,8 @@ const Counter = () => {
 Important behavior:
 
 - `refetch(...)` requests a new RSC payload for the given `rscPath` and optional `rscParams`.
-- Client-side cache reuse for `rscParams` is identity-based here as well.
 - The returned payload is merged into the current element map by key.
+- The reload registration keeps development HMR on the refetched RSC path and has no effect in production.
 - If you return only `InnerApp`, previously rendered elements such as `App` stay mounted.
 - If the refetch fails, the existing element map stays in place.
 

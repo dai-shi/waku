@@ -1,6 +1,8 @@
 import { Suspense } from 'react';
 import type { ReactNode } from 'react';
 import { Link } from 'waku/router/client';
+import { DelayedLink } from '../components/DelayedLink';
+import { MinimalRefetch } from '../components/MinimalRefetch';
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
@@ -20,7 +22,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           post 3
         </Link>
         {' | '}
-        <Link to="/widget" unstable_instant data-testid="link-widget">
+        <Link
+          to="/widget"
+          unstable_instant
+          unstable_prefetchOnEnter={{ mode: 'once' }}
+          data-testid="link-widget"
+        >
           widget
         </Link>
         {' | '}
@@ -44,6 +51,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         >
           hover
         </Link>
+        {' | '}
+        <DelayedLink />
+        {' | '}
+        <MinimalRefetch />
       </nav>
       <main>
         <Suspense fallback={<div data-testid="page-skeleton">loading...</div>}>

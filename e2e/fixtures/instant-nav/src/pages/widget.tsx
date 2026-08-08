@@ -10,6 +10,11 @@ export default function Widget() {
       >
         <Slice id="clock" />
       </Suspense>
+      <Slice
+        id="lazy-clock"
+        lazy
+        fallback={<span data-testid="lazy-clock-skeleton">loading...</span>}
+      />
     </div>
   );
 }

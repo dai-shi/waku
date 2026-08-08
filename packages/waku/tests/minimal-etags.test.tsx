@@ -21,9 +21,9 @@ import {
 } from '../src/minimal/client-utils/fetch-store.js';
 import {
   Root_UNSTABLE as Root,
+  unstable_fetchRsc as fetchRsc,
   unstable_isImmutableElement as isImmutableElement,
-  unstable_prefetchRsc as prefetchRsc,
-  useRefetch_UNSTABLE as useRefetch,
+  useRefetch,
 } from '../src/minimal/client.js';
 import { unstable_buildElements as buildElements } from '../src/minimal/server.js';
 
@@ -204,7 +204,7 @@ describe('minimal per-slot cache-validator (carry + replay)', () => {
   it('a prefetch without a base claims nothing', async () => {
     fetchRscStore[CACHED_ETAGS] = { widget: 'etag-live' };
     testHoisted.elements = { page: <div>b</div> };
-    await prefetchRsc('R/bar');
+    await fetchRsc('R/bar');
 
     const lastCall = vi.mocked(globalThis.fetch).mock.calls.at(-1);
     const headers = new Headers(
@@ -219,7 +219,7 @@ describe('minimal per-slot cache-validator (carry + replay)', () => {
       page: <div>b</div>,
       [`${ETAG_ID_PREFIX}page`]: 'etag-page-2',
     };
-    const result = await prefetchRsc('R/bar', undefined, {
+    const result = await fetchRsc('R/bar', undefined, {
       unstable_base: {
         widget: <div>w</div>,
         [`${ETAG_ID_PREFIX}widget`]: 'etag-widget',

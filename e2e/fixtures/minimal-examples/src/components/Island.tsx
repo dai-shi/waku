@@ -1,13 +1,22 @@
 'use client';
 
-import { use, useEffect } from 'react';
+import { use, useCallback, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import {
   Slot_UNSTABLE as Slot,
+  unstable_fetchRsc,
   useElementsPromise_UNSTABLE as useElementsPromise,
-  useRefetch_UNSTABLE as useRefetch,
+  useMergeElements_UNSTABLE,
 } from 'waku/minimal/client';
 import { Counter } from './Counter';
+
+const useRefetch = () => {
+  const mergeElements = useMergeElements_UNSTABLE();
+  return useCallback(
+    (rscPath: string) => mergeElements(unstable_fetchRsc(rscPath)),
+    [mergeElements],
+  );
+};
 
 export function Island() {
   return (

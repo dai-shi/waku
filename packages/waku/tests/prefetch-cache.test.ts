@@ -202,4 +202,29 @@ describe('router prefetch manager', () => {
     expect(manager.getElements('/p')).toBeUndefined();
     expect(manager.get('/p', '')).toBeUndefined();
   });
+
+  it('removes an invalidated prefetch and notifies its adopter', () => {
+    const manager = createPrefetchManager();
+    let invalidate!: () => void;
+    manager.prefetch(
+      '/p',
+      '',
+      (_base, invalidatePrefetch) => {
+        invalidate = invalidatePrefetch;
+        return pending();
+      },
+      undefined,
+    );
+    const entry = manager.get('/p', '');
+    if (!entry) {
+      throw new Error('Missing prefetch entry');
+    }
+    const onInvalidate = vi.fn();
+    entry.onInvalidate(onInvalidate);
+
+    invalidate();
+
+    expect(onInvalidate).toHaveBeenCalledOnce();
+    expect(manager.get('/p', '')).toBeUndefined();
+  });
 });

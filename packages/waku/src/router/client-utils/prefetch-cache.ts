@@ -16,6 +16,7 @@ export type PrefetchOptions = {
 export type PrefetchEntry = {
   promise: Promise<Elements>;
   expireAt: number;
+  onInvalidate: (callback: () => void) => void;
 };
 
 type PrefetchCache = Map<string, PrefetchEntry>;
@@ -103,7 +104,10 @@ type PrefetchManager = {
   prefetch: (
     rscPath: string,
     query: string,
-    fetchElements: (base: Elements | undefined) => Promise<Elements>,
+    fetchElements: (
+      base: Elements | undefined,
+      invalidate: () => void,
+    ) => Promise<Elements>,
     options: PrefetchOptions | undefined,
   ) => void;
   get: (rscPath: string, query: string) => PrefetchEntry | undefined;
@@ -140,7 +144,10 @@ const startPrefetch = (
   prefetchedElementsCache: PrefetchedElementsCache,
   rscPath: string,
   query: string,
-  fetchElements: (base: Elements | undefined) => Promise<Elements>,
+  fetchElements: (
+    base: Elements | undefined,
+    invalidate: () => void,
+  ) => Promise<Elements>,
   options: PrefetchOptions | undefined,
 ): void => {
   if (options?.mode === 'once' && prefetchedElementsCache.has(rscPath)) {
@@ -154,16 +161,40 @@ const startPrefetch = (
     return;
   }
   const base = prefetchedElementsCache.get(rscPath) ?? undefined;
-  const promise = fetchElements(base);
+  let invalidated = false;
+  let notifyInvalidation: (() => void) | undefined;
+  const onInvalidate = (callback: () => void) => {
+    notifyInvalidation = callback;
+    if (invalidated) {
+      callback();
+    }
+  };
+  const invalidate = () => {
+    if (invalidated) {
+      return;
+    }
+    invalidated = true;
+    if (prefetchCache.get(key)?.onInvalidate === onInvalidate) {
+      prefetchCache.delete(key);
+    }
+    prefetchedElementsCache.delete(rscPath);
+    notifyInvalidation?.();
+  };
+  const promise = fetchElements(base, invalidate);
   const entry: PrefetchEntry = {
     promise,
     expireAt: now + (options?.ttl ?? PREFETCH_TTL),
+    onInvalidate,
   };
-  setPrefetch(prefetchCache, key, entry);
-  reservePrefetchedElements(prefetchedElementsCache, rscPath);
+  if (!invalidated) {
+    setPrefetch(prefetchCache, key, entry);
+    reservePrefetchedElements(prefetchedElementsCache, rscPath);
+  }
   promise.then(
     (resolved) => {
-      mergePrefetchedElements(prefetchedElementsCache, rscPath, resolved);
+      if (!invalidated) {
+        mergePrefetchedElements(prefetchedElementsCache, rscPath, resolved);
+      }
     },
     () => {
       // TODO a negative ttl, so a route that answers with a document location

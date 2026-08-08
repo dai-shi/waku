@@ -1,34 +1,28 @@
 import { StrictMode, useEffect, useState } from 'react';
 import { createRoot, hydrateRoot } from 'react-dom/client';
 import { unstable_defaultRootOptions as defaultRootOptions } from 'waku/client';
-import {
-  Root_UNSTABLE as Root,
-  Slot_UNSTABLE as Slot,
-} from 'waku/minimal/client';
+import { Router } from 'waku/router/client';
 
-const ClientRoot = () => {
+const ClientRouter = () => {
   const [key, setKey] = useState(0);
   useEffect(() => {
     const global = globalThis as typeof globalThis & {
-      __WAKU_TEST_REMOUNT_ROOT__?: () => void;
+      __WAKU_TEST_ROUTER_KEY__?: number;
+      __WAKU_TEST_REMOUNT_ROUTER__?: () => void;
     };
-    global.__WAKU_TEST_REMOUNT_ROOT__ = () => setKey((prev) => prev + 1);
+    global.__WAKU_TEST_ROUTER_KEY__ = key;
+    global.__WAKU_TEST_REMOUNT_ROUTER__ = () => setKey((prev) => prev + 1);
     return () => {
-      delete global.__WAKU_TEST_REMOUNT_ROOT__;
+      delete global.__WAKU_TEST_ROUTER_KEY__;
+      delete global.__WAKU_TEST_REMOUNT_ROUTER__;
     };
-  }, []);
-  return (
-    <Root key={key}>
-      <Slot id="App">
-        <span data-testid="client-child">client child</span>
-      </Slot>
-    </Root>
-  );
+  }, [key]);
+  return <Router key={key} />;
 };
 
 const rootElement = (
   <StrictMode>
-    <ClientRoot />
+    <ClientRouter />
   </StrictMode>
 );
 

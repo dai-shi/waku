@@ -1,10 +1,30 @@
-import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import {
+  cpSync,
+  existsSync,
+  readFileSync,
+  rmSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs';
+import { dirname, join, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { Frame, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 import { prepareNormalSetup, test, waitForHydration } from './utils.js';
 
 const startApp = prepareNormalSetup('hot-reload');
+
+const minimalFixtureSrc = fileURLToPath(
+  new URL('./fixtures/minimal-examples', import.meta.url),
+);
+const minimalHmrFixtureDir = join(
+  dirname(minimalFixtureSrc),
+  `minimal-examples-hmr-tmp-${process.pid}`,
+);
+const minimalDistDir = join(minimalFixtureSrc, 'dist');
+const startMinimalHmrApp = prepareNormalSetup('minimal-examples', {
+  fixtureDir: minimalHmrFixtureDir,
+});
 
 const originalFiles: { [key: string]: string | false } = {};
 
@@ -387,5 +407,75 @@ export default defineConfig({
       expect(data.appVersion).toEqual('1.0.0');
       expect(data.newFeature).toEqual('enabled');
     }).toPass({ timeout: 20_000 });
+  });
+});
+
+test.describe('minimal hot reload', () => {
+  let port: number;
+  let stopApp: (() => Promise<void>) | undefined;
+
+  test.beforeAll(async () => {
+    rmSync(minimalHmrFixtureDir, { recursive: true, force: true });
+    cpSync(minimalFixtureSrc, minimalHmrFixtureDir, {
+      recursive: true,
+      filter: (src) =>
+        src !== minimalDistDir && !src.startsWith(minimalDistDir + sep),
+    });
+    ({ port, stopApp } = await startMinimalHmrApp('DEV'));
+  });
+
+  test.afterAll(async () => {
+    await stopApp?.();
+    rmSync(minimalHmrFixtureDir, { recursive: true, force: true });
+  });
+
+  test('refreshes the active RSC and invalidates the Root cache', async ({
+    page,
+  }) => {
+    await page.goto(`http://localhost:${port}/`);
+    await waitForHydration(page);
+    await page.getByRole('button', { name: 'Increment' }).click();
+    await expect(page.getByTestId('count')).toHaveText('Count: 1');
+    await page.getByRole('button', { name: 'Refetch' }).click();
+    await expect(page.getByTestId('title')).toHaveText('Hello refetched');
+
+    const appFile = join(minimalHmrFixtureDir, 'src/components/App.tsx');
+    const original = readFileSync(appFile, 'utf-8');
+    writeFileSync(
+      appFile,
+      original.replace('Hello {name}', 'Hello HMR {name}'),
+    );
+
+    await expectNoFullReloadFor(page);
+    await expect(page.getByTestId('title')).toHaveText('Hello HMR refetched');
+    await expect(page.getByTestId('count')).toHaveText('Count: 1');
+
+    await page.evaluate(() => {
+      (
+        globalThis as typeof globalThis & {
+          __WAKU_TEST_REMOUNT_ROOT__?: () => void;
+        }
+      ).__WAKU_TEST_REMOUNT_ROOT__?.();
+    });
+    await expect(page.getByTestId('title')).toHaveText('Hello HMR Waku');
+    await expect(page.getByTestId('count')).toHaveText('Count: 0');
+
+    await page.getByRole('button', { name: 'Refetch' }).click();
+    await expect(page.getByTestId('title')).toHaveText('Hello HMR refetched');
+    await page.evaluate(() => {
+      (
+        globalThis as typeof globalThis & {
+          __WAKU_TEST_REMOUNT_ROOT__?: () => void;
+        }
+      ).__WAKU_TEST_REMOUNT_ROOT__?.();
+    });
+    await expect(page.getByTestId('title')).toHaveText('Hello HMR Waku');
+
+    writeFileSync(
+      appFile,
+      original.replace('Hello {name}', 'Hello HMR2 {name}'),
+    );
+    await expectNoFullReloadFor(page);
+    await expect(page.getByTestId('title')).toHaveText('Hello HMR2 Waku');
   });
 });

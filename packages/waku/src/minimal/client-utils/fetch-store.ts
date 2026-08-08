@@ -19,9 +19,20 @@ type FetchEnhancers = Set<FetchEnhancer>;
 export type FetchRscInputTransformer = (
   rscPath: string,
   rscParams: unknown,
+) => readonly [rscPath: string, rscParams: unknown];
+export type LegacyFetchRscInputTransformer = (
+  rscPath: string,
+  rscParams: unknown,
   prefetchOnly: boolean,
 ) => readonly [rscPath: string, rscParams: unknown, prefetchOnly: boolean];
-type FetchRscInputTransformers = Set<FetchRscInputTransformer>;
+export type CompatibleFetchRscInputTransformer = (
+  rscPath: string,
+  rscParams: unknown,
+  prefetchOnly: false,
+) =>
+  | ReturnType<FetchRscInputTransformer>
+  | ReturnType<LegacyFetchRscInputTransformer>;
+type FetchRscInputTransformers = Set<CompatibleFetchRscInputTransformer>;
 
 type CallServerElementsListeners = Set<
   (elements: Record<string, unknown>) => void

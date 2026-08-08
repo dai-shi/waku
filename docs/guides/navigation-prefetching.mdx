@@ -177,7 +177,7 @@ The `<Suspense>` boundary decides how localized the loading state is. Wrapping t
 
 Because an instant navigation commits before the server responds, it reconciles afterward: a server redirect updates the URL to the redirect target, while a not-found (404) response keeps the requested URL, so the 404 page shows at the address the user tried.
 
-Instant navigation commits urgently rather than inside a React transition, since a transition would suppress the immediate skeleton. A custom `unstable_startTransition` therefore does not run for instant links, and `useNavigationStatus_UNSTABLE()` does not report `pending` for them. An instant navigation paints its cached shell immediately, so the shell itself is the pending state.
+An instant navigation with a cached shell commits urgently rather than inside a React transition, since a transition would suppress the immediate skeleton. A custom `unstable_startTransition` therefore does not run for that cache commit. When the shell is not cached, navigation waits for the response and uses the custom transition to commit the destination. `useNavigationStatus_UNSTABLE()` does not report `pending` for instant links; when the cache commit is available, the shell itself is the pending state.
 
 ## Pending UI
 
@@ -251,7 +251,7 @@ Catch the promises returned by programmatic `push`, `replace`, and `reload` call
 
 ## Custom Transitions
 
-For advanced navigation effects, pass `unstable_startTransition` to control how Waku starts the route transition. One common use case is integrating the browser View Transitions API:
+For advanced navigation effects, pass `unstable_startTransition` to control how Waku commits the destination. Waku waits for required route data before starting the custom transition. One common use case is integrating the browser View Transitions API:
 
 ```tsx
 'use client';

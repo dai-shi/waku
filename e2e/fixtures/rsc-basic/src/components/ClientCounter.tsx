@@ -1,9 +1,21 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useCallback, useState, useTransition } from 'react';
 import { unstable_allowServer as allowServer } from 'waku/client';
-import { useRefetch_UNSTABLE as useRefetch } from 'waku/minimal/client';
+import {
+  unstable_fetchRsc,
+  useMergeElements_UNSTABLE,
+} from 'waku/minimal/client';
 import { ClientBox } from './Box.js';
+
+const useRefetch = () => {
+  const mergeElements = useMergeElements_UNSTABLE();
+  return useCallback(
+    (rscPath: string, rscParams?: unknown) =>
+      mergeElements(unstable_fetchRsc(rscPath, rscParams)),
+    [mergeElements],
+  );
+};
 
 export const ClientCounter = ({ params }: { params: unknown }) => {
   const [count, setCount] = useState(0);
