@@ -2,7 +2,7 @@
 
 // Proves the per-slot cache-validator carry/replay lives in the minimal layer
 // (router-agnostic), driving the real minimal Root.
-import { act } from 'react';
+import { act, useEffect } from 'react';
 import type { ReactElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -23,7 +23,7 @@ import {
   Root_UNSTABLE as Root,
   unstable_fetchRsc as fetchRsc,
   unstable_isImmutableElement as isImmutableElement,
-  useRefetch,
+  useMergeElements_UNSTABLE,
 } from '../src/minimal/client.js';
 import { unstable_buildElements as buildElements } from '../src/minimal/server.js';
 
@@ -47,6 +47,25 @@ const flush = async () => {
     await new Promise<void>((resolve) => setTimeout(resolve));
   });
 };
+
+const useRefetch = () => {
+  const mergeElements = useMergeElements_UNSTABLE();
+  return (
+    rscPath: string,
+    rscParams?: unknown,
+    options?: Parameters<typeof mergeElements>[1],
+  ) =>
+    mergeElements(
+      fetchRsc(rscPath, rscParams, {
+        ...(options?.unstable_swr?.base
+          ? { unstable_base: options.unstable_swr.base }
+          : {}),
+      }),
+      options,
+    );
+};
+
+type Refetch = ReturnType<typeof useRefetch>;
 
 const renderApp = async (element: ReactElement) => {
   const container = document.createElement('div');
@@ -123,9 +142,12 @@ describe('minimal per-slot cache-validator (carry + replay)', () => {
       page: <div>a</div>,
       [`${ETAG_ID_PREFIX}page`]: IMMUTABLE_ETAG,
     };
-    let refetch!: ReturnType<typeof useRefetch>;
+    let refetch!: Refetch;
     const Capture = () => {
-      refetch = useRefetch();
+      const refetchValue = useRefetch();
+      useEffect(() => {
+        refetch = refetchValue;
+      });
       return null;
     };
     const view = await renderApp(
@@ -161,9 +183,12 @@ describe('minimal per-slot cache-validator (carry + replay)', () => {
       page: <div>a</div>,
       [`${ETAG_ID_PREFIX}page`]: 'etag-page',
     };
-    let refetch!: ReturnType<typeof useRefetch>;
+    let refetch!: Refetch;
     const Capture = () => {
-      refetch = useRefetch();
+      const refetchValue = useRefetch();
+      useEffect(() => {
+        refetch = refetchValue;
+      });
       return null;
     };
     const view = await renderApp(
@@ -250,9 +275,12 @@ describe('minimal per-slot cache-validator (carry + replay)', () => {
       page: <div>a</div>,
       [`${ETAG_ID_PREFIX}page`]: IMMUTABLE_ETAG,
     };
-    let refetch!: ReturnType<typeof useRefetch>;
+    let refetch!: Refetch;
     const Capture = () => {
-      refetch = useRefetch();
+      const refetchValue = useRefetch();
+      useEffect(() => {
+        refetch = refetchValue;
+      });
       return null;
     };
     const view = await renderApp(

@@ -33,10 +33,8 @@ import {
   fetchRscStore,
 } from './client-utils/fetch-store.js';
 import type {
-  CompatibleFetchRscInputTransformer,
   FetchEnhancer,
   FetchRscInputTransformer,
-  LegacyFetchRscInputTransformer,
   SetElements,
 } from './client-utils/fetch-store.js';
 
@@ -260,11 +258,6 @@ type MergeElementsOptions = {
   };
 };
 
-type RefetchOptions = MergeElementsOptions & {
-  signal?: AbortSignal;
-  onBuildIdMismatch?: () => void;
-};
-
 const getFetchFn = (): typeof fetch => {
   let fetchFn = fetch;
   const enhancers = fetchRscStore[FETCH_ENHANCERS];
@@ -362,7 +355,7 @@ const applyInputTransformers = (
   const fetchRscInputTransformers = fetchRscStore[FETCH_RSC_INPUT_TRANSFORMERS];
   if (fetchRscInputTransformers) {
     for (const transformFetchRscInput of fetchRscInputTransformers) {
-      [rscPath, rscParams] = transformFetchRscInput(rscPath, rscParams, false);
+      [rscPath, rscParams] = transformFetchRscInput(rscPath, rscParams);
     }
   }
   return [rscPath, rscParams];
@@ -465,17 +458,6 @@ export const unstable_registerFetchEnhancer = (
  */
 export function unstable_registerFetchRscInputTransformer(
   transformFetchRscInput: FetchRscInputTransformer,
-): Unregister;
-/**
- * @deprecated Use a two-argument transformer that returns the transformed RSC
- * path and params. The third argument is always `false`, and the third return
- * value is ignored.
- */
-export function unstable_registerFetchRscInputTransformer(
-  transformFetchRscInput: LegacyFetchRscInputTransformer,
-): Unregister;
-export function unstable_registerFetchRscInputTransformer(
-  transformFetchRscInput: CompatibleFetchRscInputTransformer,
 ): Unregister {
   const fetchRscInputTransformers = (fetchRscStore[
     FETCH_RSC_INPUT_TRANSFORMERS
@@ -719,44 +701,6 @@ export const Slot_UNSTABLE = ({
     <ChildrenContextProvider value={children}>
       {element as ReactNode}
     </ChildrenContextProvider>
-  );
-};
-
-/** @deprecated Use `Root_UNSTABLE`. */
-export const Root = Root_UNSTABLE;
-/** @deprecated Use `Slot_UNSTABLE`. */
-export const Slot = Slot_UNSTABLE;
-/** @deprecated Use `Children_UNSTABLE`. */
-export const Children = Children_UNSTABLE;
-/**
- * @deprecated Define a hook with `unstable_fetchRsc` and
- * `useMergeElements_UNSTABLE` instead.
- */
-export const useRefetch = () => {
-  const mergeElements = useMergeElements_UNSTABLE();
-  return useCallback(
-    (rscPath: string, rscParams?: unknown, options?: RefetchOptions) => {
-      const refetch = () => {
-        const { unstable_overlay, unstable_swr, ...fetchOptions } =
-          options ?? {};
-        const elements = unstable_fetchRsc(rscPath, rscParams, {
-          ...fetchOptions,
-          ...(unstable_swr?.base ? { unstable_base: unstable_swr.base } : {}),
-        });
-        return mergeElements(elements, {
-          ...(unstable_overlay ? { unstable_overlay } : {}),
-          ...(unstable_swr ? { unstable_swr } : {}),
-        });
-      };
-      unstable_registerRscReloadListener(
-        () => {
-          void refetch();
-        },
-        { replace: true },
-      );
-      return refetch();
-    },
-    [mergeElements],
   );
 };
 
