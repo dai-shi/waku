@@ -165,11 +165,11 @@ export const PostButton = () => {
 
 Both return a promise that resolves once the navigation you asked for has been handled: after the response when the route needs one, right away when it does not, such as a static route already loaded once or the route you are already on, and also when a newer navigation supersedes it.
 
-It does not wait for a follow. Anything your page throws while rendering, such as a late `unstable_notFound()` or `unstable_redirect()`, is followed by a navigation of its own that starts after this promise has settled.
+When a fetch redirects to another route or needs the custom 404 page, the same navigation fetches that destination before it resolves. Anything your page throws later while rendering, such as a late `unstable_notFound()` or `unstable_redirect()`, is followed by a navigation of its own after this promise has settled.
 
-A missing route depends on who answers the request. A Waku server sends the 404 page as the response, so the promise resolves and the route you land on is `/404`. Where no Waku server answers, such as a static export or a CDN serving its own 404, the request fails and the client fetches the 404 page itself: there the promise **rejects** and the 404 page arrives from a second navigation.
+A missing route depends on who answers the request. A Waku server can send the 404 page as the first response. Where the first request instead reports a missing route, the client fetches the custom 404 page itself. In both cases, the promise resolves with the `/404` route while the address bar keeps the URL that was requested. Without a custom 404 route, the promise rejects and the built-in Not Found page is shown.
 
-The promise also rejects when the navigation fails outright, and when a redirect hands the page to the browser, which it does whether the redirect was thrown while rendering or resolved before rendering started. A redirect to a route of this app is different: the server answers it with the destination, and the promise resolves there. Catch it if you call these programmatically, or an auth redirect at the fetch layer will surface as an unhandled rejection. It does not wait for React to finish rendering the destination, so the address bar may still show the previous URL when it resolves.
+The promise also rejects when the navigation fails outright and when a redirect hands the page to the browser. A redirect to a route of this app is different: the client follows it and the promise resolves with that destination. Catch failures when you call these methods programmatically. Navigation failures are rendered through `ErrorBoundary`. The promise does not wait for React to finish rendering the destination, so the address bar may still show the previous URL when it resolves.
 
 When the shell is cached, the layout and the `Loading...` fallback appear with no round trip, and the post's content streams into the fallback once the server responds. When the shell is **not** cached, the navigation falls back to normal behavior: the current page stays put until the response arrives, so there is no blank flash.
 
@@ -247,7 +247,7 @@ export const NavigationLogger = () => {
 
 The effect runs for the initial route and whenever the current route fields change. It does not run again for `reload()` or navigation to the same URL, and it does not observe the start of a navigation. Instant navigation commits the requested route before reconciliation, so a redirected instant navigation logs the optimistic route and then the reconciled one; keep the previous value if you only want landings.
 
-Catch the promises returned by programmatic `push`, `replace`, and `reload` calls to handle their direct errors. There is no global failure callback for `<Link>` or browser back and forward; failed navigations still surface through `ErrorBoundary` from `waku/router/client` (or your own boundary around the router). Do not treat promise resolution as a committed-route signal: a newer navigation can supersede the request, and redirects or other follows may continue after it settles. Observe the route fields above when you need the destination that was committed.
+Catch the promises returned by programmatic `push`, `replace`, and `reload` calls to handle fetch errors. There is no global failure callback for `<Link>` or browser back and forward; failed navigations surface through `ErrorBoundary` from `waku/router/client` (or your own boundary around the router). Do not treat promise resolution as a committed-route signal: a newer navigation can supersede the request, and a render-time redirect or 404 can start another navigation after it settles. Observe the route fields above when you need the destination that was committed.
 
 ## Custom Transitions
 

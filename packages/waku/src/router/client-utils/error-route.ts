@@ -6,6 +6,7 @@ import {
 import {
   getRouteUrl,
   isInsideBase,
+  isSameRscRoute,
   parseRedirectUrl,
   parseRoute,
   redactCredentials,
@@ -59,4 +60,53 @@ export const resolveErrorRoute = (
     return { type: 'route', target, url: requestedUrl };
   }
   return { type: 'none' };
+};
+
+type FollowDecision =
+  | { type: 'follow'; target: RouteProps; url: URL }
+  | { type: 'leave'; url: URL }
+  | { type: 'stop'; error: unknown }
+  | { type: 'none' };
+
+export const decideFollow = (
+  error: unknown,
+  requested: {
+    route: Pick<RouteProps, 'path' | 'query'>;
+    url: URL;
+    follows: number;
+  },
+  options: { has404: boolean; maxFollows: number },
+): FollowDecision => {
+  const errorRoute = resolveErrorRoute(error, requested.url, options.has404);
+  if (errorRoute.type === 'none') {
+    return { type: 'none' };
+  }
+  if (errorRoute.type === 'unfollowable') {
+    return {
+      type: 'stop',
+      error: new Error(`cannot follow a redirect to ${errorRoute.location}`, {
+        cause: error,
+      }),
+    };
+  }
+  if (errorRoute.type === 'leave') {
+    return { type: 'leave', url: errorRoute.url };
+  }
+  const { target, url } = errorRoute;
+  if (
+    isSameRscRoute(target, requested.route) &&
+    url.href === requested.url.href
+  ) {
+    return {
+      type: 'stop',
+      error: new Error('detected a navigation loop', { cause: error }),
+    };
+  }
+  if (requested.follows >= options.maxFollows) {
+    return {
+      type: 'stop',
+      error: new Error('too many redirect or 404 follows', { cause: error }),
+    };
+  }
+  return { type: 'follow', target, url };
 };

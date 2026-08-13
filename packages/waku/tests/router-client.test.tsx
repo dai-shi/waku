@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 
-import { StrictMode, act, use, useState } from 'react';
+import { StrictMode, act, use, useEffect, useState } from 'react';
 import type { ReactElement, ReactNode } from 'react';
 import { preloadModule } from 'react-dom';
 import { createRoot } from 'react-dom/client';
@@ -3158,7 +3158,7 @@ describe('Router integration', () => {
     }
   });
 
-  test('push writes history when refetch fails', async () => {
+  test('push writes history and renders the error when refetch fails', async () => {
     const capture = { router: null as RouterApi | null };
     const Probe = makeProbe(capture);
     const refetch = vi.fn<RefetchInner>(async () => ({}));
@@ -3167,7 +3167,15 @@ describe('Router integration', () => {
     const historyPushSpy = vi.spyOn(window.history, 'pushState');
 
     const elements = {
-      [unstable_getRouteSlotId('/start')]: <Probe />,
+      root: (
+        <>
+          <Probe />
+          <ErrorBoundary>
+            <Children />
+          </ErrorBoundary>
+        </>
+      ),
+      [unstable_getRouteSlotId('/start')]: <p>start</p>,
       [ROUTE_ID]: ['/start', ''],
       [IS_STATIC_ID]: false,
     };
@@ -3196,7 +3204,7 @@ describe('Router integration', () => {
       });
       expect(historyPushSpy).toHaveBeenCalledTimes(1);
       expect(window.location.pathname).toBe('/next');
-      // the unrecoverable error rethrows to the app boundary
+      expect(capture.router.path).toBe('/next');
       expect(view.container.textContent).toContain(
         'Caught an unexpected error',
       );
@@ -3608,6 +3616,133 @@ describe('Router integration', () => {
     expect(window.location.pathname).toBe('/next');
 
     view.unmount();
+  });
+
+  test('a failed instant nav keeps the attempted route and settled fetch baseline', async () => {
+    window.history.replaceState({}, '', '/start?a=1#top');
+    const pending = createDeferred<Record<string, unknown>>();
+    const refetch = vi.fn<RefetchInner>(() => pending.promise);
+    installRefetch(refetch);
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const historyPushSpy = vi.spyOn(window.history, 'pushState');
+    const historyReplaceSpy = vi.spyOn(window.history, 'replaceState');
+    const scrollToSpy = vi.spyOn(window, 'scrollTo').mockImplementation(() => {
+      return;
+    });
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    testHoisted.elements = {
+      ...instantNavElements(),
+      [ROUTE_ID]: ['/start', 'a=1'],
+      root: (
+        <>
+          <Probe />
+          <ErrorBoundary>
+            <Children />
+          </ErrorBoundary>
+        </>
+      ),
+    };
+    const view = await renderApp(
+      <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+        <Router initialRoute={{ path: '/start', query: 'a=1', hash: '#top' }} />
+      </Unstable_SearchCodecsProvider>,
+    );
+    try {
+      historyPushSpy.mockClear();
+      historyReplaceSpy.mockClear();
+      let navigation: Promise<void> | undefined;
+      await act(async () => {
+        navigation = capture.router!.push('/next?b=2#bottom', {
+          unstable_instant: true,
+        });
+        await flush();
+      });
+      expect(capture.router).toMatchObject({
+        path: '/next',
+        query: 'b=2',
+        hash: '#bottom',
+      });
+      scrollToSpy.mockClear();
+
+      await act(async () => {
+        pending.reject(new Error('offline'));
+        await expect(navigation).rejects.toThrow('offline');
+        await flush();
+      });
+
+      expect(capture.router).toMatchObject({
+        path: '/next',
+        query: 'b=2',
+        hash: '#bottom',
+      });
+      expect(window.location.pathname).toBe('/next');
+      expect(window.location.search).toBe('?b=2');
+      expect(window.location.hash).toBe('#bottom');
+      expect(historyPushSpy).toHaveBeenCalledTimes(1);
+      expect(historyReplaceSpy).not.toHaveBeenCalled();
+      expect(scrollToSpy).not.toHaveBeenCalled();
+      expect(view.container.textContent).toContain(
+        'Caught an unexpected error',
+      );
+
+      refetch.mockResolvedValueOnce({
+        [ROUTE_ID]: ['/start', 'b=2'],
+        [IS_STATIC_ID]: false,
+      });
+      await act(async () => {
+        await capture.router!.push('/start?b=2').catch(() => {});
+        await flush();
+      });
+      expect(refetch).toHaveBeenCalledTimes(2);
+    } finally {
+      consoleErrorSpy.mockRestore();
+      historyPushSpy.mockRestore();
+      historyReplaceSpy.mockRestore();
+      scrollToSpy.mockRestore();
+      view.unmount();
+    }
+  });
+
+  test('a fetch redirect after an instant paint replaces its history entry', async () => {
+    const refetch = vi.fn<RefetchInner>();
+    refetch
+      .mockRejectedValueOnce(
+        createCustomError('moved', { status: 307, location: '/final' }),
+      )
+      .mockResolvedValueOnce({
+        [ROUTE_ID]: ['/final', ''],
+        [IS_STATIC_ID]: false,
+      });
+    installRefetch(refetch);
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const view = await renderRouter(
+      { initialRoute: { path: '/start', query: '', hash: '' } },
+      {
+        ...instantNavElements(),
+        [unstable_getRouteSlotId('/start')]: <Probe />,
+        [unstable_getRouteSlotId('/next')]: <Probe />,
+        [unstable_getRouteSlotId('/final')]: <Probe />,
+      },
+    );
+    try {
+      const lengthBefore = window.history.length;
+
+      await act(async () => {
+        await capture.router!.push('/next', { unstable_instant: true });
+        await flush();
+      });
+
+      expect(refetch).toHaveBeenCalledTimes(2);
+      expect(capture.router?.path).toBe('/final');
+      expect(window.location.pathname).toBe('/final');
+      expect(window.history.length).toBe(lengthBefore + 1);
+    } finally {
+      view.unmount();
+    }
   });
 
   test('a redirect after the url already moved replaces instead of pushing', async () => {
@@ -4957,7 +5092,9 @@ describe('Router integration', () => {
     );
     try {
       await act(async () => {
-        await capture.router!.push('/moved').catch(() => {});
+        await expect(capture.router!.push('/moved')).rejects.toThrow(
+          'cannot follow a redirect to javascript:alert(1)',
+        );
         await flush();
         await flush();
       });
@@ -5582,6 +5719,117 @@ describe('Router integration', () => {
     }
   }, 20_000);
 
+  test('a redirect cycle that throws after each commit stops at the hop limit', async () => {
+    const refetch = vi.fn<RefetchInner>(((rscPath: string) => {
+      const path = rscPath === unstable_encodeRoutePath('/a') ? '/a' : '/b';
+      const next = path === '/a' ? '/b' : '/a';
+      const error = createCustomError('moved', {
+        status: 307,
+        location: next,
+      });
+      const DelayedRedirect = () => {
+        const [shouldThrow, setShouldThrow] = useState(false);
+        useEffect(() => setShouldThrow(true), []);
+        if (shouldThrow) {
+          throw error;
+        }
+        return <p>{path}</p>;
+      };
+      return Promise.resolve({
+        [unstable_getRouteSlotId(path)]: <DelayedRedirect />,
+        [ROUTE_ID]: [path, ''],
+        [IS_STATIC_ID]: false,
+      });
+    }) as never);
+    installRefetch(refetch);
+
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    testHoisted.elements = {
+      root: (
+        <>
+          <Probe />
+          <Children />
+        </>
+      ),
+      [unstable_getRouteSlotId('/start')]: <p>start</p>,
+      [ROUTE_ID]: ['/start', ''],
+      [IS_STATIC_ID]: false,
+    };
+
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    const view = await renderApp(
+      <ErrorBoundary>
+        <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
+      </ErrorBoundary>,
+    );
+    try {
+      await act(async () => {
+        await capture.router!.push('/a');
+        for (let i = 0; i < 160; i += 1) {
+          await flush();
+        }
+      });
+
+      expect(view.container.textContent).toContain(
+        'too many redirect or 404 follows',
+      );
+      expect(refetch).toHaveBeenCalledTimes(21);
+    } finally {
+      consoleErrorSpy.mockRestore();
+      view.unmount();
+    }
+  }, 20_000);
+
+  test('a fetch redirect cycle stops at the hop limit', async () => {
+    const refetch = vi.fn<RefetchInner>();
+    for (let index = 0; index < 40; index += 1) {
+      refetch.mockRejectedValueOnce(
+        createCustomError('follow-error', {
+          status: 307,
+          location: index % 2 === 0 ? '/b' : '/a',
+        }),
+      );
+    }
+    installRefetch(refetch);
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    testHoisted.elements = {
+      [unstable_getRouteSlotId('/start')]: <Probe />,
+      [unstable_getRouteSlotId('/a')]: <Probe />,
+      [unstable_getRouteSlotId('/b')]: <Probe />,
+      [ROUTE_ID]: ['/start', ''],
+      [IS_STATIC_ID]: false,
+    };
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    const view = await renderApp(
+      <ErrorBoundary>
+        <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+          <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
+        </Unstable_SearchCodecsProvider>
+      </ErrorBoundary>,
+    );
+    try {
+      await act(async () => {
+        await expect(capture.router!.push('/a')).rejects.toThrow(
+          'too many redirect or 404 follows',
+        );
+        await flush();
+      });
+      expect(refetch).toHaveBeenCalledTimes(21);
+      expect(view.container.textContent).toContain(
+        'too many redirect or 404 follows',
+      );
+    } finally {
+      consoleErrorSpy.mockRestore();
+      view.unmount();
+    }
+  });
+
   test('an instant redirect scrolls when the visible navigation changed paths', async () => {
     const scrollToSpy = vi
       .spyOn(window, 'scrollTo')
@@ -5846,7 +6094,7 @@ describe('Router integration', () => {
     view.unmount();
   });
 
-  test('push rejects on a 404 response and the follow lands after', async () => {
+  test('push resolves after the 404 follow lands', async () => {
     const { view, refetch, capture, router } = await renderFollowRouter({
       responses: [
         { reject: { status: 404 } },
@@ -5856,20 +6104,15 @@ describe('Router integration', () => {
       meta: { [HAS404_ID]: true },
     });
     let callsWhenSettled = 0;
-    let rejected = false;
     const record = () => {
       callsWhenSettled = refetch.mock.calls.length;
     };
     await act(async () => {
-      await router.push('/missing').then(record, () => {
-        rejected = true;
-        record();
-      });
+      await router.push('/missing').then(record);
       await flush();
       await flush();
     });
-    expect(rejected).toBe(true);
-    expect(callsWhenSettled).toBe(1);
+    expect(callsWhenSettled).toBe(2);
     expect(refetch).toHaveBeenCalledTimes(2);
     expect(capture.router!.path).toBe('/404');
     view.unmount();
@@ -5987,6 +6230,85 @@ describe('Router integration', () => {
     }
   });
 
+  test('a fetch redirect that only adds a hash reuses the current route', async () => {
+    const { view, refetch, capture, router } = await renderFollowRouter({
+      responses: [{ reject: { status: 307, location: '/start#section' } }],
+    });
+    await act(async () => {
+      await router.reload();
+      await flush();
+    });
+    expect(refetch).toHaveBeenCalledTimes(1);
+    expect(capture.router).toMatchObject({
+      path: '/start',
+      hash: '#section',
+    });
+    view.unmount();
+  });
+
+  test('a fetch redirect back to the current route keeps path-change scrolling', async () => {
+    const scrollToSpy = vi
+      .spyOn(window, 'scrollTo')
+      .mockImplementation(() => {});
+    const { view, refetch, capture, router } = await renderFollowRouter({
+      responses: [
+        { reject: { status: 307, location: '/start#missing' } },
+        { resolve: { [ROUTE_ID]: ['/start', ''], [IS_STATIC_ID]: false } },
+      ],
+    });
+    try {
+      await act(async () => {
+        await router.push('/next');
+        await flush();
+      });
+      expect(refetch).toHaveBeenCalledTimes(2);
+      expect(capture.router).toMatchObject({
+        path: '/start',
+        hash: '#missing',
+      });
+      expect(scrollToSpy).toHaveBeenCalledWith({
+        left: 0,
+        top: 0,
+        behavior: 'instant',
+      });
+    } finally {
+      scrollToSpy.mockRestore();
+      view.unmount();
+    }
+  });
+
+  test('a query-only fetch redirect to another path resets scroll', async () => {
+    const scrollToSpy = vi
+      .spyOn(window, 'scrollTo')
+      .mockImplementation(() => {});
+    const { view, refetch, capture, router } = await renderFollowRouter({
+      responses: [
+        { reject: { status: 307, location: '/detail#missing' } },
+        { resolve: { [ROUTE_ID]: ['/detail', ''], [IS_STATIC_ID]: false } },
+      ],
+      slots: ['/detail'],
+    });
+    try {
+      await act(async () => {
+        await router.push('/start?page=2', { scroll: true });
+        await flush();
+      });
+      expect(refetch).toHaveBeenCalledTimes(2);
+      expect(capture.router).toMatchObject({
+        path: '/detail',
+        hash: '#missing',
+      });
+      expect(scrollToSpy).toHaveBeenCalledWith({
+        left: 0,
+        top: 0,
+        behavior: 'instant',
+      });
+    } finally {
+      scrollToSpy.mockRestore();
+      view.unmount();
+    }
+  });
+
   test('a server redirect back to the caught query is a loop', async () => {
     const capture = { router: null as RouterApi | null };
     const Probe = makeProbe(capture);
@@ -6090,8 +6412,16 @@ describe('Router integration', () => {
     installRefetch(refetch);
 
     testHoisted.elements = {
-      [unstable_getRouteSlotId('/start')]: <Probe />,
-      [unstable_getRouteSlotId('/404')]: <Probe />,
+      root: (
+        <>
+          <Probe />
+          <ErrorBoundary>
+            <Children />
+          </ErrorBoundary>
+        </>
+      ),
+      [unstable_getRouteSlotId('/start')]: <p>start</p>,
+      [unstable_getRouteSlotId('/404')]: <p>404</p>,
       [ROUTE_ID]: ['/start', ''],
       [IS_STATIC_ID]: false,
       [HAS404_ID]: true,
@@ -6108,7 +6438,9 @@ describe('Router integration', () => {
     );
     try {
       await act(async () => {
-        await capture.router!.push('/missing').catch(() => {});
+        await expect(capture.router!.push('/missing')).rejects.toThrow(
+          'detected a navigation loop',
+        );
         for (let i = 0; i < 8; i += 1) {
           await flush();
         }
@@ -6116,6 +6448,7 @@ describe('Router integration', () => {
 
       // one request for /missing, one for /404, then it gives up
       expect(refetch).toHaveBeenCalledTimes(2);
+      expect(capture.router?.path).toBe('/404');
       expect(view.container.textContent).toContain(
         'detected a navigation loop',
       );
@@ -6560,6 +6893,61 @@ describe('Router integration', () => {
     view.unmount();
   });
 
+  test('a query-only redirect to a known static path resets scroll', async () => {
+    const scrollToSpy = vi
+      .spyOn(window, 'scrollTo')
+      .mockImplementation(() => {});
+    const redirect = createCustomError('redirect', {
+      status: 307,
+      location: '/detail#missing',
+    });
+    const refetch = vi
+      .fn<RefetchInner>()
+      .mockResolvedValueOnce({
+        [ROUTE_ID]: ['/start', 'page=1'],
+        [IS_STATIC_ID]: false,
+      })
+      .mockRejectedValueOnce(redirect);
+    installRefetch(refetch);
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const view = await renderRouter(
+      { initialRoute: { path: '/detail', query: '', hash: '' } },
+      {
+        [unstable_getRouteSlotId('/detail')]: <Probe />,
+        [unstable_getRouteSlotId('/start')]: <Probe />,
+        [ROUTE_ID]: ['/detail', ''],
+        [IS_STATIC_ID]: true,
+      },
+    );
+    try {
+      await act(async () => {
+        await capture.router!.push('/start?page=1');
+        await flush();
+      });
+      scrollToSpy.mockClear();
+
+      await act(async () => {
+        await capture.router!.push('/start?page=2', { scroll: true });
+        await flush();
+      });
+
+      expect(refetch).toHaveBeenCalledTimes(2);
+      expect(capture.router).toMatchObject({
+        path: '/detail',
+        hash: '#missing',
+      });
+      expect(scrollToSpy).toHaveBeenCalledWith({
+        left: 0,
+        top: 0,
+        behavior: 'instant',
+      });
+    } finally {
+      scrollToSpy.mockRestore();
+      view.unmount();
+    }
+  });
+
   test('a redirect that lands on a missing route goes to the 404 route', async () => {
     const { view, refetch, capture, router } = await renderFollowRouter({
       responses: [
@@ -6610,7 +6998,7 @@ describe('Router integration', () => {
     view.unmount();
   });
 
-  test('a 404 error on navigation without a 404 route rejects', async () => {
+  test('a 404 navigation without a 404 route renders Not Found', async () => {
     const { view, refetch, router } = await renderFollowRouter({
       responses: [{ reject: { status: 404 } }],
       meta: { [HAS404_ID]: false },
@@ -6621,7 +7009,54 @@ describe('Router integration', () => {
       await flush();
     });
     expect(refetch).toHaveBeenCalledTimes(1);
+    expect(window.location.pathname).toBe('/missing');
+    expect(view.container.textContent).toContain('Not Found');
     view.unmount();
+  });
+
+  test('a navigation after the built-in Not Found page recovers', async () => {
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const refetch = vi.fn<RefetchInner>();
+    refetch
+      .mockRejectedValueOnce(createCustomError('nf', { status: 404 }))
+      .mockResolvedValueOnce({
+        [ROUTE_ID]: ['/other', ''],
+        [IS_STATIC_ID]: false,
+      });
+    installRefetch(refetch);
+    testHoisted.elements = {
+      [unstable_getRouteSlotId('/start')]: <Probe />,
+      [unstable_getRouteSlotId('/other')]: <div>other page</div>,
+      [ROUTE_ID]: ['/start', ''],
+      [IS_STATIC_ID]: false,
+    };
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    const view = await renderApp(
+      <ErrorBoundary>
+        <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
+      </ErrorBoundary>,
+    );
+    try {
+      await act(async () => {
+        await expect(capture.router!.push('/missing')).rejects.toBeTruthy();
+        await flush();
+      });
+      expect(view.container.textContent).toContain('Not Found');
+
+      await act(async () => {
+        await capture.router!.push('/other');
+        await flush();
+      });
+      expect(view.container.textContent).toContain('other page');
+      expect(view.container.textContent).not.toContain('Not Found');
+      expect(window.location.pathname).toBe('/other');
+    } finally {
+      consoleErrorSpy.mockRestore();
+      view.unmount();
+    }
   });
 
   test('custom 404 handling without a /404 page keeps Not Found fallback', async () => {
@@ -7683,6 +8118,71 @@ describe('Router integration', () => {
       expect(view.container.textContent).toContain('Page 2');
       expect(window.location.pathname).toBe('/two');
     } finally {
+      view.unmount();
+    }
+  });
+
+  test('a delayed failure commit cannot replace a newer navigation', async () => {
+    const customCommits: Array<() => void> = [];
+    const customTransition = vi.fn((fn: () => void) => {
+      customCommits.push(fn);
+    });
+    const refetch = vi
+      .fn<RefetchInner>()
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValueOnce({
+        [ROUTE_ID]: ['/other', ''],
+        [IS_STATIC_ID]: false,
+      });
+    installRefetch(refetch);
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    testHoisted.elements = {
+      root: (
+        <>
+          <Probe />
+          <ErrorBoundary>
+            <Children />
+          </ErrorBoundary>
+        </>
+      ),
+      [unstable_getRouteSlotId('/start')]: (
+        <Link to="/broken" unstable_startTransition={customTransition}>
+          broken
+        </Link>
+      ),
+      [unstable_getRouteSlotId('/other')]: <div>other page</div>,
+      [ROUTE_ID]: ['/start', ''],
+      [IS_STATIC_ID]: false,
+    };
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    const view = await renderApp(
+      <Router initialRoute={{ path: '/start', query: '', hash: '' }} />,
+    );
+    try {
+      await act(async () => {
+        view.container.querySelector('a')?.click();
+        await flush();
+      });
+      expect(customTransition).toHaveBeenCalledTimes(1);
+
+      await act(async () => {
+        await capture.router!.push('/other');
+        await flush();
+      });
+      await act(async () => {
+        customCommits[0]?.();
+        await flush();
+      });
+
+      expect(view.container.textContent).toContain('other page');
+      expect(view.container.textContent).not.toContain(
+        'Caught an unexpected error',
+      );
+    } finally {
+      consoleErrorSpy.mockRestore();
       view.unmount();
     }
   });

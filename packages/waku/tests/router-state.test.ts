@@ -38,14 +38,14 @@ describe('makeRouterState', () => {
         history: 'push',
         scroll: true,
         pathChanged: true,
-        followCount: 0,
+        follows: 2,
       },
     );
     expect(routerState.url).toBe('/a?x=1#top');
     expect(routerState.requested).toEqual(['/a', 'x=1']);
     expect(routerState.history).toBe('push');
     expect(routerState.scroll).toEqual({ pathChanged: true });
-    expect(routerState.followCount).toBe(0);
+    expect(routerState.follows).toBe(2);
   });
 
   test('no scroll intent when scrolling is off', () => {
@@ -53,7 +53,7 @@ describe('makeRouterState', () => {
       history: 'replace',
       scroll: false,
       pathChanged: true,
-      followCount: 0,
+      follows: 0,
     });
     expect(routerState.scroll).toBeNull();
   });
@@ -65,7 +65,7 @@ describe('getRouterState', () => {
       history: 'push',
       scroll: false,
       pathChanged: false,
-      followCount: 0,
+      follows: 0,
     });
     expect(getRouterState(withRouterState({}, routerState))).toBe(routerState);
     expect(getRouterState({})).toBeUndefined();
@@ -73,26 +73,28 @@ describe('getRouterState', () => {
 });
 
 describe('resolveServerRedirect', () => {
-  test('a failed navigation reads no redirect from the stale route id', () => {
-    const attempt = makeRouterState(route('/missing'), urlOf('/missing'), {
-      history: 'push',
-      scroll: true,
-      pathChanged: true,
-      followCount: 0,
-    });
-    const elements = { [ROUTE_ID]: ['/a', ''] };
-
-    // the record still holds the route the client came from
-    expect(resolveServerRedirect(elements, attempt, '/f').url.pathname).toBe(
-      '/a',
+  test('a failed navigation reports the attempted route and url', () => {
+    const attempted = makeRouterState(
+      route('/next', 'b=2', '#bottom'),
+      urlOf('/next?b=2#bottom'),
+      {
+        history: null,
+        scroll: false,
+        pathChanged: false,
+        follows: 0,
+      },
     );
-    expect(
-      resolveServerRedirect(
-        elements,
-        { ...attempt, failure: { error: new Error('x'), committedHash: '' } },
-        '/f',
-      ).url.pathname,
-    ).toBe('/missing');
+    const { route: resolvedRoute, url } = resolveServerRedirect(
+      { [ROUTE_ID]: ['/start', 'a=1'] },
+      {
+        ...attempted,
+        failedFrom: route('/start', 'a=1', '#top'),
+      },
+      '/f',
+    );
+
+    expect(resolvedRoute).toEqual(route('/next', 'b=2', '#bottom'));
+    expect(url.href).toBe(urlOf('/next?b=2#bottom').href);
   });
 
   test('path from the elements, query and hash from the routerState url', () => {
@@ -103,7 +105,7 @@ describe('resolveServerRedirect', () => {
         history: 'replace',
         scroll: false,
         pathChanged: false,
-        followCount: 0,
+        follows: 0,
       },
     );
     const elements = { [ROUTE_ID]: ['/a', 'x=1'] };
@@ -121,7 +123,7 @@ describe('resolveServerRedirect', () => {
       history: 'replace',
       scroll: false,
       pathChanged: false,
-      followCount: 0,
+      follows: 0,
     });
     const elements = { [ROUTE_ID]: ['/a', ''], [IS_STATIC_ID]: true };
     const { route: resolvedRoute, url } = resolveServerRedirect(
@@ -138,7 +140,7 @@ describe('resolveServerRedirect', () => {
       history: 'push',
       scroll: false,
       pathChanged: true,
-      followCount: 0,
+      follows: 0,
     });
     const elements = { [ROUTE_ID]: ['/b', 'y=2'] };
     const { route: resolvedRoute, url } = resolveServerRedirect(
@@ -158,7 +160,7 @@ describe('resolveServerRedirect', () => {
         history: 'replace',
         scroll: false,
         pathChanged: false,
-        followCount: 0,
+        follows: 0,
       });
       const elements = { [ROUTE_ID]: ['/b', ''] };
       const { url } = resolveServerRedirect(elements, routerState, '/f');
@@ -173,7 +175,7 @@ describe('resolveServerRedirect', () => {
       history: 'replace',
       scroll: false,
       pathChanged: true,
-      followCount: 0,
+      follows: 0,
     });
     const elements = { [ROUTE_ID]: ['/404', ''] };
     const { route: resolvedRoute, url } = resolveServerRedirect(
@@ -193,61 +195,34 @@ describe('getSettledRoute', () => {
     expect(getSettledRoute({}, fallback)).toEqual(fallback);
   });
 
-  test('a failed navigation keeps the hash that is still on screen', () => {
-    const routerState = makeRouterState(route('/b'), urlOf('/b#target'), {
-      history: 'push',
-      scroll: true,
-      pathChanged: true,
-      followCount: 0,
-    });
-    const elements = withRouterState(
-      { [ROUTE_ID]: ['/a', 'x=1'] },
-      {
-        ...routerState,
-        failure: { error: new Error('x'), committedHash: '#onscreen' },
-      },
-    );
-    // the route id is the one the client came from, not the failed attempt
-    expect(getSettledRoute(elements, fallback)).toEqual({
-      path: '/a',
-      query: 'x=1',
-      hash: '#onscreen',
-    });
-  });
-
-  test('a failure with no route id falls back, still with the on screen hash', () => {
-    const routerState = makeRouterState(route('/b'), urlOf('/b'), {
-      history: 'push',
-      scroll: false,
-      pathChanged: true,
-      followCount: 0,
-    });
-    const elements = withRouterState(
-      {},
-      {
-        ...routerState,
-        failure: { error: new Error('x'), committedHash: '' },
-      },
-    );
-    expect(getSettledRoute(elements, fallback)).toEqual({
-      path: '/f',
-      query: '',
-      hash: '',
-    });
-  });
-
   test('a landed navigation resolves the server redirect', () => {
     const routerState = makeRouterState(route('/a'), urlOf('/a#top'), {
       history: 'push',
       scroll: true,
       pathChanged: true,
-      followCount: 0,
+      follows: 0,
     });
     const elements = withRouterState(
       { [ROUTE_ID]: ['/b', 'y=2'] },
       routerState,
     );
     expect(getSettledRoute(elements, fallback)).toEqual(route('/b', 'y=2'));
+  });
+
+  test('a failed navigation keeps the last settled route', () => {
+    const settledRoute = route('/a', 'x=1', '#top');
+    const routerState = makeRouterState(route('/b'), urlOf('/b?y=2#bottom'), {
+      history: null,
+      scroll: false,
+      pathChanged: false,
+      follows: 0,
+    });
+    const elements = withRouterState(
+      { [ROUTE_ID]: ['/a', 'x=1'] },
+      { ...routerState, failedFrom: settledRoute },
+    );
+
+    expect(getSettledRoute(elements, fallback)).toEqual(settledRoute);
   });
 });
 

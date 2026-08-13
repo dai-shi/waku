@@ -35,12 +35,8 @@ export type RouterState = {
   readonly requested: readonly [path: string, query: string];
   readonly history: 'push' | 'replace' | null;
   readonly scroll: { readonly pathChanged: boolean } | null;
-  readonly followCount: number;
-  // set when the fetch never landed, so the route id is stale
-  readonly failure?: {
-    readonly error: unknown;
-    readonly committedHash: string;
-  };
+  readonly follows: number;
+  readonly failedFrom?: RouteProps;
 };
 
 export const getRouterState = (
@@ -55,14 +51,14 @@ export const makeRouterState = (
     history: 'push' | 'replace' | null;
     scroll: boolean;
     pathChanged: boolean;
-    followCount: number;
+    follows: number;
   },
 ): RouterState => ({
   url: url.pathname + url.search + url.hash,
   requested: [route.path, route.query],
   history: options.history,
   scroll: options.scroll ? { pathChanged: options.pathChanged } : null,
-  followCount: options.followCount,
+  follows: options.follows,
 });
 
 export const resolveServerRedirect = (
@@ -71,9 +67,17 @@ export const resolveServerRedirect = (
   fallbackPath: string,
 ): { route: RouteProps; url: URL } => {
   const stateUrl = new URL(routerState.url, window.location.href);
-  const serverRoute = routerState.failure
-    ? undefined
-    : getRouteFromElements(elements);
+  if (routerState.failedFrom) {
+    return {
+      route: {
+        path: routerState.requested[0],
+        query: stateUrl.searchParams.toString(),
+        hash: stateUrl.hash,
+      },
+      url: stateUrl,
+    };
+  }
+  const serverRoute = getRouteFromElements(elements);
   const redirect =
     serverRoute &&
     (serverRoute.path !== routerState.requested[0] ||
@@ -86,8 +90,7 @@ export const resolveServerRedirect = (
   }
   return {
     route: {
-      path:
-        redirect?.path ?? getRouteFromElements(elements)?.path ?? fallbackPath,
+      path: redirect?.path ?? serverRoute?.path ?? fallbackPath,
       query: stateUrl.searchParams.toString(),
       hash: stateUrl.hash,
     },
@@ -95,10 +98,6 @@ export const resolveServerRedirect = (
   };
 };
 
-/**
- * A failed navigation keeps the hash still on screen, unlike the route the
- * router paints, which takes its hash from the requested url.
- */
 export const getSettledRoute = (
   elements: Record<string | symbol, unknown>,
   fallback: RouteProps,
@@ -107,13 +106,10 @@ export const getSettledRoute = (
   if (!routerState) {
     return fallback;
   }
-  if (routerState.failure) {
-    return {
-      ...(getRouteFromElements(elements) ?? fallback),
-      hash: routerState.failure.committedHash,
-    };
-  }
-  return resolveServerRedirect(elements, routerState, fallback.path).route;
+  return (
+    routerState.failedFrom ??
+    resolveServerRedirect(elements, routerState, fallback.path).route
+  );
 };
 
 export const canCommitInstantly = (

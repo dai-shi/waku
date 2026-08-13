@@ -1,7 +1,10 @@
 /** @vitest-environment happy-dom */
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { createCustomError } from '../src/lib/utils/custom-errors.js';
-import { resolveErrorRoute } from '../src/router/client-utils/error-route.js';
+import {
+  decideFollow,
+  resolveErrorRoute,
+} from '../src/router/client-utils/error-route.js';
 
 beforeEach(() => {
   vi.stubEnv('WAKU_CONFIG_BASE_PATH', '/');
@@ -216,5 +219,106 @@ describe('resolveErrorRoute', () => {
     expect(resolveErrorRoute(error, requested('/docs/from'), false).type).toBe(
       'leave',
     );
+  });
+});
+
+describe('decideFollow', () => {
+  const options = { has404: false, maxFollows: 20 };
+  const at = (path: string, query = '', follows = 0) => ({
+    route: { path, query },
+    url: requested(path + (query && `?${query}`)),
+    follows,
+  });
+  const redirectTo = (location: string) =>
+    createCustomError('redirect', { status: 307, location });
+
+  test('an error that points nowhere decides nothing', () => {
+    expect(decideFollow(new Error('offline'), at('/from'), options)).toEqual({
+      type: 'none',
+    });
+  });
+
+  test('a missing route only follows when the app has a 404 route', () => {
+    const error = createCustomError('not found', { status: 404 });
+
+    expect(decideFollow(error, at('/missing'), options)).toEqual({
+      type: 'none',
+    });
+    expect(
+      decideFollow(error, at('/missing'), { ...options, has404: true }),
+    ).toEqual({
+      type: 'follow',
+      target: { path: '/404', query: '', hash: '' },
+      url: expect.any(URL),
+    });
+  });
+
+  test('a location the router cannot route to stops', () => {
+    const error = redirectTo('javascript:alert(1)');
+
+    expect(decideFollow(error, at('/from'), options)).toMatchObject({
+      type: 'stop',
+      error: {
+        message: 'cannot follow a redirect to javascript:alert(1)',
+        cause: error,
+      },
+    });
+  });
+
+  test('a redirect off the origin leaves', () => {
+    expect(
+      decideFollow(redirectTo('https://other.example/next'), at('/from'), {
+        ...options,
+        has404: true,
+      }),
+    ).toEqual({ type: 'leave', url: expect.any(URL) });
+  });
+
+  test('a redirect back to the route being fetched stops as a loop', () => {
+    expect(
+      decideFollow(redirectTo('/here'), at('/here'), options),
+    ).toMatchObject({
+      type: 'stop',
+      error: { message: 'detected a navigation loop' },
+    });
+  });
+
+  test('the same path with a different query is not a loop', () => {
+    expect(
+      decideFollow(redirectTo('/here?page=2'), at('/here'), options),
+    ).toMatchObject({
+      type: 'follow',
+      target: { path: '/here', query: 'page=2' },
+    });
+  });
+
+  test('the same path with only a different hash is not a loop', () => {
+    expect(
+      decideFollow(redirectTo('/here#section'), at('/here'), options),
+    ).toMatchObject({
+      type: 'follow',
+      target: { path: '/here', query: '', hash: '#section' },
+    });
+  });
+
+  test('the last follow inside the budget goes through and the next one stops', () => {
+    const error = redirectTo('/next');
+
+    expect(decideFollow(error, at('/from', '', 19), options).type).toBe(
+      'follow',
+    );
+    expect(decideFollow(error, at('/from', '', 20), options)).toMatchObject({
+      type: 'stop',
+      error: { message: 'too many redirect or 404 follows' },
+    });
+  });
+
+  test('a loop is reported ahead of a spent budget', () => {
+    expect(
+      decideFollow(redirectTo('/here'), at('/here', '', 20), options),
+    ).toMatchObject({
+      type: 'stop',
+      error: { message: 'detected a navigation loop' },
+    });
   });
 });
