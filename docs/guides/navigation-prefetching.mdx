@@ -177,7 +177,7 @@ The `<Suspense>` boundary decides how localized the loading state is. Wrapping t
 
 Because an instant navigation commits before the server responds, it reconciles afterward: a server redirect updates the URL to the redirect target, while a not-found (404) response keeps the requested URL, so the 404 page shows at the address the user tried.
 
-An instant navigation with a cached shell commits urgently rather than inside a React transition, since a transition would suppress the immediate skeleton. A custom `unstable_startTransition` therefore does not run for that cache commit. When the shell is not cached, navigation waits for the response and uses the custom transition to commit the destination. `useNavigationStatus_UNSTABLE()` does not report `pending` for instant links; when the cache commit is available, the shell itself is the pending state.
+An instant navigation that can commit from cache, or that needs no fetch, commits urgently rather than inside a React transition, since a transition would suppress the immediate skeleton. A custom `unstable_startTransition` therefore does not run for that commit. When the shell is not cached, navigation waits for the response and uses the custom transition to commit the destination; `useNavigationStatus_UNSTABLE()` reports `pending` for that wait. When the cache commit is available, the shell itself is the pending state.
 
 ## Pending UI
 
@@ -224,7 +224,7 @@ export const PendingLink = <Path extends RoutePath>({
 
 Use `PendingLink` where a link needs an indicator. Keep the indicator non-interactive and `aria-hidden` (as above) so it does not affect the link's accessible name or introduce a nested interactive target.
 
-`useNavigationStatus_UNSTABLE()` must be called from a Client Component rendered inside the `<Link>` because the status belongs to the nearest link. It does not observe programmatic navigation, browser back and forward, instant navigation, or a link with a custom transition. Called outside any `<Link>`, the hook returns an empty object (not `{ pending: false }`).
+`useNavigationStatus_UNSTABLE()` must be called from a Client Component rendered inside the `<Link>` because the status belongs to the nearest link. It does not observe programmatic navigation, browser back and forward, or a link with a custom transition. Instant links report `pending` when they fall back to waiting for a response; a cache commit does not, because the shell itself is the pending state. Called outside any `<Link>`, the hook returns an empty object (not `{ pending: false }`).
 
 ## Observe Route Changes
 

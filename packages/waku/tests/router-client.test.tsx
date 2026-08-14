@@ -3521,6 +3521,188 @@ describe('Router integration', () => {
     }
   });
 
+  test('instant Link still pending when it cannot paint from cache', async () => {
+    const navigation = createDeferred<Record<string, unknown>>();
+    const refetch = vi.fn<RefetchInner>(() => navigation.promise);
+    installRefetch(refetch);
+    window.history.replaceState({}, '', '/one');
+
+    const PendingProbe = () => {
+      const { pending } = useNavigationStatus();
+      return pending ? (
+        <div data-testid="pending">Pending</div>
+      ) : (
+        <div data-testid="not-pending">Idle</div>
+      );
+    };
+
+    const view = await renderRouter(
+      { initialRoute: { path: '/one', query: '', hash: '' } },
+      {
+        [unstable_getRouteSlotId('/one')]: (
+          <>
+            <h1>Page 1</h1>
+            <Link to="/two" unstable_instant>
+              Go to two
+              <PendingProbe />
+            </Link>
+          </>
+        ),
+        [unstable_getRouteSlotId('/two')]: <h1>Page 2</h1>,
+        [ROUTE_ID]: ['/one', ''],
+        [IS_STATIC_ID]: false,
+      },
+    );
+
+    try {
+      const has = (testid: string) =>
+        view.container.querySelector(`[data-testid="${testid}"]`) !== null;
+
+      expect(has('not-pending')).toBe(true);
+
+      const link = Array.from(view.container.querySelectorAll('a')).find(
+        (anchor) => anchor.textContent?.includes('Go to two'),
+      ) as HTMLAnchorElement | undefined;
+      if (!link) {
+        throw new Error('expected link');
+      }
+      await act(async () => {
+        link.dispatchEvent(
+          new MouseEvent('click', {
+            bubbles: true,
+            cancelable: true,
+            button: 0,
+          }),
+        );
+      });
+      await flush();
+
+      expect(refetch).toHaveBeenCalledTimes(1);
+      expect(has('pending')).toBe(true);
+      expect(has('not-pending')).toBe(false);
+      expect(view.container.textContent).toContain('Page 1');
+
+      await act(async () => {
+        navigation.resolve({
+          [unstable_getRouteSlotId('/two')]: <h1>Page 2</h1>,
+          [ROUTE_ID]: ['/two', ''],
+          [IS_STATIC_ID]: false,
+        });
+        await flush();
+      });
+
+      expect(view.container.textContent).toContain('Page 2');
+      expect(has('pending')).toBe(false);
+    } finally {
+      view.unmount();
+    }
+  });
+
+  test('instant hash-only Link does not fetch and lands on the hash', async () => {
+    window.history.replaceState({}, '', '/one');
+
+    const PendingProbe = () => {
+      const { pending } = useNavigationStatus();
+      return pending ? (
+        <div data-testid="pending">Pending</div>
+      ) : (
+        <div data-testid="not-pending">Idle</div>
+      );
+    };
+
+    const view = await renderRouter(
+      { initialRoute: { path: '/one', query: '', hash: '' } },
+      {
+        [unstable_getRouteSlotId('/one')]: (
+          <>
+            <h1>Page 1</h1>
+            <Link to="/one#target" unstable_instant>
+              Jump
+              <PendingProbe />
+            </Link>
+          </>
+        ),
+        [ROUTE_ID]: ['/one', ''],
+        [IS_STATIC_ID]: false,
+      },
+    );
+
+    try {
+      const has = (testid: string) =>
+        view.container.querySelector(`[data-testid="${testid}"]`) !== null;
+
+      expect(has('not-pending')).toBe(true);
+
+      const link = Array.from(view.container.querySelectorAll('a')).find(
+        (anchor) => anchor.textContent?.includes('Jump'),
+      ) as HTMLAnchorElement | undefined;
+      if (!link) {
+        throw new Error('expected link');
+      }
+      await act(async () => {
+        link.dispatchEvent(
+          new MouseEvent('click', {
+            bubbles: true,
+            cancelable: true,
+            button: 0,
+          }),
+        );
+      });
+      await flush();
+
+      expect(has('pending')).toBe(false);
+      expect(has('not-pending')).toBe(true);
+      expect(window.location.hash).toBe('#target');
+      expect(getRefetchMock()).not.toHaveBeenCalled();
+    } finally {
+      view.unmount();
+    }
+  });
+
+  test('superseding an uncached instant navigation settles both promises', async () => {
+    const slow = createDeferred<Record<string, unknown>>();
+    const refetch = vi
+      .fn<RefetchInner>()
+      .mockImplementationOnce(() => slow.promise)
+      .mockResolvedValueOnce({
+        [ROUTE_ID]: ['/next', ''],
+        [IS_STATIC_ID]: false,
+      });
+    installRefetch(refetch);
+
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const view = await renderRouter(
+      { initialRoute: { path: '/start', query: '', hash: '' } },
+      {
+        [unstable_getRouteSlotId('/start')]: <Probe />,
+        [unstable_getRouteSlotId('/next')]: <Probe />,
+        [ROUTE_ID]: ['/start', ''],
+        [IS_STATIC_ID]: false,
+      },
+    );
+
+    try {
+      if (!capture.router) {
+        throw new Error('router not initialized');
+      }
+
+      await act(async () => {
+        const superseded = capture.router!.push('/slow', {
+          unstable_instant: true,
+        });
+        await Promise.resolve();
+        const active = capture.router!.push('/next');
+        await Promise.all([superseded, active]);
+      });
+
+      expect(capture.router.path).toBe('/next');
+    } finally {
+      slow.resolve({ [ROUTE_ID]: ['/slow', ''], [IS_STATIC_ID]: false });
+      view.unmount();
+    }
+  });
+
   test('instant nav reuses a prefetched response as data source and base', async () => {
     const refetch = vi.fn<RefetchInner>(async () => ({
       [ROUTE_ID]: ['/next', ''],

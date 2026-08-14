@@ -263,6 +263,7 @@ type ChangeRouteOptions = {
   instant?: boolean | undefined;
   follows?: number | undefined;
   startTransition?: ((fn: TransitionFunction) => void) | undefined;
+  pendingTransition?: ((fn: TransitionFunction) => void) | undefined;
 };
 
 type ChangeRoute = (
@@ -335,15 +336,27 @@ const useResolveSearchCodec = () => {
   );
 };
 
+const canPaintInstantOverlay = (
+  follows: number,
+  routeSlotId: string,
+  resolvedElements: Record<string, unknown>,
+  prefetchedElements: Record<string, unknown> | null | undefined,
+) =>
+  !follows &&
+  canCommitInstantly(routeSlotId, resolvedElements, prefetchedElements);
+
 const dispatchChangeRoute = (
   changeRoute: ChangeRoute,
   route: RouteProps,
   options: ChangeRouteOptions,
   startTransitionFn: (fn: TransitionFunction) => void = startTransition,
 ): Promise<void> => {
-  if (options.instant) {
-    // instant paints from the cache; a transition would hold that back
-    return changeRoute(route, options);
+  if (options.instant && !options.startTransition) {
+    // skip the outer wrap until changeRoute knows it will actually paint
+    return changeRoute(route, {
+      ...options,
+      pendingTransition: startTransitionFn,
+    });
   }
   if (options.startTransition) {
     return changeRoute(route, options);
@@ -1267,16 +1280,49 @@ const InnerRouter = ({
 
   const changeRoute: ChangeRoute = useCallback(
     async function changeRoute(nextRoute, options) {
+      const settledRoute = getSettledRoute(
+        resolvedElementsRef.current,
+        routeFallback,
+      );
+      const shouldRefetch =
+        options.refetch ?? !isSameRscRoute(nextRoute, settledRoute);
+      // a navigation that commits synchronously must not be wrapped: a transition
+      // would deprioritise the paint that unstable_instant exists to deliver
+      if (
+        options.pendingTransition &&
+        shouldRefetch &&
+        !staticPathSetRef.current!.has(nextRoute.path) &&
+        !canPaintInstantOverlay(
+          options.follows ?? 0,
+          getRouteSlotId(nextRoute.path),
+          resolvedElementsRef.current,
+          prefetchManagerRef.current!.getElements(
+            encodeRoutePath(nextRoute.path),
+          ),
+        )
+      ) {
+        const schedule = options.pendingTransition;
+        // React's startTransition runs fn now, so cancel still happens in this turn.
+        return new Promise<void>((resolve, reject) => {
+          schedule(async () => {
+            try {
+              await changeRoute(nextRoute, {
+                ...options,
+                pendingTransition: undefined,
+              });
+              resolve();
+            } catch (e) {
+              reject(e);
+            }
+          });
+        });
+      }
       cancelPendingNavigation();
       setNavigationError(undefined);
       if (import.meta.hot) {
         // A route navigation retires the previous Minimal refetch target.
         registerRscReloadListener(() => {}, { replace: true });
       }
-      const settledRoute = getSettledRoute(
-        resolvedElementsRef.current,
-        routeFallback,
-      );
       const routeUrl = options.url ?? getRouteUrl(nextRoute);
       const initialAttempt: NavigationAttempt = {
         route: nextRoute,
@@ -1285,8 +1331,6 @@ const InnerRouter = ({
       };
       const requestedPathChanged =
         initialAttempt.route.path !== settledRoute.path;
-      const shouldRefetch =
-        options.refetch ?? !isSameRscRoute(nextRoute, settledRoute);
       const makeStateForAttempt = (
         attempt: NavigationAttempt,
         history: HistoryIntent,
@@ -1364,9 +1408,9 @@ const InnerRouter = ({
         });
         const prefetchedElements = prefetchManager.getElements(rscPath);
         const instant =
-          !attempt.follows &&
           !!options.instant &&
-          canCommitInstantly(
+          canPaintInstantOverlay(
+            attempt.follows,
             getRouteSlotId(attempt.route.path),
             resolvedElementsRef.current,
             prefetchedElements,
