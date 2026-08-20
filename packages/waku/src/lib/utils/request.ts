@@ -126,14 +126,21 @@ function validateServerActionRequest(req: Request) {
     if (origin === 'null') {
       throw createCustomError('Forbidden', { status: 403 });
     }
-    const requestOrigin = new URL(req.url).origin;
+    const requestUrl = new URL(req.url);
     let originUrl: URL;
     try {
       originUrl = new URL(origin);
     } catch {
       throw createCustomError('Forbidden', { status: 403 });
     }
-    if (originUrl.origin !== requestOrigin) {
+    if (
+      originUrl.origin !== requestUrl.origin &&
+      !(
+        requestUrl.protocol === 'http:' &&
+        originUrl.protocol === 'https:' &&
+        originUrl.host === requestUrl.host
+      )
+    ) {
       throw createCustomError('Forbidden', { status: 403 });
     }
   } else if (req.headers.get('sec-fetch-site') === 'cross-site') {
