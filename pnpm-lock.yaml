@@ -1408,7 +1408,7 @@ importers:
         specifier: ~19.2.8
         version: 19.2.8(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(webpack@5.99.9(esbuild@0.28.1))
       waku:
-        specifier: 1.0.0-beta.9
+        specifier: 1.0.0-rc.0
         version: link:../../packages/waku
     devDependencies:
       '@rolldown/plugin-babel':
@@ -1451,7 +1451,7 @@ importers:
         specifier: ~19.2.8
         version: 19.2.8(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(webpack@5.99.9(esbuild@0.28.1))
       waku:
-        specifier: 1.0.0-beta.9
+        specifier: 1.0.0-rc.0
         version: link:../../packages/waku
     devDependencies:
       '@rolldown/plugin-babel':
@@ -4311,6 +4311,7 @@ packages:
   eslint@9.39.4:
     resolution: {integrity: sha512-XoMjdBOwe/esVgEvLmNsD3IRHkm7fbKIUGvrleloJXUZgDHig2IPWNniv+GwjyJXzuNqVjlr5+4yVUZjycJwfQ==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+    deprecated: This version is no longer supported. Please see https://eslint.org/version-support for other options.
     hasBin: true
     peerDependencies:
       jiti: '*'
