@@ -25,7 +25,7 @@ export const Sponsors = ({ className = '' }: SponsorsProps) => {
     <div className={cx('pointer-events-none relative w-full', className)}>
       <div
         className={cx(
-          'group pointer-events-auto flex w-full origin-center scale-75 flex-col items-center gap-[4px] sm:scale-100',
+          'group pointer-events-auto flex w-full origin-center scale-75 flex-col items-center gap-1 sm:scale-100',
         )}
       >
         <span
@@ -51,11 +51,11 @@ export const Sponsors = ({ className = '' }: SponsorsProps) => {
                   index !== 0 && 'absolute inset-0 h-full w-full',
                 )}
               >
-                <div className="absolute left-0 right-0 top-0 h-[20px] -translate-y-full" />
+                <div className="absolute left-0 right-0 top-0 h-5 -translate-y-full" />
                 <img
                   src={sponsors.logo}
                   alt={sponsors.title}
-                  className="block h-[20px] w-full object-contain"
+                  className="block h-5 w-full object-contain"
                 />
               </a>
             );

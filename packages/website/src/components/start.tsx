@@ -17,7 +17,7 @@ export const Start = () => {
       )}
     >
       <h1>
-        <Logo className="max-w-[15rem] lg:max-w-[25rem]" />
+        <Logo className="lg:max-w-100 max-w-60" />
       </h1>
       <h3 className="text-shadow mt-3 text-xl font-bold leading-none text-white/80 sm:text-3xl">
         The minimal React framework

@@ -54,7 +54,7 @@ export const Navigation = ({ isHome }: NavigationProps) => {
             The minimal React framework
           </div>
         </div>
-        <div className="relative flex max-h-full w-full max-w-[16rem] flex-col gap-0.5 md:left-auto xl:grow xl:gap-1.5">
+        <div className="relative flex max-h-full w-full max-w-64 flex-col gap-0.5 md:left-auto xl:grow xl:gap-1.5">
           {docs.map((link) => {
             return isHome ? (
               <DocLink key={link.to} link={link} />
@@ -63,7 +63,7 @@ export const Navigation = ({ isHome }: NavigationProps) => {
             );
           })}
         </div>
-        <ul className="relative z-100 mx-auto flex w-full max-w-[16rem] shrink-0 flex-col items-center justify-center gap-3 text-center">
+        <ul className="relative z-100 mx-auto flex w-full max-w-64 shrink-0 flex-col items-center justify-center gap-3 text-center">
           {links.map((link) => {
             return <MenuLink key={link.to} link={link} />;
           })}
@@ -74,7 +74,7 @@ export const Navigation = ({ isHome }: NavigationProps) => {
   );
 };
 
-const logoClassNames = `mx-auto block w-full max-w-[12.5rem]`;
+const logoClassNames = `mx-auto block w-full max-w-50`;
 
 type LinkProps = {
   link: {

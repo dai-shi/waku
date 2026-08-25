@@ -19,7 +19,7 @@ export const getAuthor = (author: string): Author => {
         name: `Sophia Andren`,
         biography: `technical director of candycode`,
         avatar: `https://cdn.candycode.com/waku/sophia.png`,
-        url: `https://x.com/razorbelle`,
+        url: `https://x.com/razorbelle/all`,
       };
     case 'tyler':
       return {

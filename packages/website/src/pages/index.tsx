@@ -52,7 +52,7 @@ export default async function HomePage() {
       </div> */}
       <div
         id="content"
-        className="xl:-right-37 relative z-10 mx-auto w-full max-w-[80ch] scroll-mt-16 pt-16 lg:scroll-mt-32 lg:pt-32 2xl:right-auto"
+        className="xl:-right-37 relative z-10 mx-auto w-full max-w-[80ch] scroll-mt-16 pt-16 lg:scroll-mt-32 lg:pt-32 xl:max-w-[min(80ch,calc(100vw-296px-2rem))] 2xl:right-auto 2xl:max-w-[min(80ch,calc(100vw-296px*2-2rem))]"
       >
         {beforeRoutingMdx.content}
         <h2
@@ -67,7 +67,7 @@ export default async function HomePage() {
         />
         {afterRoutingMdx.content}
       </div>
-      <div className="xl:-right-37 relative z-10 mx-auto mb-8 mt-16 flex w-full max-w-[80ch] justify-center sm:mb-0 lg:mt-32 2xl:right-auto">
+      <div className="xl:-right-37 relative z-10 mx-auto mb-8 mt-16 flex w-full max-w-[80ch] justify-center sm:mb-0 lg:mt-32 xl:max-w-[min(80ch,calc(100vw-296px-2rem))] 2xl:right-auto 2xl:max-w-[min(80ch,calc(100vw-296px*2-2rem))]">
         <StarWaku />
       </div>
       {/* <div id="nudge" className="absolute top-px inline-block size-px" /> */}

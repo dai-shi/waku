@@ -1,0 +1,74 @@
+---
+slug: waku-v1-rc
+title: Waku 1.0 (RC)
+description: Final call for feedback, plus type-safe and instant navigation.
+author: sophia
+release: v1-rc
+date: 2026/08/25
+---
+
+Waku 1.0-RC is finally here!
+
+Waku is the minimal React framework, designed around React Server Components from the start. It shines for anything from learning RSC concepts, to small static sites, to full-stack dynamic web applications. Routes can start fully static, then blend in dynamic parts [slice by slice](/#slices).
+
+With the release of the RC, the public APIs are fixed, and we now mark all unstable APIs explicitly. While we'll continue to explore experimental features and ecosystem libraries, you can be confident in the stability of the public APIs.
+
+This is the last call for feedback that can still change v1. If something in the API feels wrong, please tell us in our [GitHub discussions](https://github.com/wakujs/waku/discussions) or on our [Discord server](https://discord.gg/MrQdmzd).
+
+Let's land v1 final soon!
+
+---
+
+## Release notes
+
+#### Type-safe navigation
+
+Every navigation API now takes a typed target. Navigate by route pattern and let the types check the params:
+
+```tsx
+router.push({ to: '/posts/[slug]', params: { slug } });
+```
+
+The pattern autocompletes from your routes and `params` is typed from it, so renaming a route or forgetting a slug is a compile error instead of a 404 someone finds later. The same targets work with `replace`, `prefetch`, and `unstable_redirect`. Search params are typed per route through a codec. Page and layout props are typed from their route. The string APIs keep working. See the [Typed Routes](/guides/typed-routes) guide.
+
+#### Instant navigation
+
+Waku now caches the static parts of a route as it learns them, and `<Link>` can warm a route before the user clicks. Once a route's shell is cached, the experimental `unstable_instant` paints it immediately, `<Suspense>` fallbacks and all, then streams the dynamic parts in. See the [Navigation and Prefetching](/guides/navigation-prefetching) guide.
+
+#### Other changes
+
+- **Navigation fixes**: redirects, 404s, hash targets, and version skew.
+
+- **Stricter request handling**: origin checks for CSRF, tighter validation of server action requests, and a configurable body limit.
+
+- **External redirects**: `unstable_redirect` now takes an `http` or `https` URL, so you can redirect to another site.
+
+#### Breaking changes
+
+- **Request context**: Waku's context is now request-only and lives in the router. `unstable_getContext()` and `unstable_getContextData()` are gone from `waku/server`. Use `unstable_getRequest()`, `unstable_getHeaders()`, and `unstable_setNonce()` from `waku/router/server`, and bring your own `AsyncLocalStorage` for context data. See the [Request Context](/guides/request-context) guide.
+
+  ```diff
+  - import { unstable_getContext } from 'waku/server';
+  + import { unstable_getRequest } from 'waku/router/server';
+
+  - const { req } = unstable_getContext();
+  + const req = unstable_getRequest();
+  ```
+
+- **Middleware and the render scope**: Hono middleware can no longer read or write Waku's context. To run code inside the render scope, including seeding per-request data or setting a CSP nonce, register a handler interceptor with `createInterceptor`. Middleware still works for response headers and its own storage.
+
+  ```ts
+  import { createPages } from 'waku';
+  import { unstable_getHeaders as getHeaders } from 'waku/router/server';
+  import { runWithRequestData } from './lib/request-data.js';
+
+  createPages(async ({ createPage, createInterceptor }) => {
+    createInterceptor((next) => {
+      const country = getHeaders()['cf-ipcountry'] ?? 'unknown';
+      return runWithRequestData({ country }, next);
+    });
+    return [
+      // ...pages...
+    ];
+  });
+  ```

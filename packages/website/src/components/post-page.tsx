@@ -75,7 +75,7 @@ export async function PostPage({
         ogImageUrl={ogImageUrl}
       />
       <meta property="twitter:card" content="summary_large_image" />
-      <div className="relative z-10 mx-auto w-full max-w-[80ch] pt-16 text-white lg:pt-36 xl:-right-[calc(296px/2)] 2xl:right-auto">
+      <div className="xl:-right-37 relative z-10 mx-auto w-full max-w-[80ch] pt-16 text-white lg:pt-36 xl:max-w-[min(80ch,calc(100vw-296px-2rem))] 2xl:right-auto 2xl:max-w-[min(80ch,calc(100vw-296px*2-2rem))]">
         <div className="mb-8 flex items-center gap-2 sm:gap-4">
           {frontmatter.release && (
             <div>
@@ -124,10 +124,10 @@ export async function PostPage({
         )}
         <hr className="mt-2 h-px border-none bg-gray-800" />
       </div>
-      <div className="relative z-10 mx-auto w-full max-w-[80ch] pt-8 lg:pt-16 xl:-right-[calc(296px/2)] 2xl:right-auto">
+      <div className="xl:-right-37 relative z-10 mx-auto w-full max-w-[80ch] pt-8 lg:pt-16 xl:max-w-[min(80ch,calc(100vw-296px-2rem))] 2xl:right-auto 2xl:max-w-[min(80ch,calc(100vw-296px*2-2rem))]">
         {content}
       </div>
-      <div className="relative z-10 mx-auto mb-8 mt-16 flex w-full max-w-[80ch] justify-center sm:mb-0 lg:mt-32 xl:-right-[calc(296px/2)] 2xl:right-auto">
+      <div className="xl:-right-37 relative z-10 mx-auto mb-8 mt-16 flex w-full max-w-[80ch] justify-center sm:mb-0 lg:mt-32 xl:max-w-[min(80ch,calc(100vw-296px-2rem))] 2xl:right-auto 2xl:max-w-[min(80ch,calc(100vw-296px*2-2rem))]">
         <StarWaku />
       </div>
     </Page>
