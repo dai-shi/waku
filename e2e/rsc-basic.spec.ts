@@ -35,6 +35,302 @@ test.describe(`rsc-basic`, () => {
     ).toHaveText('2');
   });
 
+  test(
+    'deprecated additive HMR listeners can register before Root mounts',
+    { tag: '@dev' },
+    async ({ page }) => {
+      await page.goto(`http://localhost:${port}/`);
+      await expect(page.getByTestId('app-name')).toHaveText('Waku');
+
+      const called = await page.evaluate(() => {
+        globalThis.__WAKU_RSC_RELOAD_LISTENERS__?.forEach((listener) =>
+          listener(),
+        );
+        return (
+          globalThis as typeof globalThis & {
+            __WAKU_ROOTLESS_HMR_LISTENER__?: boolean;
+          }
+        ).__WAKU_ROOTLESS_HMR_LISTENER__;
+      });
+
+      expect(called).toBe(true);
+    },
+  );
+
+  test(
+    'deprecated replacement HMR listeners can register before Root mounts',
+    { tag: '@dev' },
+    async ({ page }) => {
+      await page.goto(`http://localhost:${port}/`);
+      await expect(page.getByTestId('app-name')).toHaveText('Waku');
+
+      const registered = await page.evaluate(
+        () =>
+          (
+            globalThis as typeof globalThis & {
+              __WAKU_ROOTLESS_HMR_REPLACEMENT_REGISTERED__?: boolean;
+            }
+          ).__WAKU_ROOTLESS_HMR_REPLACEMENT_REGISTERED__,
+      );
+
+      expect(registered).toBe(true);
+    },
+  );
+
+  test('server actions target the default minimal root', async ({ page }) => {
+    await page.goto(`http://localhost:${port}/?multiple-roots`);
+    await expect(page.getByTestId('first-root')).toContainText('first');
+    await expect(page.getByTestId('second-root')).toContainText('second');
+    await page
+      .getByTestId('first-root')
+      .getByRole('button', { name: 'Update content' })
+      .click();
+    await expect(page.getByTestId('second-root')).toContainText(
+      'updated content',
+    );
+    await page.getByTestId('unmount-second-root').click();
+    await page
+      .getByTestId('first-root')
+      .getByRole('button', { name: 'Update content' })
+      .click();
+    await expect(page.getByTestId('first-root')).toContainText(
+      'updated content',
+    );
+  });
+
+  test('simultaneously suspended Roots settle independently', async ({
+    page,
+  }) => {
+    await page.goto(
+      `http://localhost:${port}/?multiple-roots&simultaneous-roots`,
+    );
+    await expect(page.getByTestId('first-root')).toContainText('first');
+    await expect(page.getByTestId('second-root')).toContainText('second');
+  });
+
+  test(
+    'unmounting the default Root restores the previous HMR target',
+    { tag: '@dev' },
+    async ({ page }) => {
+      await page.goto(`http://localhost:${port}/?multiple-roots`);
+      await expect(page.getByTestId('first-root')).toContainText('first');
+      await expect(page.getByTestId('second-root')).toContainText('second');
+      await page.getByTestId('unmount-second-root').click();
+
+      const requests = await page.evaluate(async () => {
+        const urls: string[] = [];
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = (...args) => {
+          urls.push(String(args[0]));
+          return originalFetch(...args);
+        };
+        try {
+          globalThis.__WAKU_REFETCH_RSC__?.();
+          await Promise.resolve();
+        } finally {
+          globalThis.fetch = originalFetch;
+        }
+        return urls;
+      });
+
+      expect(requests).toContain('/RSC/first.txt');
+    },
+  );
+
+  test('HMR reloads every mounted Root', { tag: '@dev' }, async ({ page }) => {
+    await page.goto(`http://localhost:${port}/?multiple-roots`);
+    await expect(page.getByTestId('first-root')).toContainText('first');
+    await expect(page.getByTestId('second-root')).toContainText('second');
+
+    const requests = await page.evaluate(() => {
+      const urls: string[] = [];
+      const originalFetch = globalThis.fetch;
+      globalThis.fetch = (...args) => {
+        urls.push(String(args[0]));
+        return originalFetch(...args);
+      };
+      try {
+        globalThis.__WAKU_RSC_RELOAD_LISTENERS__?.forEach((listener) =>
+          listener(),
+        );
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+      return urls;
+    });
+
+    expect(requests).toContain('/RSC/first.txt');
+    expect(requests).toContain('/RSC/second.txt');
+  });
+
+  test(
+    'HMR clears cached etags from every Root',
+    { tag: '@dev' },
+    async ({ page }) => {
+      await page.goto(`http://localhost:${port}/?multiple-roots`);
+      await expect(page.getByTestId('second-root')).toContainText('second');
+      await page.evaluate(() => globalThis.__WAKU_REFETCH_RSC__?.());
+      await page.getByTestId('unmount-second-root').click();
+
+      const actionRequest = page.waitForRequest(
+        (request) =>
+          request.method() === 'POST' &&
+          new URL(request.url()).pathname.startsWith('/RSC/'),
+      );
+      await page
+        .getByTestId('first-root')
+        .getByRole('button', { name: 'Update content' })
+        .click();
+
+      expect((await actionRequest).headers()['x-waku-etags']).toBe('{}');
+    },
+  );
+
+  test(
+    "unmounting the default Root restores the previous Root's descendant HMR target",
+    { tag: '@dev' },
+    async ({ page }) => {
+      await page.goto(
+        `http://localhost:${port}/?multiple-roots&descendant-hmr=first`,
+      );
+      await expect(page.getByTestId('first-root')).toContainText('first');
+      await expect(page.getByTestId('second-root')).toContainText('second');
+      await page.getByTestId('unmount-second-root').click();
+
+      const called = await page.evaluate(() => {
+        globalThis.__WAKU_REFETCH_RSC__?.();
+        return (
+          globalThis as typeof globalThis & {
+            __WAKU_TEST_HMR_TARGET__?: string;
+          }
+        ).__WAKU_TEST_HMR_TARGET__;
+      });
+
+      expect(called).toBe('first');
+    },
+  );
+
+  test(
+    'a non-default Root can own its HMR target',
+    { tag: '@dev' },
+    async ({ page }) => {
+      await page.goto(`http://localhost:${port}/?multiple-roots`);
+      await expect(page.getByTestId('second-root')).toContainText('second');
+      await page
+        .getByTestId('first-root')
+        .getByRole('button', { name: 'Own HMR', exact: true })
+        .click();
+      await expect(
+        page
+          .getByTestId('first-root')
+          .getByRole('button', { name: 'Owns HMR' }),
+      ).toBeVisible();
+      await page.getByTestId('unmount-second-root').click();
+
+      const called = await page.evaluate(() => {
+        globalThis.__WAKU_REFETCH_RSC__?.();
+        return (
+          globalThis as typeof globalThis & {
+            __WAKU_TEST_HMR_TARGET__?: string;
+          }
+        ).__WAKU_TEST_HMR_TARGET__;
+      });
+
+      expect(called).toBe('first');
+    },
+  );
+
+  test(
+    "unmounting a Root with a descendant HMR target restores the previous Root's target",
+    { tag: '@dev' },
+    async ({ page }) => {
+      await page.goto(
+        `http://localhost:${port}/?multiple-roots&descendant-hmr=second`,
+      );
+      await expect(page.getByTestId('second-root')).toContainText('second');
+      await page.getByTestId('unmount-second-root').click();
+
+      const requests = await page.evaluate(async () => {
+        const urls: string[] = [];
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = (...args) => {
+          urls.push(String(args[0]));
+          return originalFetch(...args);
+        };
+        try {
+          globalThis.__WAKU_REFETCH_RSC__?.();
+          await Promise.resolve();
+        } finally {
+          globalThis.fetch = originalFetch;
+        }
+        return urls;
+      });
+
+      expect(requests).toContain('/RSC/first.txt');
+    },
+  );
+
+  test(
+    'unmounting a middle Root preserves earlier HMR ownership',
+    { tag: '@dev' },
+    async ({ page }) => {
+      await page.goto(
+        `http://localhost:${port}/?multiple-roots&three-roots&descendant-hmr=first`,
+      );
+      await expect(page.getByTestId('third-root')).toContainText('third');
+      await page.getByTestId('unmount-second-root').click();
+      await page.getByTestId('unmount-third-root').click();
+
+      const called = await page.evaluate(() => {
+        globalThis.__WAKU_REFETCH_RSC__?.();
+        return (
+          globalThis as typeof globalThis & {
+            __WAKU_TEST_HMR_TARGET__?: string;
+          }
+        ).__WAKU_TEST_HMR_TARGET__;
+      });
+
+      expect(called).toBe('first');
+    },
+  );
+
+  test(
+    'rerendering a Root preserves its descendant HMR target',
+    { tag: '@dev' },
+    async ({ page }) => {
+      await page.goto(`http://localhost:${port}/?multiple-roots`);
+      await expect(page.getByTestId('second-root')).toContainText('second');
+      await page.evaluate(() => {
+        const previous = globalThis.__WAKU_REFETCH_RSC__;
+        const listeners = globalThis.__WAKU_RSC_RELOAD_LISTENERS__;
+        const replacement = () => {
+          (
+            globalThis as typeof globalThis & {
+              __WAKU_TEST_HMR_TARGET__?: boolean;
+            }
+          ).__WAKU_TEST_HMR_TARGET__ = true;
+        };
+        const index = previous && listeners?.indexOf(previous);
+        if (listeners && typeof index === 'number' && index !== -1) {
+          listeners.splice(index, 1, replacement);
+        }
+        globalThis.__WAKU_REFETCH_RSC__ = replacement;
+      });
+
+      await page.getByTestId('rerender-second-root').click();
+      const called = await page.evaluate(() => {
+        globalThis.__WAKU_REFETCH_RSC__?.();
+        return (
+          globalThis as typeof globalThis & {
+            __WAKU_TEST_HMR_TARGET__?: boolean;
+          }
+        ).__WAKU_TEST_HMR_TARGET__;
+      });
+
+      expect(called).toBe(true);
+    },
+  );
+
   test('index.html', async ({ request }) => {
     const res = await request.get(`http://localhost:${port}/`);
     expect(await res.text()).toContain('name="test-custom-index-html"');

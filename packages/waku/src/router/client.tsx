@@ -33,11 +33,11 @@ import {
   unstable_fetchRsc as fetchRsc,
   unstable_getErrorInfo as getErrorInfo,
   unstable_isImmutableElement as isImmutableElement,
-  unstable_registerCallServerElementsListener as registerCallServerElementsListener,
-  unstable_registerRscReloadListener as registerRscReloadListener,
   unstable_removeBase as removeBase,
   useElementsPromise_UNSTABLE as useElementsPromise,
   useMergeElements_UNSTABLE as useMergeElements,
+  useRegisterCallServerElementsListener_UNSTABLE as useRegisterCallServerElementsListener,
+  useRegisterRscReloadListener_UNSTABLE as useRegisterRscReloadListener,
 } from '../minimal/client.js';
 import { decideFollow, isFollowable } from './client-utils/error-route.js';
 import {
@@ -1167,6 +1167,7 @@ const InnerRouter = ({
 
   const refetch = useRefetch();
   const mergeElements = useMergeElements();
+  const registerRscReloadListener = useRegisterRscReloadListener();
   const [fetchingSlices] = useState(
     () => new Map<SliceId, Promise<Elements>>(),
   );
@@ -1189,7 +1190,7 @@ const InnerRouter = ({
       // The listener below owns the current route, not Root's initial path.
       registerRscReloadListener(() => {}, { replace: true });
     }
-  }, []);
+  }, [registerRscReloadListener]);
 
   const routeFallback = useMemo(
     () => ({ ...initialRoute, hash: restoredHash }),
@@ -1276,6 +1277,7 @@ const InnerRouter = ({
     lazySliceIds,
     fetchingSlices,
     mergeElements,
+    registerRscReloadListener,
   ]);
 
   const changeRoute: ChangeRoute = useCallback(
@@ -1610,6 +1612,7 @@ const InnerRouter = ({
       addToStaticPathSet,
       cancelPendingNavigation,
       has404,
+      registerRscReloadListener,
     ],
   );
 
@@ -1641,6 +1644,8 @@ const InnerRouter = ({
     },
     [changeRoute, routeFallback],
   );
+  const registerCallServerElementsListener =
+    useRegisterCallServerElementsListener();
   useEffect(() => {
     const listener = (elements: Record<string, unknown>) => {
       addToStaticPathSet(elements);
@@ -1652,7 +1657,11 @@ const InnerRouter = ({
       });
     };
     return registerCallServerElementsListener(listener);
-  }, [changeRouteFromServer, addToStaticPathSet]);
+  }, [
+    changeRouteFromServer,
+    addToStaticPathSet,
+    registerCallServerElementsListener,
+  ]);
 
   const prefetchRoute: PrefetchRoute = useCallback((route, options) => {
     preloadRouteModules(route.path);

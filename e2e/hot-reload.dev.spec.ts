@@ -191,6 +191,28 @@ test.describe('hot reload', () => {
     await expect(page.getByText('Fixed Page')).toBeVisible();
   });
 
+  test('router owns the replaceable HMR target', async ({ page }) => {
+    await page.goto(`http://localhost:${port}/`);
+    await waitForHydration(page);
+
+    const requests = await page.evaluate(() => {
+      const urls: string[] = [];
+      const originalFetch = globalThis.fetch;
+      globalThis.fetch = (...args) => {
+        urls.push(String(args[0]));
+        return originalFetch(...args);
+      };
+      try {
+        globalThis.__WAKU_REFETCH_RSC__?.();
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+      return urls;
+    });
+
+    expect(requests).toEqual([]);
+  });
+
   test('css modules', async ({ page }) => {
     await page.goto(`http://localhost:${port}/css-modules`);
     await waitForHydration(page);

@@ -17,3 +17,5 @@ export const wrap = async (node: ReactNode) => {
 export const getData = async () => {
   return <span className="server-data">Server Data</span>;
 };
+
+export const updateContent = async () => 'update-content';

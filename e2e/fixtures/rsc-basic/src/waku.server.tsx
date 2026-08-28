@@ -1,5 +1,6 @@
 import adapter from 'waku/adapters/default';
 import App from './components/App.js';
+import { MultipleRootAction } from './components/MultipleRootAction.js';
 
 const BUILD_MATADATA_KEY = 'metadata-key';
 const BUILD_MATADATA_VALUE = 'metadata-value';
@@ -7,6 +8,23 @@ const BUILD_MATADATA_VALUE = 'metadata-value';
 export default adapter({
   handleRequest: async (input, { renderRsc, loadBuildMetadata }) => {
     if (input.type === 'rsc') {
+      if (
+        input.rscPath === 'first' ||
+        input.rscPath === 'second' ||
+        input.rscPath === 'third'
+      ) {
+        return renderRsc(
+          {
+            Content: (
+              <div>
+                <p>{input.rscPath}</p>
+                <MultipleRootAction name={input.rscPath} />
+              </div>
+            ),
+          },
+          { etags: { Content: input.rscPath } },
+        );
+      }
       return renderRsc({
         App: (
           <App
@@ -19,7 +37,10 @@ export default adapter({
     }
     if (input.type === 'call') {
       const value = await input.fn(...input.args);
-      return renderRsc({}, { value });
+      return renderRsc(
+        value === 'update-content' ? { Content: <p>updated content</p> } : {},
+        { value },
+      );
     }
     return 'fallback';
   },

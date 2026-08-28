@@ -13,12 +13,11 @@ import {
   isValidEtag,
 } from '../src/lib/utils/etags.js';
 import {
-  CACHED_ETAGS,
-  ENTRY,
   FETCH_ENHANCERS,
-  SET_ELEMENTS,
   fetchRscStore,
 } from '../src/minimal/client-utils/fetch-store.js';
+import { clearInitialRscEntries } from '../src/minimal/client-utils/initial-rsc-store.js';
+import { getDefaultRootStore } from '../src/minimal/client-utils/root-store.js';
 import {
   Root_UNSTABLE as Root,
   unstable_fetchRsc as fetchRsc,
@@ -86,10 +85,8 @@ beforeEach(() => {
   vi.spyOn(globalThis, 'fetch').mockResolvedValue(
     new Response(null, { status: 200 }),
   );
-  delete fetchRscStore[ENTRY];
-  delete fetchRscStore[SET_ELEMENTS];
+  clearInitialRscEntries();
   delete fetchRscStore[FETCH_ENHANCERS];
-  delete fetchRscStore[CACHED_ETAGS];
 });
 
 afterEach(() => {
@@ -117,7 +114,7 @@ describe('minimal per-slot cache-validator (carry + replay)', () => {
     );
     await flush();
 
-    const cached = fetchRscStore[CACHED_ETAGS] ?? {};
+    const cached = getDefaultRootStore()?.etags ?? {};
     expect(cached.page).toBe('etag-foo');
     expect(cached.bar).toBe('etag-bar');
     expect(cached.static).toBe(1);
@@ -171,7 +168,7 @@ describe('minimal per-slot cache-validator (carry + replay)', () => {
 
     // the _etag: key follows its slot's swr-ness through the eager merge, so a
     // pinned static slot's etag stays a concrete value and survives in the cache
-    expect(fetchRscStore[CACHED_ETAGS]?.page).toBe(IMMUTABLE_ETAG);
+    expect(getDefaultRootStore()?.etags.page).toBe(IMMUTABLE_ETAG);
 
     view.unmount();
   });
@@ -227,7 +224,6 @@ describe('minimal per-slot cache-validator (carry + replay)', () => {
   });
 
   it('a prefetch without a base claims nothing', async () => {
-    fetchRscStore[CACHED_ETAGS] = { widget: 'etag-live' };
     testHoisted.elements = { page: <div>b</div> };
     await fetchRsc('R/bar');
 
@@ -239,7 +235,6 @@ describe('minimal per-slot cache-validator (carry + replay)', () => {
   });
 
   it('a prefetch claims the etags of its base and returns the merge', async () => {
-    fetchRscStore[CACHED_ETAGS] = { widget: 'etag-live', page: 'etag-page' };
     testHoisted.elements = {
       page: <div>b</div>,
       [`${ETAG_ID_PREFIX}page`]: 'etag-page-2',
@@ -303,8 +298,8 @@ describe('minimal per-slot cache-validator (carry + replay)', () => {
     });
     await flush();
 
-    expect(fetchRscStore[CACHED_ETAGS]?.widget).toBe('etag-widget');
-    expect(fetchRscStore[CACHED_ETAGS]?.page).toBe(IMMUTABLE_ETAG);
+    expect(getDefaultRootStore()?.etags.widget).toBe('etag-widget');
+    expect(getDefaultRootStore()?.etags.page).toBe(IMMUTABLE_ETAG);
 
     view.unmount();
   });

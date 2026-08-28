@@ -3,12 +3,13 @@
 import { useCallback, useState } from 'react';
 import {
   unstable_fetchRsc as fetchRsc,
-  unstable_registerRscReloadListener as registerRscReloadListener,
   useMergeElements_UNSTABLE as useMergeElements,
+  useRegisterRscReloadListener_UNSTABLE as useRegisterRscReloadListener,
 } from 'waku/minimal/client';
 
 const useRefetch = () => {
   const mergeElements = useMergeElements();
+  const registerRscReloadListener = useRegisterRscReloadListener();
   return useCallback(
     (rscPath: string) => {
       const refetch = () => mergeElements(fetchRsc(rscPath));
@@ -20,7 +21,7 @@ const useRefetch = () => {
       );
       return refetch();
     },
-    [mergeElements],
+    [mergeElements, registerRscReloadListener],
   );
 };
 

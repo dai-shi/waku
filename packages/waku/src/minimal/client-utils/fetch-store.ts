@@ -1,17 +1,6 @@
-import type { Etags } from '../../lib/utils/etags.js';
-
-export const ENTRY = 'e';
-export const SET_ELEMENTS = 's';
 export const FETCH_ENHANCERS = 'f';
 export const FETCH_RSC_INPUT_TRANSFORMERS = 't';
 export const CALL_SERVER_ELEMENTS_LISTENERS = 'l';
-export const CACHED_ETAGS = 'c';
-
-export type SetElements = (
-  updater: (
-    prev: Promise<Record<string | symbol, unknown>>,
-  ) => Promise<Record<string | symbol, unknown>>,
-) => void;
 
 export type FetchEnhancer = (fetchFn: typeof fetch) => typeof fetch;
 type FetchEnhancers = Set<FetchEnhancer>;
@@ -27,16 +16,9 @@ type CallServerElementsListeners = Set<
 >;
 
 export type FetchRscStore = {
-  [ENTRY]?: [
-    rscPath: string,
-    rscParams: unknown,
-    elementsPromise: Promise<Record<string, unknown>>,
-  ];
-  [SET_ELEMENTS]?: SetElements;
   [FETCH_ENHANCERS]?: FetchEnhancers;
   [FETCH_RSC_INPUT_TRANSFORMERS]?: FetchRscInputTransformers;
   [CALL_SERVER_ELEMENTS_LISTENERS]?: CallServerElementsListeners;
-  [CACHED_ETAGS]?: Etags;
 };
 
 // Internal module-level RSC store. This module is intentionally absent from the

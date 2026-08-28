@@ -19,6 +19,11 @@ import { error, info } from '@actions/core';
 import { test as basicTest, expect } from '@playwright/test';
 import type { ConsoleMessage, Page } from '@playwright/test';
 
+declare global {
+  var __WAKU_RSC_RELOAD_LISTENERS__: (() => void)[] | undefined;
+  var __WAKU_REFETCH_RSC__: (() => void) | undefined;
+}
+
 const execAsync = promisify(exec);
 
 export const FETCH_ERROR_MESSAGES = {
