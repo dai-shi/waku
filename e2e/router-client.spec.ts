@@ -105,6 +105,39 @@ test.describe('router-client', () => {
     await expect(page.getByTestId('route-query')).toHaveText('');
   });
 
+  test('concurrent Router mounts settle with different initial routes', async ({
+    page,
+  }) => {
+    await page.goto(`http://localhost:${port}/start`);
+    await waitForHydration(page);
+
+    const requests: string[] = [];
+    page.on('request', (request) => {
+      if (
+        request.url().includes('/RSC/R/multiple-router.txt') ||
+        request.url().includes('/RSC/R/other-router.txt')
+      ) {
+        requests.push(request.url());
+      }
+    });
+
+    await page.getByTestId('mount-routers').click();
+
+    const first = page.frameLocator('[data-testid="first-router"]');
+    const second = page.frameLocator('[data-testid="second-router"]');
+    const third = page.frameLocator('[data-testid="third-router"]');
+    const fourth = page.frameLocator('[data-testid="fourth-router"]');
+    await expect(first.getByTestId('server-query')).toHaveText('name=first');
+    await expect(first.getByTestId('route-query')).toHaveText('name=first');
+    await expect(second.getByTestId('server-query')).toHaveText('name=second');
+    await expect(second.getByTestId('route-query')).toHaveText('name=second');
+    await expect(third.getByTestId('server-query')).toHaveText('');
+    await expect(third.getByTestId('route-query')).toHaveText('');
+    await expect(fourth.getByTestId('server-query')).toHaveText('');
+    await expect(fourth.getByTestId('route-query')).toHaveText('');
+    expect(requests).toHaveLength(4);
+  });
+
   test('popstate interceptor can rewrite navigation target', async ({
     page,
   }) => {

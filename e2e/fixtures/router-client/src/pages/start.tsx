@@ -1,5 +1,6 @@
 import { Link } from 'waku';
 import { ResolveClientSuspenseButton } from '../components/client-suspense.js';
+import { MultipleRouters } from '../components/multiple-routers.js';
 import { NavIndicator } from '../components/nav-indicator.js';
 import { PushMissingButton, RouteState } from '../components/route-state.js';
 import { TransitionLink } from '../components/transition-link.js';
@@ -61,6 +62,7 @@ export default function StartPage() {
       <p>
         <ResolveClientSuspenseButton />
       </p>
+      <MultipleRouters />
       <p>
         <Link to="/trigger-not-found" data-testid="go-trigger-not-found">
           Go trigger not found

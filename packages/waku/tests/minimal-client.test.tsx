@@ -199,6 +199,17 @@ describe('minimal/client fetch', () => {
     expect(create).toHaveBeenCalledOnce();
   });
 
+  test('retries a rejected initial fetch', async () => {
+    const first = getInitialRscEntry('R/app.txt', undefined, () =>
+      Promise.reject(new Error('failed')),
+    );
+    await expect(first).rejects.toThrow('failed');
+    const create = vi.fn(() => Promise.resolve({}));
+
+    expect(getInitialRscEntry('R/app.txt', undefined, create)).not.toBe(first);
+    expect(create).toHaveBeenCalledOnce();
+  });
+
   test('server actions use the current fetch, not the one elements decoded with', async () => {
     // Capture the callServer baked into the fetched elements.
     let callServer: CallServer | undefined;

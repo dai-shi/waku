@@ -427,7 +427,8 @@ Important behavior:
 
 - `initialRscPath` defaults to `''`.
 - `Root` is required for `Slot`, `Children`, and `useMergeElements`.
-- The client store is a module-level singleton (normally one per document), so mounting multiple `Root` instances is not supported.
+- Each `Root` owns its client store. Bare server action calls use the `Root`
+  that was most recently mounted when the request starts.
 - `Root` injects default head tags for charset, viewport, and generator.
 - For SSR or SSG, use `hydrateRoot(document, rootElement)` when `globalThis.__WAKU_HYDRATE__` is set.
 - For purely client-side rendering, use `createRoot(document).render(rootElement)`.

@@ -1771,6 +1771,34 @@ describe('Router integration', () => {
     view.unmount();
   });
 
+  test('keeps initial params stable until the Router commits', async () => {
+    const elements = {
+      [unstable_getRouteSlotId('/start')]: <div />,
+      [ROUTE_ID]: ['/start', ''],
+      [IS_STATIC_ID]: false,
+    };
+    const view = await renderRouterInStrictMode(
+      { initialRoute: { path: '/start', query: 'a=1', hash: '' } },
+      elements,
+    );
+    const params = vi
+      .mocked(Root)
+      .mock.calls.map(([props]) => props.initialRscParams as URLSearchParams);
+
+    expect(params.length).toBeGreaterThan(1);
+    expect(params.every((item) => item === params[0])).toBe(true);
+
+    const nextView = await renderRouter(
+      { initialRoute: { path: '/start', query: 'a=1', hash: '' } },
+      elements,
+    );
+    expect(vi.mocked(Root).mock.calls.at(-1)?.[0].initialRscParams).not.toBe(
+      params[0],
+    );
+    view.unmount();
+    nextView.unmount();
+  });
+
   test('uses route data as initial route', async () => {
     window.history.replaceState({}, '', '/missing');
 
