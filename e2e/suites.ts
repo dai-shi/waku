@@ -55,6 +55,7 @@ export const CHROMIUM_ONLY_SPECS = [
   'minimal-examples.spec.ts',
   'monorepo.spec.ts',
   'multi-platform.prd.spec.ts',
+  'nav-api-spike.spec.ts',
   'partial-build.prd.spec.ts',
   'performance-track.dev.spec.ts',
   'react-compiler.spec.ts',

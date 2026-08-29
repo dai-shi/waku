@@ -2,9 +2,11 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { createCustomError } from '../src/lib/utils/custom-errors.js';
 import {
+  MAX_FOLLOWS_PER_NAVIGATION,
   decideFollow,
+  isFollowable,
   resolveErrorRoute,
-} from '../src/router/client-utils/error-route.js';
+} from '../src/router/client-core-utils/error-route.js';
 
 beforeEach(() => {
   vi.stubEnv('WAKU_CONFIG_BASE_PATH', '/');
@@ -222,8 +224,18 @@ describe('resolveErrorRoute', () => {
   });
 });
 
+describe('isFollowable', () => {
+  test('a redirect or 404 is followable and a plain error is not', () => {
+    expect(
+      isFollowable(createCustomError('redirect', { location: '/next' })),
+    ).toBe(true);
+    expect(isFollowable(createCustomError('nf', { status: 404 }))).toBe(true);
+    expect(isFollowable(new Error('offline'))).toBe(false);
+  });
+});
+
 describe('decideFollow', () => {
-  const options = { has404: false, maxFollows: 20 };
+  const options = { has404: false, maxFollows: MAX_FOLLOWS_PER_NAVIGATION };
   const at = (path: string, query = '', follows = 0) => ({
     route: { path, query },
     url: requested(path + (query && `?${query}`)),
@@ -298,6 +310,23 @@ describe('decideFollow', () => {
     ).toMatchObject({
       type: 'follow',
       target: { path: '/here', query: '', hash: '#section' },
+    });
+  });
+
+  test('the same path and hash as the current url is a loop', () => {
+    expect(
+      decideFollow(
+        redirectTo('/here#section'),
+        {
+          route: { path: '/here', query: '' },
+          url: requested('/here#section'),
+          follows: 0,
+        },
+        options,
+      ),
+    ).toMatchObject({
+      type: 'stop',
+      error: { message: 'detected a navigation loop' },
     });
   });
 

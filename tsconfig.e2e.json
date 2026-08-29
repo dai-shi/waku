@@ -4,5 +4,9 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["playwright.config.ts", "./e2e/*.ts"]
+  "include": [
+    "playwright.config.ts",
+    "./e2e/*.ts",
+    "./e2e/fixtures/nav-api-spike/src/settle-navigate-finished.ts"
+  ]
 }

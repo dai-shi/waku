@@ -93,7 +93,7 @@ export const buildRouteHref = <Path extends RoutePath>(
     const codec = resolveCodec?.(to);
     if (!codec) {
       throw new Error(
-        `Cannot serialize "search" for "${to}": no search codec resolved. Provide it via <Unstable_SearchCodecsProvider> in a module rendered on every page (e.g. your root layout) so navigation can serialize it.`,
+        `Cannot serialize "search" for "${to}": no search codec resolved. Provide it via <SearchCodecsProvider_UNSTABLE> in a module rendered on every page (e.g. your root layout) so navigation can serialize it.`,
       );
     }
     query = codec.serialize(search);

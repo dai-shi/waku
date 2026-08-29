@@ -3,7 +3,7 @@ import {
   PREFETCH_LIMIT,
   PREFETCH_TTL,
   createPrefetchManager,
-} from '../src/router/client-utils/prefetch-cache.js';
+} from '../src/router/client-core-utils/prefetch-cache.js';
 
 type PrefetchManager = ReturnType<typeof createPrefetchManager>;
 
@@ -226,5 +226,60 @@ describe('router prefetch manager', () => {
 
     expect(onInvalidate).toHaveBeenCalledOnce();
     expect(manager.get('/p', '')).toBeUndefined();
+  });
+
+  it('notifies every adopter of an invalidated prefetch', () => {
+    const manager = createPrefetchManager();
+    let invalidate!: () => void;
+    manager.prefetch(
+      '/p',
+      '',
+      (_base, invalidatePrefetch) => {
+        invalidate = invalidatePrefetch;
+        return pending();
+      },
+      undefined,
+    );
+    const entry = manager.get('/p', '');
+    if (!entry) {
+      throw new Error('Missing prefetch entry');
+    }
+    const notifyA = vi.fn();
+    const notifyB = vi.fn();
+    entry.onInvalidate(notifyA);
+    entry.onInvalidate(notifyB);
+
+    invalidate();
+
+    expect(notifyA).toHaveBeenCalledOnce();
+    expect(notifyB).toHaveBeenCalledOnce();
+  });
+
+  it('does not notify an unsubscribed invalidation callback', () => {
+    const manager = createPrefetchManager();
+    let invalidate!: () => void;
+    manager.prefetch(
+      '/p',
+      '',
+      (_base, invalidatePrefetch) => {
+        invalidate = invalidatePrefetch;
+        return pending();
+      },
+      undefined,
+    );
+    const entry = manager.get('/p', '');
+    if (!entry) {
+      throw new Error('Missing prefetch entry');
+    }
+    const notifyA = vi.fn();
+    const notifyB = vi.fn();
+    entry.onInvalidate(notifyA);
+    const unsubscribeB = entry.onInvalidate(notifyB);
+    unsubscribeB();
+
+    invalidate();
+
+    expect(notifyA).toHaveBeenCalledOnce();
+    expect(notifyB).not.toHaveBeenCalled();
   });
 });

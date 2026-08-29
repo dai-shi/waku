@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { ETAG_ID_PREFIX, IMMUTABLE_ETAG } from '../src/lib/utils/etags.js';
 import {
   ROUTER_STATE_ID,
-  canCommitInstantly,
   getRouterState,
   getSettledRoute,
   makeRouterState,
@@ -223,34 +222,6 @@ describe('getSettledRoute', () => {
     );
 
     expect(getSettledRoute(elements, fallback)).toEqual(settledRoute);
-  });
-});
-
-describe('canCommitInstantly', () => {
-  const immutable = (slotId: string) => ({
-    [ETAG_ID_PREFIX + slotId]: IMMUTABLE_ETAG,
-  });
-
-  test('true when the resolved elements hold an immutable route slot', () => {
-    expect(
-      canCommitInstantly('route:/a', immutable('route:/a'), undefined),
-    ).toBe(true);
-  });
-
-  test('true when only the prefetched elements hold it', () => {
-    expect(canCommitInstantly('route:/a', {}, immutable('route:/a'))).toBe(
-      true,
-    );
-  });
-
-  test('false without an immutable etag for the slot', () => {
-    expect(
-      canCommitInstantly(
-        'route:/a',
-        { [ETAG_ID_PREFIX + 'route:/a']: 'W/"mutable"' },
-        null,
-      ),
-    ).toBe(false);
   });
 });
 

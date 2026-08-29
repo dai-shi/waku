@@ -69,6 +69,10 @@
       "types": "./dist/router/client.d.ts",
       "default": "./dist/router/client.js"
     },
+    "./router/client-core": {
+      "types": "./dist/router/client-core.d.ts",
+      "default": "./dist/router/client-core.js"
+    },
     "./router/server": {
       "types": "./dist/router/server.d.ts",
       "default": "./dist/router/server.js"

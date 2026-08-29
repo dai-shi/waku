@@ -18,10 +18,20 @@ export type ErrorRoute =
   | { type: 'unfollowable'; location: string }
   | { type: 'none' };
 
+/**
+ * Whether a caught render error is a redirect or 404 the binding should
+ * consider following.
+ */
 export const isFollowable = (error: unknown) => {
   const info = getErrorInfo(error);
   return info?.status === 404 || !!info?.location;
 };
+
+/**
+ * Bound on one navigation's follow chain, including slot-thrown redirects
+ * after `load` returns.
+ */
+export const MAX_FOLLOWS_PER_NAVIGATION = 20;
 
 export const resolveErrorRoute = (
   error: unknown,
@@ -62,12 +72,18 @@ export const resolveErrorRoute = (
   return { type: 'none' };
 };
 
-type FollowDecision =
+export type FollowDecision =
   | { type: 'follow'; target: RouteProps; url: URL }
   | { type: 'leave'; url: URL }
   | { type: 'stop'; error: unknown }
   | { type: 'none' };
 
+/**
+ * Given a caught error, the route that threw it, and how many follows have
+ * already happened, whether to follow, leave the document, or stop.
+ * `load` uses this for fetch-time redirects; a slot-thrown redirect happens
+ * after `load` returns, so the binding must call it too.
+ */
 export const decideFollow = (
   error: unknown,
   requested: {

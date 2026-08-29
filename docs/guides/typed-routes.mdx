@@ -218,20 +218,20 @@ export default function ProductsPage({ search }: PageProps<'/products'>) {
 
 ### Provide codecs on the client
 
-To read, update, or navigate with search on the client, the codec has to be available there. Wrap your app with `Unstable_SearchCodecsProvider`. Because codecs hold functions, the provider must be rendered from a `'use client'` module that imports them:
+To read, update, or navigate with search on the client, the codec has to be available there. Wrap your app with `SearchCodecsProvider_UNSTABLE`. Because codecs hold functions, the provider must be rendered from a `'use client'` module that imports them:
 
 ```tsx
 // ./src/components/search-codecs.tsx
 'use client';
 
 import type { ReactNode } from 'react';
-import { Unstable_SearchCodecsProvider } from 'waku/router/client';
+import { SearchCodecsProvider_UNSTABLE } from 'waku/router/client';
 import * as searchCodecs from '../lib/search';
 
 export const SearchCodecs = ({ children }: { children: ReactNode }) => (
-  <Unstable_SearchCodecsProvider searchCodecs={searchCodecs}>
+  <SearchCodecsProvider_UNSTABLE searchCodecs={searchCodecs}>
     {children}
-  </Unstable_SearchCodecsProvider>
+  </SearchCodecsProvider_UNSTABLE>
 );
 ```
 

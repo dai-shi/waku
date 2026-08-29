@@ -1,6 +1,14 @@
 // @vitest-environment happy-dom
 
-import { StrictMode, act, use, useEffect, useState } from 'react';
+import {
+  StrictMode,
+  act,
+  createContext,
+  use,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
 import type { ReactElement, ReactNode } from 'react';
 import { preloadModule } from 'react-dom';
 import { createRoot } from 'react-dom/client';
@@ -25,17 +33,32 @@ import {
   Root_UNSTABLE as Root,
   Slot_UNSTABLE as Slot,
   unstable_fetchRsc as fetchRsc,
+  useElementsPromise_UNSTABLE as useElementsPromise,
   useMergeElements_UNSTABLE as useMergeElements,
 } from '../src/minimal/client.js';
-import { PREFETCH_LIMIT } from '../src/router/client-utils/prefetch-cache.js';
+import * as routerCaches from '../src/router/client-core-utils/caches.js';
+import {
+  clearCaches,
+  clearRegisteredLazySlices,
+} from '../src/router/client-core-utils/caches.js';
+import {
+  RouterHostContext,
+  useRouterHost,
+} from '../src/router/client-core-utils/host.js';
+import { PREFETCH_LIMIT } from '../src/router/client-core-utils/prefetch-cache.js';
+import {
+  fetchSlice,
+  getInFlightSliceCount,
+  resetSliceFetches,
+} from '../src/router/client-core-utils/slice.js';
 import {
   ErrorBoundary,
   INTERNAL_ServerRouter,
   Link,
   Router,
   unstable_RouterContext as RouterContext,
+  SearchCodecsProvider_UNSTABLE,
   Slice,
-  Unstable_SearchCodecsProvider,
   unstable_encodeRoutePath,
   unstable_encodeSliceId,
   unstable_getRouteSlotId,
@@ -44,6 +67,8 @@ import {
   useNavigationStatus_UNSTABLE as useNavigationStatus,
   useParams_UNSTABLE as useParams,
   useRouter,
+  useSearch_UNSTABLE as useSearch,
+  useSetSearch_UNSTABLE as useSetSearch,
 } from '../src/router/client.js';
 import {
   HAS404_ID,
@@ -51,6 +76,9 @@ import {
   ROUTE_ID,
   decodeRoutePath,
 } from '../src/router/isomorphic-utils/route-path.js';
+
+const spyPrefetchRoute = () =>
+  vi.spyOn(routerCaches, 'prefetchRoute').mockImplementation(() => {});
 
 const postsSearchCodec = {
   id: 'posts-test',
@@ -535,9 +563,9 @@ const renderRouter = async (
 ) => {
   testHoisted.elements = elements;
   return renderApp(
-    <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+    <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
       <Router {...(props || {})} />
-    </Unstable_SearchCodecsProvider>,
+    </SearchCodecsProvider_UNSTABLE>,
   );
 };
 
@@ -548,9 +576,9 @@ const renderRouterInStrictMode = async (
   testHoisted.elements = elements;
   return renderApp(
     <StrictMode>
-      <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+      <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
         <Router {...(props || {})} />
-      </Unstable_SearchCodecsProvider>
+      </SearchCodecsProvider_UNSTABLE>
     </StrictMode>,
   );
 };
@@ -592,6 +620,9 @@ beforeEach(() => {
   // shell so prefetchRoute's cache wiring has a promise to track.
   prefetchRsc.mockReturnValue(resolvedThenable({}));
   vi.mocked(Root).mockClear();
+  clearCaches();
+  clearRegisteredLazySlices();
+  resetSliceFetches();
 
   const IntersectionObserverMock = vi.fn(function (
     callback: IntersectionObserverCallback,
@@ -624,6 +655,8 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  const prefetch = routerCaches.prefetchRoute as { mockRestore?: () => void };
+  prefetch.mockRestore?.();
   vi.clearAllMocks();
 });
 
@@ -664,9 +697,9 @@ describe('router/client utilities', () => {
     } as const;
     await expect(
       renderApp(
-        <Unstable_SearchCodecsProvider searchCodecs={[a, b]}>
+        <SearchCodecsProvider_UNSTABLE searchCodecs={[a, b]}>
           <div />
-        </Unstable_SearchCodecsProvider>,
+        </SearchCodecsProvider_UNSTABLE>,
       ),
     ).rejects.toThrow(/Duplicate search codec id/);
   });
@@ -680,9 +713,9 @@ describe('router/client utilities', () => {
     const notCodec = { id: 3, first: 'react', last: 'js' };
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const view = await renderApp(
-      <Unstable_SearchCodecsProvider searchCodecs={{ codec, notCodec }}>
+      <SearchCodecsProvider_UNSTABLE searchCodecs={{ codec, notCodec }}>
         <div />
-      </Unstable_SearchCodecsProvider>,
+      </SearchCodecsProvider_UNSTABLE>,
     );
     expect(warn).toHaveBeenCalledWith(
       expect.stringContaining('not a search codec'),
@@ -791,7 +824,7 @@ describe('useRouter + Link with context', () => {
       capture.router = router;
     };
     const changeRoute = vi.fn(async () => {});
-    const prefetchRoute = vi.fn();
+    const prefetchRoute = spyPrefetchRoute();
 
     const Probe = () => {
       setRouter(useRouter() as unknown as RouterApi);
@@ -803,9 +836,6 @@ describe('useRouter + Link with context', () => {
         value={{
           route: { path: '/start', query: '', hash: '' },
           changeRoute,
-          prefetchRoute,
-          fetchingSlices: new Map<string, Promise<Record<string, unknown>>>(),
-          lazySliceIds: new Set<string>(),
         }}
       >
         <Probe />
@@ -897,19 +927,16 @@ describe('useRouter + Link with context', () => {
     };
 
     const view = await renderApp(
-      <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+      <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
         <RouterContext
           value={{
             route: { path: '/start', query: '', hash: '' },
             changeRoute,
-            prefetchRoute: vi.fn(),
-            fetchingSlices: new Map<string, Promise<Record<string, unknown>>>(),
-            lazySliceIds: new Set<string>(),
           }}
         >
           <Probe />
         </RouterContext>
-      </Unstable_SearchCodecsProvider>,
+      </SearchCodecsProvider_UNSTABLE>,
     );
 
     if (!capture.router) {
@@ -960,29 +987,23 @@ describe('useRouter + Link with context', () => {
     try {
       expect(import.meta.env.WAKU_CONFIG_BASE_PATH).toBe('/base/');
       const capture = { router: null as RouterApi | null };
-      const prefetchRoute = vi.fn();
+      const prefetchRoute = spyPrefetchRoute();
       const Probe = () => {
         capture.router = useRouter() as unknown as RouterApi;
         return null;
       };
 
       const view = await renderApp(
-        <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+        <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
           <RouterContext
             value={{
               route: { path: '/start', query: '', hash: '' },
               changeRoute: vi.fn(async () => {}),
-              prefetchRoute,
-              fetchingSlices: new Map<
-                string,
-                Promise<Record<string, unknown>>
-              >(),
-              lazySliceIds: new Set<string>(),
             }}
           >
             <Probe />
           </RouterContext>
-        </Unstable_SearchCodecsProvider>,
+        </SearchCodecsProvider_UNSTABLE>,
       );
 
       if (!capture.router) {
@@ -1030,17 +1051,14 @@ describe('useRouter + Link with context', () => {
     };
 
     const view = await renderApp(
-      <RouterContext
+      <RouterHostContext
         value={{
           route: { path: '/posts/a%20b', query: '', hash: '' },
-          changeRoute: vi.fn(async () => {}),
-          prefetchRoute: vi.fn(),
-          fetchingSlices: new Map<string, Promise<Record<string, unknown>>>(),
-          lazySliceIds: new Set<string>(),
+          navigate: async () => {},
         }}
       >
         <Probe />
-      </RouterContext>,
+      </RouterHostContext>,
     );
 
     expect(capture.params).toEqual({ slug: 'a b' });
@@ -1055,17 +1073,14 @@ describe('useRouter + Link with context', () => {
     };
 
     const view = await renderApp(
-      <RouterContext
+      <RouterHostContext
         value={{
           route: { path: '/about', query: '', hash: '' },
-          changeRoute: vi.fn(async () => {}),
-          prefetchRoute: vi.fn(),
-          fetchingSlices: new Map<string, Promise<Record<string, unknown>>>(),
-          lazySliceIds: new Set<string>(),
+          navigate: async () => {},
         }}
       >
         <Probe />
-      </RouterContext>,
+      </RouterHostContext>,
     );
 
     expect(capture.params).toBeNull();
@@ -1111,17 +1126,14 @@ describe('useRouter + Link with context', () => {
       });
       setRoute = setRouteState;
       return (
-        <RouterContext
+        <RouterHostContext
           value={{
             route,
-            changeRoute: vi.fn(async () => {}),
-            prefetchRoute: vi.fn(),
-            fetchingSlices: new Map<string, Promise<Record<string, unknown>>>(),
-            lazySliceIds: new Set<string>(),
+            navigate: async () => {},
           }}
         >
           <Probe />
-        </RouterContext>
+        </RouterHostContext>
       );
     };
 
@@ -1136,18 +1148,106 @@ describe('useRouter + Link with context', () => {
     view.unmount();
   });
 
+  test('useSearch and useSetSearch work under a bare RouterHost', async () => {
+    window.history.replaceState({}, '', '/outer#global');
+    const navigate = vi.fn(async () => {});
+    const capture = {
+      params: undefined as unknown,
+      search: undefined as unknown,
+    };
+    const Probe = () => {
+      capture.params = useParams({ from: '/posts/[slug]' });
+      capture.search = useSearch({ from: '/posts/[slug]' });
+      const setSearch = useSetSearch({ from: '/posts/[slug]' });
+      return (
+        <button
+          type="button"
+          onClick={() => {
+            void setSearch({ tab: 'x' }, { history: 'replace', scroll: true });
+          }}
+        >
+          set
+        </button>
+      );
+    };
+
+    const view = await renderApp(
+      <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
+        <RouterHostContext
+          value={{
+            route: {
+              path: '/posts/hello',
+              query: 'tab=comments',
+              hash: '#local',
+            },
+            navigate,
+          }}
+        >
+          <Probe />
+        </RouterHostContext>
+      </SearchCodecsProvider_UNSTABLE>,
+    );
+
+    expect(capture.params).toEqual({ slug: 'hello' });
+    expect(capture.search).toEqual({ tab: 'comments' });
+
+    await act(async () => {
+      view.container.querySelector('button')!.click();
+    });
+    expect(navigate).toHaveBeenCalledWith('/posts/hello?tab=x#local', {
+      history: 'replace',
+      scroll: true,
+    });
+
+    view.unmount();
+  });
+
+  test('useSetSearch is a no-op when the host path does not match', async () => {
+    const navigate = vi.fn(async () => {});
+    const Probe = () => {
+      const setSearch = useSetSearch({ from: '/posts/[slug]' });
+      return (
+        <button
+          type="button"
+          onClick={() => {
+            void setSearch({ tab: 'x' });
+          }}
+        >
+          set
+        </button>
+      );
+    };
+
+    const view = await renderApp(
+      <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
+        <RouterHostContext
+          value={{
+            route: { path: '/about', query: '', hash: '' },
+            navigate,
+          }}
+        >
+          <Probe />
+        </RouterHostContext>
+      </SearchCodecsProvider_UNSTABLE>,
+    );
+
+    await act(async () => {
+      view.container.querySelector('button')!.click();
+    });
+    expect(navigate).not.toHaveBeenCalled();
+
+    view.unmount();
+  });
+
   test('Link intercepts normal click and skips alt/defaultPrevented clicks', async () => {
     const changeRoute = vi.fn(async () => {});
-    const prefetchRoute = vi.fn();
+    const prefetchRoute = spyPrefetchRoute();
 
     const view = await renderApp(
       <RouterContext
         value={{
           route: { path: '/start', query: '', hash: '' },
           changeRoute,
-          prefetchRoute,
-          fetchingSlices: new Map<string, Promise<Record<string, unknown>>>(),
-          lazySliceIds: new Set<string>(),
         }}
       >
         <>
@@ -1208,7 +1308,6 @@ describe('useRouter + Link with context', () => {
 
   test('Link re-scrolls to the same hash on a repeated click', async () => {
     const changeRoute = vi.fn(async () => {});
-    const prefetchRoute = vi.fn();
     // Same href as the link's resolved target, so `internalOnClick` takes the
     // "no route change" path that previously bailed out entirely.
     window.history.replaceState({}, '', '/start#target');
@@ -1229,9 +1328,6 @@ describe('useRouter + Link with context', () => {
         value={{
           route: { path: '/start', query: '', hash: '#target' },
           changeRoute,
-          prefetchRoute,
-          fetchingSlices: new Map<string, Promise<Record<string, unknown>>>(),
-          lazySliceIds: new Set<string>(),
         }}
       >
         <Link to="/start#target" data-testid="hash-link">
@@ -1271,7 +1367,6 @@ describe('useRouter + Link with context', () => {
 
   test('Link with scroll={false} does not re-scroll on a same-hash click', async () => {
     const changeRoute = vi.fn(async () => {});
-    const prefetchRoute = vi.fn();
     window.history.replaceState({}, '', '/start#target');
 
     const scrollToSpy = vi.spyOn(window, 'scrollTo').mockImplementation(() => {
@@ -1286,9 +1381,6 @@ describe('useRouter + Link with context', () => {
         value={{
           route: { path: '/start', query: '', hash: '#target' },
           changeRoute,
-          prefetchRoute,
-          fetchingSlices: new Map<string, Promise<Record<string, unknown>>>(),
-          lazySliceIds: new Set<string>(),
         }}
       >
         <Link to="/start#target" scroll={false} data-testid="hash-link">
@@ -1321,7 +1413,7 @@ describe('useRouter + Link with context', () => {
 
   test('Link intercepts external, target, and download clicks', async () => {
     const changeRoute = vi.fn(async () => {});
-    const prefetchRoute = vi.fn();
+    const prefetchRoute = spyPrefetchRoute();
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     const view = await renderApp(
@@ -1329,9 +1421,6 @@ describe('useRouter + Link with context', () => {
         value={{
           route: { path: '/start', query: '', hash: '' },
           changeRoute,
-          prefetchRoute,
-          fetchingSlices: new Map<string, Promise<Record<string, unknown>>>(),
-          lazySliceIds: new Set<string>(),
         }}
       >
         <>
@@ -1396,7 +1485,7 @@ describe('useRouter + Link with context', () => {
   });
 
   test('Link handles prefetchOnEnter and prefetchOnView', async () => {
-    const prefetchRoute = vi.fn();
+    const prefetchRoute = spyPrefetchRoute();
     const onMouseEnter = vi.fn();
 
     const view = await renderApp(
@@ -1404,9 +1493,6 @@ describe('useRouter + Link with context', () => {
         value={{
           route: { path: '/start', query: '', hash: '' },
           changeRoute: vi.fn(async () => {}),
-          prefetchRoute,
-          fetchingSlices: new Map<string, Promise<Record<string, unknown>>>(),
-          lazySliceIds: new Set<string>(),
         }}
       >
         <Link
@@ -1454,16 +1540,11 @@ describe('useRouter + Link with context', () => {
   });
 
   test('Link attaches prefetchOnView observer when enabled after mount', async () => {
-    const prefetchRoute = vi.fn();
-
     const view = await renderApp(
       <RouterContext
         value={{
           route: { path: '/start', query: '', hash: '' },
           changeRoute: vi.fn(async () => {}),
-          prefetchRoute,
-          fetchingSlices: new Map<string, Promise<Record<string, unknown>>>(),
-          lazySliceIds: new Set<string>(),
         }}
       >
         <PrefetchOnViewToggleLink />
@@ -1498,9 +1579,6 @@ describe('useRouter + Link with context', () => {
     const contextValue = {
       route: { path: '/start', query: '', hash: '' },
       changeRoute: vi.fn(async () => {}),
-      prefetchRoute: vi.fn(),
-      fetchingSlices: new Map<string, Promise<Record<string, unknown>>>(),
-      lazySliceIds: new Set<string>(),
     };
 
     const objectRef: { current: HTMLAnchorElement | null } = { current: null };
@@ -1539,9 +1617,6 @@ describe('useRouter + Link with context', () => {
         value={{
           route: { path: '/start', query: '', hash: '' },
           changeRoute: vi.fn(async () => {}),
-          prefetchRoute: vi.fn(),
-          fetchingSlices: new Map<string, Promise<Record<string, unknown>>>(),
-          lazySliceIds: new Set<string>(),
         }}
       >
         <Link to="/next" ref={callbackRef}>
@@ -1562,62 +1637,32 @@ describe('useRouter + Link with context', () => {
 });
 
 describe('Slice', () => {
-  test('throws without a Router', async () => {
-    await expect(renderApp(<Slice id="slice-1" />)).rejects.toThrow(
-      'Missing Router',
-    );
-  });
-
-  test('renders existing slice slot', async () => {
+  test('renders without a Router', async () => {
     const slotId = unstable_getSliceSlotId('slice-1');
     const elements = {
       [slotId]: <div data-testid="slice">slice-content</div>,
     };
 
-    const view = await renderWithMinimalRoot(
-      <RouterContext
-        value={{
-          route: { path: '/start', query: '', hash: '' },
-          changeRoute: vi.fn(async () => {}),
-          prefetchRoute: vi.fn(),
-          fetchingSlices: new Map<string, Promise<Record<string, unknown>>>(),
-          lazySliceIds: new Set<string>(),
-        }}
-      >
-        <Slice id="slice-1" />
-      </RouterContext>,
-      elements,
-    );
+    const view = await renderWithMinimalRoot(<Slice id="slice-1" />, elements);
 
     expect(view.container.textContent).toContain('slice-content');
     view.unmount();
   });
 
   test('lazy slice fetches once, dedupes, and clears the request on completion', async () => {
-    const fetchingSlices = new Map<string, Promise<Record<string, unknown>>>();
     const view = await renderWithMinimalRoot(
-      <RouterContext
-        value={{
-          route: { path: '/start', query: '', hash: '' },
-          changeRoute: vi.fn(async () => {}),
-          prefetchRoute: vi.fn(),
-          fetchingSlices,
-          lazySliceIds: new Set<string>(),
-        }}
-      >
-        <>
-          <Slice
-            id="slice-1"
-            lazy
-            fallback={<div data-testid="fallback-1">loading 1</div>}
-          />
-          <Slice
-            id="slice-1"
-            lazy
-            fallback={<div data-testid="fallback-2">loading 2</div>}
-          />
-        </>
-      </RouterContext>,
+      <>
+        <Slice
+          id="slice-1"
+          lazy
+          fallback={<div data-testid="fallback-1">loading 1</div>}
+        />
+        <Slice
+          id="slice-1"
+          lazy
+          fallback={<div data-testid="fallback-2">loading 2</div>}
+        />
+      </>,
       {},
     );
 
@@ -1627,9 +1672,127 @@ describe('Slice', () => {
     expect(refetch).toHaveBeenCalledTimes(1);
     expect(refetch).toHaveBeenCalledWith(unstable_encodeSliceId('slice-1'));
     // released when it settles, so the slice can be fetched again later
-    expect(fetchingSlices.size).toBe(0);
+    expect(getInFlightSliceCount()).toBe(0);
 
     view.unmount();
+  });
+
+  test('lazy slice fetch is shared across independent roots; both stores receive the merge', async () => {
+    const slotId = unstable_getSliceSlotId('slice-1');
+    const pending = createDeferred<Record<string, unknown>>();
+    const refetch = installRefetch(vi.fn<RefetchInner>(() => pending.promise));
+
+    const view = await renderApp(
+      <>
+        <div data-testid="root-a">
+          <Root initialRscPath="">
+            <Slice
+              id="slice-1"
+              lazy
+              fallback={<div data-testid="fallback-a">fallback-a</div>}
+            />
+          </Root>
+        </div>
+        <div data-testid="root-b">
+          <Root initialRscPath="">
+            <Slice
+              id="slice-1"
+              lazy
+              fallback={<div data-testid="fallback-b">fallback-b</div>}
+            />
+          </Root>
+        </div>
+      </>,
+    );
+
+    expect(view.container.textContent).toContain('fallback-a');
+    expect(view.container.textContent).toContain('fallback-b');
+    expect(refetch).toHaveBeenCalledTimes(1);
+    expect(refetch).toHaveBeenCalledWith(unstable_encodeSliceId('slice-1'));
+    expect(getInFlightSliceCount()).toBe(1);
+
+    await act(async () => {
+      pending.resolve({
+        [slotId]: <div data-testid="slice-body">slice-content</div>,
+      });
+    });
+
+    expect(
+      view.container.querySelector('[data-testid="root-a"]')?.textContent,
+    ).toContain('slice-content');
+    expect(
+      view.container.querySelector('[data-testid="root-b"]')?.textContent,
+    ).toContain('slice-content');
+    expect(getInFlightSliceCount()).toBe(0);
+
+    view.unmount();
+  });
+
+  test('replace slice fetch is shared across independent callers; both merges receive the result', async () => {
+    const pending = createDeferred<Record<string, unknown>>();
+    const refetch = installRefetch(
+      vi.fn<RefetchInner>(async () => pending.promise),
+    );
+    const mergeA = vi.fn(async (data: Record<string, unknown>) => data);
+    const mergeB = vi.fn(async (data: Record<string, unknown>) => data);
+
+    fetchSlice('slice-1', mergeA as Parameters<typeof fetchSlice>[1], {
+      replace: true,
+    });
+    fetchSlice('slice-1', mergeB as Parameters<typeof fetchSlice>[1], {
+      replace: true,
+    });
+
+    expect(refetch).toHaveBeenCalledTimes(1);
+    expect(refetch).toHaveBeenCalledWith(unstable_encodeSliceId('slice-1'));
+    expect(getInFlightSliceCount()).toBe(1);
+
+    await act(async () => {
+      pending.resolve({
+        [unstable_getSliceSlotId('slice-1')]: (
+          <div data-testid="slice-body">slice-content</div>
+        ),
+      });
+    });
+
+    expect(mergeA).toHaveBeenCalledTimes(1);
+    expect(mergeB).toHaveBeenCalledTimes(1);
+    expect(getInFlightSliceCount()).toBe(0);
+  });
+
+  test('a replace slice fetch does not adopt an in-flight non-replace fetch', async () => {
+    const stale = createDeferred<Record<string, unknown>>();
+    const fresh = createDeferred<Record<string, unknown>>();
+    let calls = 0;
+    const refetch = installRefetch(
+      vi.fn<RefetchInner>(async () => {
+        calls += 1;
+        return calls === 1 ? stale.promise : fresh.promise;
+      }),
+    );
+    const mergeLazy = vi.fn(async (data: Record<string, unknown>) => data);
+    const mergeHmr = vi.fn(async (data: Record<string, unknown>) => data);
+    const slotId = unstable_getSliceSlotId('slice-1');
+
+    fetchSlice('slice-1', mergeLazy as Parameters<typeof fetchSlice>[1]);
+    fetchSlice('slice-1', mergeHmr as Parameters<typeof fetchSlice>[1], {
+      replace: true,
+    });
+
+    expect(refetch).toHaveBeenCalledTimes(2);
+    expect(getInFlightSliceCount()).toBe(1);
+
+    await act(async () => {
+      stale.resolve({ [slotId]: 'stale' });
+    });
+    expect(mergeHmr).not.toHaveBeenCalled();
+
+    await act(async () => {
+      fresh.resolve({ [slotId]: 'fresh' });
+    });
+    expect(mergeHmr).toHaveBeenCalledTimes(1);
+    expect(mergeHmr.mock.calls[0]?.[0]).toEqual({ [slotId]: 'fresh' });
+    expect(getInFlightSliceCount()).toBe(0);
   });
 
   test('lazy slice skips fetch when static element exists', async () => {
@@ -1640,17 +1803,7 @@ describe('Slice', () => {
     };
 
     const view = await renderWithMinimalRoot(
-      <RouterContext
-        value={{
-          route: { path: '/start', query: '', hash: '' },
-          changeRoute: vi.fn(async () => {}),
-          prefetchRoute: vi.fn(),
-          fetchingSlices: new Map<string, Promise<Record<string, unknown>>>(),
-          lazySliceIds: new Set<string>(),
-        }}
-      >
-        <Slice id="slice-1" lazy fallback={<div>fallback</div>} />
-      </RouterContext>,
+      <Slice id="slice-1" lazy fallback={<div>fallback</div>} />,
       elements,
     );
 
@@ -1669,17 +1822,7 @@ describe('Slice', () => {
     };
 
     const view = await renderWithMinimalRoot(
-      <RouterContext
-        value={{
-          route: { path: '/start', query: '', hash: '' },
-          changeRoute: vi.fn(async () => {}),
-          prefetchRoute: vi.fn(),
-          fetchingSlices: new Map<string, Promise<Record<string, unknown>>>(),
-          lazySliceIds: new Set<string>(),
-        }}
-      >
-        <Slice id="slice-1" lazy fallback={<div>fallback</div>} />
-      </RouterContext>,
+      <Slice id="slice-1" lazy fallback={<div>fallback</div>} />,
       elements,
     );
 
@@ -1692,25 +1835,13 @@ describe('Slice', () => {
   });
 
   test('logs refetch failures and clears the request', async () => {
-    const fetchingSlices = new Map<string, Promise<Record<string, unknown>>>();
-
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const refetch = vi.fn<RefetchInner>(async () => ({}));
     refetch.mockRejectedValueOnce(new Error('slice failed'));
     installRefetch(refetch);
 
     const view = await renderWithMinimalRoot(
-      <RouterContext
-        value={{
-          route: { path: '/start', query: '', hash: '' },
-          changeRoute: vi.fn(async () => {}),
-          prefetchRoute: vi.fn(),
-          fetchingSlices,
-          lazySliceIds: new Set<string>(),
-        }}
-      >
-        <Slice id="slice-1" lazy fallback={<div>fallback</div>} />
-      </RouterContext>,
+      <Slice id="slice-1" lazy fallback={<div>fallback</div>} />,
       {},
     );
 
@@ -1719,7 +1850,7 @@ describe('Slice', () => {
       expect.any(Error),
     );
     // a failed fetch releases the id too, so a retry is possible
-    expect(fetchingSlices.size).toBe(0);
+    expect(getInFlightSliceCount()).toBe(0);
 
     view.unmount();
   });
@@ -1768,6 +1899,27 @@ describe('Router integration', () => {
     expect(initialParams!.get('query')).toBe('a=1');
     expect(capture.router?.hash).toBe('#hash');
 
+    view.unmount();
+  });
+
+  test('Router provides a host whose own keys are exactly route and navigate', async () => {
+    const capture = { keys: undefined as PropertyKey[] | undefined };
+    const Probe = () => {
+      capture.keys = Reflect.ownKeys(useRouterHost());
+      return null;
+    };
+
+    const view = await renderRouter(
+      {
+        initialRoute: { path: '/start', query: '', hash: '' },
+      },
+      {
+        [unstable_getRouteSlotId('/start')]: <Probe />,
+        [ROUTE_ID]: ['/start', ''],
+      },
+    );
+
+    expect(capture.keys).toEqual(['route', 'navigate']);
     view.unmount();
   });
 
@@ -1876,6 +2028,34 @@ describe('Router integration', () => {
       view.unmount();
     } finally {
       vi.stubEnv('WAKU_CONFIG_BASE_PATH', '/');
+    }
+  });
+
+  test('a server function route update commits synchronously in the dispatch', async () => {
+    const view = await renderRouter(
+      { initialRoute: { path: '/start', query: '', hash: '' } },
+      {
+        [unstable_getRouteSlotId('/start')]: <div>start</div>,
+        [unstable_getRouteSlotId('/next')]: <div>next</div>,
+        [ROUTE_ID]: ['/start', ''],
+        [IS_STATIC_ID]: false,
+      },
+    );
+    try {
+      const store = fetchRscStore as unknown as Record<string, unknown>;
+      const listeners = store.l as Set<
+        (elements: Record<string, unknown>) => void
+      >;
+      expect(listeners.size).toBe(1);
+      testHoisted.mergeTypes.length = 0;
+      await act(async () => {
+        for (const listener of listeners) {
+          listener({ [ROUTE_ID]: ['/next', ''], [IS_STATIC_ID]: false });
+        }
+        expect(testHoisted.mergeTypes).toEqual(['sync']);
+      });
+    } finally {
+      view.unmount();
     }
   });
 
@@ -3224,9 +3404,9 @@ describe('Router integration', () => {
       .mockImplementation(() => {});
     const view = await renderApp(
       <ErrorBoundary>
-        <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+        <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
           <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
-        </Unstable_SearchCodecsProvider>
+        </SearchCodecsProvider_UNSTABLE>
       </ErrorBoundary>,
     );
     try {
@@ -3280,6 +3460,168 @@ describe('Router integration', () => {
 
     expect(refetch).not.toHaveBeenCalled();
     expect(capture.router.query).toBe('x=2');
+
+    view.unmount();
+  });
+
+  test('a second root fetches a static route it has never loaded', async () => {
+    const captureA = { router: null as RouterApi | null };
+    const captureB = { router: null as RouterApi | null };
+    const CaptureContext = createContext<{
+      router: RouterApi | null;
+    } | null>(null);
+    const Probe = () => {
+      const capture = useContext(CaptureContext);
+      const router = useRouter() as unknown as RouterApi;
+      if (capture) {
+        capture.router = router;
+      }
+      return <div data-testid="route-probe">{router.path}</div>;
+    };
+    const staticSlot = unstable_getRouteSlotId('/static');
+    const refetch = installRefetch(
+      vi.fn<RefetchInner>(async (rscPath) => {
+        if (rscPath === unstable_encodeRoutePath('/static')) {
+          return {
+            [staticSlot]: <div data-testid="page-static">static-content</div>,
+            [ROUTE_ID]: ['/static', ''],
+            [IS_STATIC_ID]: true,
+          };
+        }
+        return {};
+      }),
+    );
+
+    testHoisted.elements = {
+      root: (
+        <>
+          <Probe />
+          <Children />
+        </>
+      ),
+      [unstable_getRouteSlotId('/start')]: (
+        <div data-testid="page-start">start</div>
+      ),
+      [unstable_getRouteSlotId('/other')]: (
+        <div data-testid="page-other">other</div>
+      ),
+    };
+
+    const view = await renderApp(
+      <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
+        <div data-testid="root-a">
+          <CaptureContext value={captureA}>
+            <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
+          </CaptureContext>
+        </div>
+        <div data-testid="root-b">
+          <CaptureContext value={captureB}>
+            <Router initialRoute={{ path: '/other', query: '', hash: '' }} />
+          </CaptureContext>
+        </div>
+      </SearchCodecsProvider_UNSTABLE>,
+    );
+
+    expect(captureA.router).toBeTruthy();
+    expect(captureB.router).toBeTruthy();
+
+    await act(async () => {
+      await captureA.router!.push('/static');
+    });
+    await flush();
+
+    expect(
+      view.container.querySelector('[data-testid="root-a"]')?.textContent,
+    ).toContain('static-content');
+    const callsAfterA = refetch.mock.calls.length;
+    expect(callsAfterA).toBeGreaterThan(0);
+
+    await act(async () => {
+      await captureB.router!.push('/static');
+    });
+    await flush();
+
+    expect(
+      view.container.querySelector('[data-testid="root-b"]')?.textContent,
+    ).toContain('static-content');
+    expect(refetch.mock.calls.length).toBeGreaterThan(callsAfterA);
+
+    view.unmount();
+  });
+
+  test('a second root prefetches a static route it has never loaded', async () => {
+    const captureA = { router: null as RouterApi | null };
+    const captureB = { router: null as RouterApi | null };
+    const CaptureContext = createContext<{
+      router: RouterApi | null;
+    } | null>(null);
+    const Probe = () => {
+      const capture = useContext(CaptureContext);
+      const router = useRouter() as unknown as RouterApi;
+      if (capture) {
+        capture.router = router;
+      }
+      return <div data-testid="route-probe">{router.path}</div>;
+    };
+    const staticSlot = unstable_getRouteSlotId('/static');
+    installRefetch(
+      vi.fn<RefetchInner>(async (rscPath) => {
+        if (rscPath === unstable_encodeRoutePath('/static')) {
+          return {
+            [staticSlot]: <div data-testid="page-static">static-content</div>,
+            [ROUTE_ID]: ['/static', ''],
+            [IS_STATIC_ID]: true,
+          };
+        }
+        return {};
+      }),
+    );
+
+    testHoisted.elements = {
+      root: (
+        <>
+          <Probe />
+          <Children />
+        </>
+      ),
+      [unstable_getRouteSlotId('/start')]: (
+        <div data-testid="page-start">start</div>
+      ),
+      [unstable_getRouteSlotId('/other')]: (
+        <div data-testid="page-other">other</div>
+      ),
+    };
+
+    const view = await renderApp(
+      <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
+        <div data-testid="root-a">
+          <CaptureContext value={captureA}>
+            <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
+          </CaptureContext>
+        </div>
+        <div data-testid="root-b">
+          <CaptureContext value={captureB}>
+            <Router initialRoute={{ path: '/other', query: '', hash: '' }} />
+          </CaptureContext>
+        </div>
+      </SearchCodecsProvider_UNSTABLE>,
+    );
+
+    await act(async () => {
+      await captureA.router!.push('/static');
+    });
+    await flush();
+
+    expect(
+      view.container.querySelector('[data-testid="root-a"]')?.textContent,
+    ).toContain('static-content');
+    // B has never loaded /static, so the shared set must not skip this
+    expect(prefetchRsc).not.toHaveBeenCalled();
+    captureB.router!.prefetch('/static');
+    expect(prefetchRsc).toHaveBeenCalled();
+    expect(prefetchRsc.mock.calls[0]?.[0]).toBe(
+      unstable_encodeRoutePath('/static'),
+    );
 
     view.unmount();
   });
@@ -3450,15 +3792,12 @@ describe('Router integration', () => {
   });
 
   test('a hover prefetch skips a link that only adds a hash', async () => {
-    const prefetchRoute = vi.fn();
+    const prefetchRoute = spyPrefetchRoute();
     const view = await renderApp(
       <RouterContext
         value={{
           route: { path: '/start', query: '', hash: '' },
           changeRoute: vi.fn(async () => {}),
-          prefetchRoute,
-          fetchingSlices: new Map<string, Promise<Record<string, unknown>>>(),
-          lazySliceIds: new Set<string>(),
         }}
       >
         <Link to="/start#target" unstable_prefetchOnEnter={{}}>
@@ -3482,15 +3821,12 @@ describe('Router integration', () => {
   test('a hover prefetch compares with the route on screen, not the address bar', async () => {
     // an interceptor or a failed navigation leaves the two apart
     window.history.replaceState({}, '', '/blocked');
-    const prefetchRoute = vi.fn();
+    const prefetchRoute = spyPrefetchRoute();
     const view = await renderApp(
       <RouterContext
         value={{
           route: { path: '/start', query: '', hash: '' },
           changeRoute: vi.fn(async () => {}),
-          prefetchRoute,
-          fetchingSlices: new Map<string, Promise<Record<string, unknown>>>(),
-          lazySliceIds: new Set<string>(),
         }}
       >
         <Link to="/start#target" unstable_prefetchOnEnter={{}}>
@@ -3866,9 +4202,9 @@ describe('Router integration', () => {
       ),
     };
     const view = await renderApp(
-      <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+      <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
         <Router initialRoute={{ path: '/start', query: 'a=1', hash: '#top' }} />
-      </Unstable_SearchCodecsProvider>,
+      </SearchCodecsProvider_UNSTABLE>,
     );
     try {
       historyPushSpy.mockClear();
@@ -3961,6 +4297,150 @@ describe('Router integration', () => {
       expect(window.location.pathname).toBe('/final');
       expect(window.history.length).toBe(lengthBefore + 1);
     } finally {
+      view.unmount();
+    }
+  });
+
+  test('an adopted instant landing does not merge a settle patch', async () => {
+    const pending = createDeferred<Record<string, unknown>>();
+    const refetch = vi.fn<RefetchInner>(() => pending.promise);
+    installRefetch(refetch);
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const scrollToSpy = vi.spyOn(window, 'scrollTo').mockImplementation(() => {
+      return;
+    });
+    const view = await renderRouter(
+      { initialRoute: { path: '/start', query: '', hash: '' } },
+      {
+        ...instantNavElements(),
+        [unstable_getRouteSlotId('/start')]: <Probe />,
+        [unstable_getRouteSlotId('/next')]: <Probe />,
+      },
+    );
+    try {
+      let pushed: Promise<void> | undefined;
+      await act(async () => {
+        pushed = capture.router!.push('/next', { unstable_instant: true });
+        await flush();
+      });
+      expect(window.location.pathname).toBe('/next');
+      expect(scrollToSpy).toHaveBeenCalled();
+      scrollToSpy.mockClear();
+      testHoisted.mergeTypes.length = 0;
+
+      await act(async () => {
+        pending.resolve({ [ROUTE_ID]: ['/next', ''], [IS_STATIC_ID]: true });
+        await pushed;
+        await flush();
+      });
+
+      expect(testHoisted.mergeTypes).toEqual(['swr']);
+      expect(scrollToSpy).not.toHaveBeenCalled();
+    } finally {
+      scrollToSpy.mockRestore();
+      view.unmount();
+    }
+  });
+
+  test('a failed instant nav restores pre-paint route meta', async () => {
+    const pending = createDeferred<Record<string, unknown>>();
+    installRefetch(vi.fn<RefetchInner>(() => pending.promise));
+    const capture = {
+      router: null as RouterApi | null,
+      routeId: undefined as unknown,
+      isStatic: undefined as unknown,
+    };
+    const Probe = () => {
+      const elements = use(useElementsPromise());
+      capture.routeId = elements[ROUTE_ID];
+      capture.isStatic = elements[IS_STATIC_ID];
+      capture.router = useRouter() as unknown as RouterApi;
+      return null;
+    };
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    testHoisted.elements = {
+      ...instantNavElements(),
+      [ROUTE_ID]: ['/start', 'a=1'],
+      [IS_STATIC_ID]: false,
+      root: (
+        <>
+          <Probe />
+          <ErrorBoundary>
+            <Children />
+          </ErrorBoundary>
+        </>
+      ),
+    };
+    const view = await renderApp(
+      <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
+        <Router initialRoute={{ path: '/start', query: 'a=1', hash: '' }} />
+      </SearchCodecsProvider_UNSTABLE>,
+    );
+    try {
+      let navigation: Promise<void> | undefined;
+      await act(async () => {
+        navigation = capture.router!.push('/next', { unstable_instant: true });
+        await flush();
+      });
+      expect(capture.routeId).toEqual(['/next', '']);
+
+      await act(async () => {
+        pending.reject(new Error('offline'));
+        await expect(navigation).rejects.toThrow('offline');
+        await flush();
+      });
+
+      expect(capture.routeId).toEqual(['/start', 'a=1']);
+      expect(capture.isStatic).toBe(false);
+      expect(capture.router).toMatchObject({ path: '/next' });
+    } finally {
+      consoleErrorSpy.mockRestore();
+      view.unmount();
+    }
+  });
+
+  test('a follow after an instant paint commits with replace', async () => {
+    const refetch = vi.fn<RefetchInner>();
+    refetch
+      .mockRejectedValueOnce(
+        createCustomError('moved', { status: 307, location: '/final' }),
+      )
+      .mockResolvedValueOnce({
+        [ROUTE_ID]: ['/final', ''],
+        [IS_STATIC_ID]: false,
+      });
+    installRefetch(refetch);
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const historyPushSpy = vi.spyOn(window.history, 'pushState');
+    const historyReplaceSpy = vi.spyOn(window.history, 'replaceState');
+    const view = await renderRouter(
+      { initialRoute: { path: '/start', query: '', hash: '' } },
+      {
+        ...instantNavElements(),
+        [unstable_getRouteSlotId('/start')]: <Probe />,
+        [unstable_getRouteSlotId('/next')]: <Probe />,
+        [unstable_getRouteSlotId('/final')]: <Probe />,
+      },
+    );
+    try {
+      historyPushSpy.mockClear();
+      historyReplaceSpy.mockClear();
+      await act(async () => {
+        await capture.router!.push('/next', { unstable_instant: true });
+        await flush();
+      });
+
+      expect(capture.router?.path).toBe('/final');
+      expect(window.location.pathname).toBe('/final');
+      expect(historyPushSpy).toHaveBeenCalledTimes(1);
+      expect(historyReplaceSpy).toHaveBeenCalled();
+    } finally {
+      historyPushSpy.mockRestore();
+      historyReplaceSpy.mockRestore();
       view.unmount();
     }
   });
@@ -4297,9 +4777,9 @@ describe('Router integration', () => {
       const [, setN] = useState(0);
       bump.fn = () => setN((n) => n + 1);
       return (
-        <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+        <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
           <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
-        </Unstable_SearchCodecsProvider>
+        </SearchCodecsProvider_UNSTABLE>
       );
     };
     testHoisted.elements = {
@@ -5234,9 +5714,9 @@ describe('Router integration', () => {
     };
     const view = await renderApp(
       <ErrorBoundary>
-        <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+        <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
           <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
-        </Unstable_SearchCodecsProvider>
+        </SearchCodecsProvider_UNSTABLE>
       </ErrorBoundary>,
     );
     if (!capture.router) {
@@ -5305,9 +5785,9 @@ describe('Router integration', () => {
       .mockImplementation(() => {});
     const view = await renderApp(
       <ErrorBoundary>
-        <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+        <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
           <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
-        </Unstable_SearchCodecsProvider>
+        </SearchCodecsProvider_UNSTABLE>
       </ErrorBoundary>,
     );
     try {
@@ -5804,11 +6284,11 @@ describe('Router integration', () => {
       .mockImplementation(() => {});
     testHoisted.elements = elements;
     const view = await renderApp(
-      <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+      <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
         <ErrorBoundary>
           <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
         </ErrorBoundary>
-      </Unstable_SearchCodecsProvider>,
+      </SearchCodecsProvider_UNSTABLE>,
     );
     if (!capture.router) {
       throw new Error('router not initialized');
@@ -5863,11 +6343,11 @@ describe('Router integration', () => {
       .spyOn(console, 'error')
       .mockImplementation(() => {});
     const view = await renderApp(
-      <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+      <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
         <ErrorBoundary>
           <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
         </ErrorBoundary>
-      </Unstable_SearchCodecsProvider>,
+      </SearchCodecsProvider_UNSTABLE>,
     );
     try {
       await act(async () => {
@@ -5915,11 +6395,11 @@ describe('Router integration', () => {
       .spyOn(console, 'error')
       .mockImplementation(() => {});
     const view = await renderApp(
-      <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+      <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
         <ErrorBoundary>
           <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
         </ErrorBoundary>
-      </Unstable_SearchCodecsProvider>,
+      </SearchCodecsProvider_UNSTABLE>,
     );
     try {
       await act(async () => {
@@ -6028,9 +6508,9 @@ describe('Router integration', () => {
       .mockImplementation(() => {});
     const view = await renderApp(
       <ErrorBoundary>
-        <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+        <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
           <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
-        </Unstable_SearchCodecsProvider>
+        </SearchCodecsProvider_UNSTABLE>
       </ErrorBoundary>,
     );
     try {
@@ -6651,9 +7131,9 @@ describe('Router integration', () => {
       .mockImplementation(() => {});
     const view = await renderApp(
       <ErrorBoundary>
-        <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+        <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
           <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
-        </Unstable_SearchCodecsProvider>
+        </SearchCodecsProvider_UNSTABLE>
       </ErrorBoundary>,
     );
     try {
@@ -6701,9 +7181,9 @@ describe('Router integration', () => {
       .spyOn(console, 'error')
       .mockImplementation(() => {});
     const view = await renderApp(
-      <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+      <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
         <Router initialRoute={{ path: '/list', query: '', hash: '' }} />
-      </Unstable_SearchCodecsProvider>,
+      </SearchCodecsProvider_UNSTABLE>,
     );
     try {
       await act(async () => {
@@ -6751,9 +7231,9 @@ describe('Router integration', () => {
       .spyOn(console, 'error')
       .mockImplementation(() => {});
     const view = await renderApp(
-      <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+      <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
         <Router initialRoute={{ path: '/list', query: '', hash: '' }} />
-      </Unstable_SearchCodecsProvider>,
+      </SearchCodecsProvider_UNSTABLE>,
     );
     try {
       await act(async () => {
@@ -7009,9 +7489,9 @@ describe('Router integration', () => {
       .mockImplementation(() => {});
     const view = await renderApp(
       <ErrorBoundary>
-        <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+        <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
           <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
-        </Unstable_SearchCodecsProvider>
+        </SearchCodecsProvider_UNSTABLE>
       </ErrorBoundary>,
     );
     try {
@@ -7331,10 +7811,10 @@ describe('Router integration', () => {
     const initialRoute = { path: '/start', query: '', hash: '' };
     const view = await renderApp(
       <StrictMode>
-        <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+        <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
           <Router initialRoute={initialRoute} />
           <Router initialRoute={initialRoute} />
-        </Unstable_SearchCodecsProvider>
+        </SearchCodecsProvider_UNSTABLE>
       </StrictMode>,
     );
     await flush();
@@ -7637,9 +8117,9 @@ describe('Router integration', () => {
     try {
       const view = await renderApp(
         <ErrorBoundary>
-          <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+          <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
             <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
-          </Unstable_SearchCodecsProvider>
+          </SearchCodecsProvider_UNSTABLE>
         </ErrorBoundary>,
       );
       await flush();
@@ -7759,9 +8239,9 @@ describe('Router integration', () => {
       .mockImplementation(() => {});
     const view = await renderApp(
       <ErrorBoundary>
-        <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+        <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
           <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
-        </Unstable_SearchCodecsProvider>
+        </SearchCodecsProvider_UNSTABLE>
       </ErrorBoundary>,
     );
     try {
@@ -7811,11 +8291,11 @@ describe('Router integration', () => {
       .spyOn(console, 'error')
       .mockImplementation(() => {});
     const view = await renderApp(
-      <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+      <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
         <ErrorBoundary>
           <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
         </ErrorBoundary>
-      </Unstable_SearchCodecsProvider>,
+      </SearchCodecsProvider_UNSTABLE>,
     );
     try {
       for (let i = 0; i < 110; i += 1) {
@@ -7869,9 +8349,9 @@ describe('Router integration', () => {
     try {
       const view = await renderApp(
         <ErrorBoundary>
-          <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+          <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
             <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
-          </Unstable_SearchCodecsProvider>
+          </SearchCodecsProvider_UNSTABLE>
         </ErrorBoundary>,
       );
       await flush();
@@ -7917,9 +8397,9 @@ describe('Router integration', () => {
     try {
       const view = await renderApp(
         <ErrorBoundary>
-          <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+          <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
             <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
-          </Unstable_SearchCodecsProvider>
+          </SearchCodecsProvider_UNSTABLE>
         </ErrorBoundary>,
       );
       await flush();
@@ -8113,9 +8593,9 @@ describe('Router integration', () => {
       .mockImplementation(() => {});
     const view = await renderApp(
       <ErrorBoundary>
-        <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+        <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
           <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
-        </Unstable_SearchCodecsProvider>
+        </SearchCodecsProvider_UNSTABLE>
       </ErrorBoundary>,
     );
     try {
@@ -8567,9 +9047,7 @@ describe('INTERNAL_ServerRouter', () => {
     await expect(capture.router!.push('/next')).rejects.toThrow(
       'changeRoute is not in the server',
     );
-    expect(() => capture.router!.prefetch('/next')).toThrow(
-      'prefetchRoute is not in the server',
-    );
+    expect(() => capture.router!.prefetch('/next')).not.toThrow();
 
     view.unmount();
   });

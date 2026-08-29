@@ -23,7 +23,7 @@ declare module '../src/router/base-types.js' {
   }
 }
 
-// A codec resolver, as push/Link build it from <Unstable_SearchCodecsProvider>.
+// A codec resolver, as push/Link build it from <SearchCodecsProvider_UNSTABLE>.
 const resolveCodec = (routePath: string) =>
   routePath === '/href-search' || routePath === '/p/[slug]' ? codec : undefined;
 

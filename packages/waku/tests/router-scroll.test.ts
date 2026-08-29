@@ -5,7 +5,7 @@ import {
   scrollToHash,
   shouldScrollByDefault,
   shouldScrollForRouteChange,
-} from '../src/router/client-utils/scroll.js';
+} from '../src/router/client-core-utils/scroll.js';
 
 beforeEach(() => {
   vi.stubEnv('WAKU_CONFIG_BASE_PATH', '/');

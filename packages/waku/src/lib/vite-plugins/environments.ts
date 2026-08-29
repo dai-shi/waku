@@ -129,7 +129,12 @@ export function environmentsPlugin(config: Required<Config>): Plugin {
           noExternal: env.command === 'build' ? true : [PKG_NAME],
         },
         optimizeDeps: {
-          exclude: [PKG_NAME, 'waku/minimal/client', 'waku/router/client'],
+          exclude: [
+            PKG_NAME,
+            'waku/minimal/client',
+            'waku/router/client',
+            'waku/router/client-core',
+          ],
         },
       };
     },

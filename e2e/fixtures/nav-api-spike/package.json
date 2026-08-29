@@ -1,0 +1,23 @@
+{
+  "name": "nav-api-spike",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "waku dev",
+    "build": "waku build",
+    "start": "waku start"
+  },
+  "dependencies": {
+    "hono": "^4.12.14",
+    "react": "~19.2.8",
+    "react-dom": "~19.2.8",
+    "react-server-dom-webpack": "~19.2.8",
+    "waku": "latest"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
+    "typescript": "^6.0.3"
+  }
+}

@@ -1,7 +1,3 @@
-// Router-scoped cache of prefetched route trees. Keyed by (rscPath, query) so a
-// prefetch for one query is never reused for another, and bounded by a ttl and a
-// size limit so hover-prefetching in a long session cannot grow without bound.
-
 type Elements = Record<string | symbol, unknown>;
 
 export type PrefetchMode = 'always' | 'once';
@@ -16,16 +12,12 @@ export type PrefetchOptions = {
 export type PrefetchEntry = {
   promise: Promise<Elements>;
   expireAt: number;
-  onInvalidate: (callback: () => void) => void;
+  onInvalidate: (callback: () => void) => () => void;
 };
 
 type PrefetchCache = Map<string, PrefetchEntry>;
 
-// Session cache of prefetched responses, keyed by rscPath alone. Entries are
-// only served under the etag protocol: they paint immutable slots (which
-// cannot vary by query) and fall back for a dynamic slot only when the
-// server omits it, which proves the stored copy current. A null entry marks
-// a route whose first prefetch is still in flight.
+// null = first prefetch still in flight; served under the etag protocol
 type PrefetchedElementsCache = Map<string, Elements | null>;
 
 export const PREFETCH_TTL = 1000 * 60;
@@ -162,12 +154,17 @@ const startPrefetch = (
   }
   const base = prefetchedElementsCache.get(rscPath) ?? undefined;
   let invalidated = false;
-  let notifyInvalidation: (() => void) | undefined;
-  const onInvalidate = (callback: () => void) => {
-    notifyInvalidation = callback;
+  // a shared entry can have more than one load adopter
+  const invalidationCallbacks = new Set<() => void>();
+  const onInvalidate = (callback: () => void): (() => void) => {
     if (invalidated) {
       callback();
+      return () => {};
     }
+    invalidationCallbacks.add(callback);
+    return () => {
+      invalidationCallbacks.delete(callback);
+    };
   };
   const invalidate = () => {
     if (invalidated) {
@@ -178,7 +175,9 @@ const startPrefetch = (
       prefetchCache.delete(key);
     }
     prefetchedElementsCache.delete(rscPath);
-    notifyInvalidation?.();
+    const callbacks = [...invalidationCallbacks];
+    invalidationCallbacks.clear();
+    callbacks.forEach((callback) => callback());
   };
   const promise = fetchElements(base, invalidate);
   const entry: PrefetchEntry = {
