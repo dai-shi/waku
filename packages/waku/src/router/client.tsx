@@ -253,6 +253,39 @@ type NavigationAttempt = {
   follows: number;
 };
 
+const startInstantPaint = (
+  attempt: NavigationAttempt,
+  state: RouterState,
+  signal: AbortSignal,
+  refetch: Refetch,
+  getElements: () => Elements,
+) => {
+  if (!canPaintInstantOverlay(attempt.follows, attempt.route, getElements())) {
+    return;
+  }
+  const cached = getPrefetch(attempt.route);
+  const prefetchedElements = getPrefetchedElements(attempt.route);
+  return refetch(
+    encodeRoutePath(attempt.route.path),
+    createRscParams(attempt.route.query),
+    {
+      signal,
+      // SWR pins metadata, so the eager paint has to carry the requested route.
+      unstable_overlay: {
+        [ROUTER_STATE_ID]: state,
+        [ROUTE_ID]: [attempt.route.path, attempt.route.query],
+        [IS_STATIC_ID]: isStaticFromElements(getElements()),
+      },
+      unstable_swr: {
+        pin: pinForSwr(getElements),
+        ...(prefetchedElements ? { base: prefetchedElements } : {}),
+      },
+      onBuildIdMismatch: () => reloadWithUrl(attempt.url),
+      ...(cached ? { prefetched: cached.promise } : {}),
+    },
+  );
+};
+
 type PrefetchRoute = (route: RouteProps, options?: PrefetchOptions) => void;
 
 const RouterContext = createContext<{
@@ -1031,41 +1064,13 @@ const InnerRouter = ({
       }
       const base = resolvedElementsRef.current;
       const initialFollows = options.follows ?? 0;
-      const painted =
-        !!options.instant &&
-        canPaintInstantOverlay(
-          initialFollows,
-          nextRoute,
-          resolvedElementsRef.current,
-        );
-      const cached = painted ? getPrefetch(nextRoute) : undefined;
-      const prefetchedElements = painted
-        ? getPrefetchedElements(nextRoute)
-        : undefined;
-      // overlay/swr is the one store write; load adopts that promise so the
-      // follow loop stays in the loader and an adopted landing does not merge
-      const adopt = painted
-        ? refetch(
-            encodeRoutePath(nextRoute.path),
-            createRscParams(nextRoute.query),
-            {
-              signal: controller.signal,
-              unstable_overlay: {
-                [ROUTER_STATE_ID]: makeStateForAttempt(
-                  initialAttempt,
-                  options.history,
-                ),
-                // meta is pinned, so an instant nav has to carry it or it goes stale
-                [ROUTE_ID]: [nextRoute.path, nextRoute.query],
-                [IS_STATIC_ID]: isStaticFromElements(base),
-              },
-              unstable_swr: {
-                pin: pinForSwr(() => resolvedElementsRef.current),
-                ...(prefetchedElements ? { base: prefetchedElements } : {}),
-              },
-              onBuildIdMismatch: () => reloadWithUrl(routeUrl),
-              ...(cached ? { prefetched: cached.promise } : {}),
-            },
+      const instantResponse = options.instant
+        ? startInstantPaint(
+            initialAttempt,
+            makeStateForAttempt(initialAttempt, options.history),
+            controller.signal,
+            refetch,
+            () => resolvedElementsRef.current,
           )
         : undefined;
       const outcome = await load(nextRoute, {
@@ -1082,14 +1087,16 @@ const InnerRouter = ({
             reloadWithUrl(url);
           }
         },
-        ...(adopt ? { adopt } : {}),
+        ...(instantResponse ? { adopt: instantResponse } : {}),
       });
       if (outcome.type === 'aborted') {
         return;
       }
       // paint already pushed; a follow must replace
       const historyIntent =
-        painted && outcome.follows > initialFollows && options.history !== null
+        instantResponse &&
+        outcome.follows > initialFollows &&
+        options.history !== null
           ? 'replace'
           : options.history;
       if (outcome.type === 'reused') {
@@ -1115,7 +1122,7 @@ const InnerRouter = ({
       }
       if (outcome.type === 'failed') {
         const { error } = outcome;
-        const restoreBase = painted;
+        const restoreBase = !!instantResponse;
         const showError = () => {
           if (controller.signal.aborted) {
             return;

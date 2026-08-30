@@ -70,30 +70,6 @@ export const abortable = <T>(
   });
 };
 
-export const fetchRouteElements = (
-  rscPath: string,
-  rscParams: URLSearchParams,
-  {
-    signal,
-    prefetched,
-    onBuildIdMismatch,
-    base,
-  }: {
-    signal: AbortSignal;
-    prefetched?: Promise<Elements>;
-    onBuildIdMismatch?: () => void;
-    base: Elements;
-  },
-): Promise<Elements> => {
-  return prefetched
-    ? abortable(prefetched, signal)
-    : fetchRsc(rscPath, rscParams, {
-        signal,
-        ...(onBuildIdMismatch ? { onBuildIdMismatch } : {}),
-        unstable_base: base,
-      });
-};
-
 export const load = async (
   requested: RouteProps,
   opts: LoadOptions,
@@ -139,21 +115,18 @@ export const load = async (
         adopted = true;
       } else {
         const rscPath = encodeRoutePath(attempt.route.path);
-        elements = await fetchRouteElements(
-          rscPath,
-          createRscParams(attempt.route.query),
-          {
-            signal: opts.signal,
-            ...(cached ? { prefetched: cached.promise } : {}),
-            // a defined wrapper disables minimal's reload default
-            ...(onBuildIdMismatch
-              ? {
-                  onBuildIdMismatch: () => onBuildIdMismatch(attempt.url),
-                }
-              : {}),
-            base: opts.base,
-          },
-        );
+        elements = cached
+          ? await abortable(cached.promise, opts.signal)
+          : await fetchRsc(rscPath, createRscParams(attempt.route.query), {
+              signal: opts.signal,
+              // a defined wrapper disables minimal's reload default
+              ...(onBuildIdMismatch
+                ? {
+                    onBuildIdMismatch: () => onBuildIdMismatch(attempt.url),
+                  }
+                : {}),
+              unstable_base: opts.base,
+            });
       }
       if (opts.signal.aborted) {
         return { type: 'aborted' };

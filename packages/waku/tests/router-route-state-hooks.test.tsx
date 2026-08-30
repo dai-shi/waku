@@ -240,12 +240,16 @@ describe('useHmrRefetch', () => {
     expect(refetchCall).toBeDefined();
     expect(refetchCall?.[1]).toBeInstanceOf(URLSearchParams);
     expect((refetchCall?.[1] as URLSearchParams).get('query')).toBe('q=1');
-    expect(fetchSlice).toHaveBeenCalledWith('slice-a', expect.any(Function), {
-      replace: true,
-    });
-    expect(fetchSlice).toHaveBeenCalledWith('slice-b', expect.any(Function), {
-      replace: true,
-    });
+    expect(fetchSlice).toHaveBeenCalledWith(
+      'slice-a',
+      expect.any(Function),
+      true,
+    );
+    expect(fetchSlice).toHaveBeenCalledWith(
+      'slice-b',
+      expect.any(Function),
+      true,
+    );
 
     view.unmount();
   });

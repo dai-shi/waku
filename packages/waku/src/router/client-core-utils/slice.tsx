@@ -16,7 +16,7 @@ type Elements = Record<string | symbol, unknown>;
 
 export type SliceId = string;
 
-type SliceRequest = { promise: Promise<Elements>; isReplace: boolean };
+type SliceRequest = [promise: Promise<Elements>, replace: boolean];
 
 const fetchingSlices = new Map<SliceId, SliceRequest>();
 const registeredLazySlices = new Set<SliceId>();
@@ -36,18 +36,17 @@ export const clearRegisteredLazySlices = (): void => {
 export const fetchSlice = (
   id: SliceId,
   mergeElements: ReturnType<typeof useMergeElements>,
-  options?: { replace?: boolean },
+  replace = false,
 ) => {
   let request = fetchingSlices.get(id);
-  if (!request || (options?.replace && !request.isReplace)) {
-    request = {
-      promise: fetchRsc(encodeSliceId(id)),
-      isReplace: !!options?.replace,
-    };
+  const isReplace = request?.[1];
+  if (!request || (replace && !isReplace)) {
+    request = [fetchRsc(encodeSliceId(id)), replace];
     fetchingSlices.set(id, request);
   }
   const current = request;
-  current.promise
+  const [promise] = current;
+  promise
     .then((result) => {
       if (fetchingSlices.get(id) === current) {
         return mergeElements(result);

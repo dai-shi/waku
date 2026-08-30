@@ -1734,12 +1734,8 @@ describe('Slice', () => {
     const mergeA = vi.fn(async (data: Record<string, unknown>) => data);
     const mergeB = vi.fn(async (data: Record<string, unknown>) => data);
 
-    fetchSlice('slice-1', mergeA as Parameters<typeof fetchSlice>[1], {
-      replace: true,
-    });
-    fetchSlice('slice-1', mergeB as Parameters<typeof fetchSlice>[1], {
-      replace: true,
-    });
+    fetchSlice('slice-1', mergeA as Parameters<typeof fetchSlice>[1], true);
+    fetchSlice('slice-1', mergeB as Parameters<typeof fetchSlice>[1], true);
 
     expect(refetch).toHaveBeenCalledTimes(1);
     expect(refetch).toHaveBeenCalledWith(unstable_encodeSliceId('slice-1'));
@@ -1773,9 +1769,7 @@ describe('Slice', () => {
     const slotId = unstable_getSliceSlotId('slice-1');
 
     fetchSlice('slice-1', mergeLazy as Parameters<typeof fetchSlice>[1]);
-    fetchSlice('slice-1', mergeHmr as Parameters<typeof fetchSlice>[1], {
-      replace: true,
-    });
+    fetchSlice('slice-1', mergeHmr as Parameters<typeof fetchSlice>[1], true);
 
     expect(refetch).toHaveBeenCalledTimes(2);
     expect(getInFlightSliceCount()).toBe(1);
@@ -4031,7 +4025,7 @@ describe('Router integration', () => {
     }
   });
 
-  test('superseding an uncached instant navigation settles both promises', async () => {
+  test('superseding a painted instant navigation aborts its response', async () => {
     const slow = createDeferred<Record<string, unknown>>();
     const refetch = vi
       .fn<RefetchInner>()
@@ -4047,10 +4041,12 @@ describe('Router integration', () => {
     const view = await renderRouter(
       { initialRoute: { path: '/start', query: '', hash: '' } },
       {
+        ...instantNavElements(),
         [unstable_getRouteSlotId('/start')]: <Probe />,
+        [unstable_getRouteSlotId('/slow')]: <Probe />,
         [unstable_getRouteSlotId('/next')]: <Probe />,
-        [ROUTE_ID]: ['/start', ''],
-        [IS_STATIC_ID]: false,
+        [`${ETAG_ID_PREFIX}${unstable_getRouteSlotId('/slow')}`]:
+          IMMUTABLE_ETAG,
       },
     );
 
@@ -4059,15 +4055,29 @@ describe('Router integration', () => {
         throw new Error('router not initialized');
       }
 
+      let superseded: Promise<void> | undefined;
       await act(async () => {
-        const superseded = capture.router!.push('/slow', {
+        superseded = capture.router!.push('/slow', {
           unstable_instant: true,
         });
-        await Promise.resolve();
-        const active = capture.router!.push('/next');
-        await Promise.all([superseded, active]);
+        await flush();
+      });
+      const firstSignal = refetch.mock.calls[0]![2]!.signal!;
+      expect(capture.router.path).toBe('/slow');
+
+      await act(async () => {
+        await capture.router!.push('/next');
+        await flush();
       });
 
+      expect(firstSignal.aborted).toBe(true);
+      expect(capture.router.path).toBe('/next');
+
+      await act(async () => {
+        slow.resolve({ [ROUTE_ID]: ['/slow', ''], [IS_STATIC_ID]: false });
+        await superseded;
+        await flush();
+      });
       expect(capture.router.path).toBe('/next');
     } finally {
       slow.resolve({ [ROUTE_ID]: ['/slow', ''], [IS_STATIC_ID]: false });
@@ -4586,6 +4596,60 @@ describe('Router integration', () => {
       expect.any(URLSearchParams),
       expect.anything(),
     );
+
+    view.unmount();
+  });
+
+  test('an instant static response is reused after it commits', async () => {
+    const pending = createDeferred<Record<string, unknown>>();
+    const refetch = vi
+      .fn<RefetchInner>()
+      .mockImplementationOnce(() => pending.promise)
+      .mockResolvedValueOnce({
+        [ROUTE_ID]: ['/start', ''],
+        [IS_STATIC_ID]: false,
+      });
+    installRefetch(refetch);
+
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const view = await renderRouter(
+      { initialRoute: { path: '/start', query: '', hash: '' } },
+      {
+        ...instantNavElements(),
+        [unstable_getRouteSlotId('/start')]: <Probe />,
+        [unstable_getRouteSlotId('/next')]: <Probe />,
+      },
+    );
+    if (!capture.router) {
+      throw new Error('router not initialized');
+    }
+
+    let pushed: Promise<void> | undefined;
+    await act(async () => {
+      pushed = capture.router!.push('/next', { unstable_instant: true });
+      await flush();
+    });
+    await act(async () => {
+      pending.resolve({ [ROUTE_ID]: ['/next', ''], [IS_STATIC_ID]: true });
+      await pushed;
+      await flush();
+    });
+    await act(async () => {
+      await capture.router!.push('/start');
+      await flush();
+    });
+    expect(capture.router.path).toBe('/start');
+    expect(window.location.pathname).toBe('/start');
+
+    refetch.mockClear();
+    await act(async () => {
+      await capture.router!.push('/next');
+      await flush();
+    });
+
+    expect(refetch).not.toHaveBeenCalled();
+    expect(capture.router.path).toBe('/next');
 
     view.unmount();
   });

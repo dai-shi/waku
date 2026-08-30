@@ -37,7 +37,7 @@ export const useHmrRefetch = ({
             ),
           ).then(learnStaticFromElements, () => {});
           forEachRegisteredLazySlice((id) => {
-            fetchSlice(id, mergeElements, { replace: true });
+            fetchSlice(id, mergeElements, true);
           });
         });
       };
