@@ -11,7 +11,6 @@ import {
   encodeSliceId,
   getSliceSlotId,
 } from '../isomorphic-utils/route-path.js';
-import { registerLazySlice } from './caches.js';
 
 type Elements = Record<string | symbol, unknown>;
 
@@ -20,6 +19,19 @@ export type SliceId = string;
 type SliceRequest = { promise: Promise<Elements>; isReplace: boolean };
 
 const fetchingSlices = new Map<SliceId, SliceRequest>();
+const registeredLazySlices = new Set<SliceId>();
+
+export const registerLazySlice = (id: SliceId): void => {
+  registeredLazySlices.add(id);
+};
+
+export const forEachRegisteredLazySlice = (fn: (id: SliceId) => void): void => {
+  registeredLazySlices.forEach(fn);
+};
+
+export const clearRegisteredLazySlices = (): void => {
+  registeredLazySlices.clear();
+};
 
 export const fetchSlice = (
   id: SliceId,

@@ -43,7 +43,6 @@ import {
   createRscParams,
   getPrefetch,
   getPrefetchedElements,
-  hasCachedShell,
   learnStaticFromElements,
   prefetchRoute as prefetchCachedRoute,
 } from './client-core-utils/caches.js';
@@ -56,8 +55,13 @@ import {
   decideFollow,
   isFollowable,
 } from './client-core-utils/error-route.js';
+import { useHmrRefetch } from './client-core-utils/hmr.js';
 import { RouterHostContext } from './client-core-utils/host.js';
 import type { RouterHost } from './client-core-utils/host.js';
+import {
+  useInitialRoute,
+  useInitialRscParams,
+} from './client-core-utils/initial-route.js';
 import { abortable, load } from './client-core-utils/load.js';
 import { buildMergePatch } from './client-core-utils/merge-patch.js';
 import {
@@ -65,31 +69,29 @@ import {
   useResolveSearchCodec,
 } from './client-core-utils/route-hooks.js';
 import {
-  useHmrRefetch,
-  useInitialRoute,
-  useInitialRscParams,
-} from './client-core-utils/route-state-hooks.js';
-import {
   getRouteUrl,
   isSameRoute,
   isSameRscRoute,
   parseRoute,
 } from './client-core-utils/route-url.js';
-import {
-  scrollToHash,
-  shouldScrollByDefault,
-  shouldScrollForRouteChange,
-} from './client-core-utils/scroll.js';
 import type { SliceId } from './client-core-utils/slice.js';
+import {
+  canPaintInstantOverlay,
+  pinForSwr,
+} from './client-utils/instant-navigation.js';
 import {
   ROUTER_STATE_ID,
   getRouterState,
   getSettledRoute,
   makeRouterState,
-  pinForSwr,
   resolveServerRedirect,
 } from './client-utils/router-state.js';
 import type { RouterState } from './client-utils/router-state.js';
+import {
+  scrollToHash,
+  shouldScrollByDefault,
+  shouldScrollForRouteChange,
+} from './client-utils/scroll.js';
 import type {
   RouteParams,
   RouteSearch,
@@ -258,12 +260,6 @@ const RouterContext = createContext<{
   changeRoute: ChangeRoute;
   getElements?: () => Record<string, unknown>;
 } | null>(null);
-
-const canPaintInstantOverlay = (
-  follows: number,
-  route: RouteProps,
-  resolvedElements: Record<string, unknown>,
-) => !follows && hasCachedShell(route, resolvedElements);
 
 const dispatchChangeRoute = (
   changeRoute: ChangeRoute,

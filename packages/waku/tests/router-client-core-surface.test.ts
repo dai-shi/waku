@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
 import { readFileSync, readdirSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, test } from 'vitest';
 import {
@@ -66,7 +66,6 @@ describe('waku/router/client-core surface', () => {
       'unstable_parseRoute',
       'unstable_pathnameToRoutePath',
       'unstable_prefetchRoute',
-      'unstable_registerLazySlice',
       'useHmrRefetch_UNSTABLE',
       'useInitialRoute_UNSTABLE',
       'useInitialRscParams_UNSTABLE',
@@ -171,28 +170,31 @@ describe('waku/router/client surface', () => {
   });
 });
 
-describe('folder membership is layer membership', () => {
-  test('client-utils holds only router-state', () => {
-    expect(readdirSync(join(routerSrc, 'client-utils')).sort()).toEqual([
-      'router-state.ts',
-    ]);
-  });
-
-  test('client-core-utils holds the L1 modules', () => {
-    expect(readdirSync(join(routerSrc, 'client-core-utils')).sort()).toEqual([
-      'caches.ts',
-      'element-meta.ts',
-      'error-boundary.tsx',
-      'error-route.ts',
-      'host.ts',
-      'load.ts',
-      'merge-patch.ts',
-      'prefetch-cache.ts',
-      'route-hooks.tsx',
-      'route-state-hooks.ts',
-      'route-url.ts',
-      'scroll.ts',
-      'slice.tsx',
-    ]);
+describe('client utility boundaries', () => {
+  test('client-core-utils does not depend on client-utils', () => {
+    const dir = join(routerSrc, 'client-core-utils');
+    const clientUtilsDir = join(routerSrc, 'client-utils');
+    const fileNames = readdirSync(dir, {
+      encoding: 'utf8',
+      recursive: true,
+    }).filter((fileName) => /\.[cm]?[jt]sx?$/.test(fileName));
+    expect(fileNames.length).toBeGreaterThan(0);
+    for (const fileName of fileNames) {
+      const src = readFileSync(join(dir, fileName), 'utf8');
+      const specs = [
+        ...src.matchAll(/(?:\bfrom\s+|\bimport\s*(?:\(\s*)?)["']([^"']+)["']/g),
+      ].map((match) => match[1]!);
+      expect(
+        specs.some((spec) => {
+          if (!spec.startsWith('.')) {
+            return false;
+          }
+          const target = resolve(dirname(join(dir, fileName)), spec);
+          const path = relative(clientUtilsDir, target);
+          return !path.startsWith('..') && !isAbsolute(path);
+        }),
+        fileName,
+      ).toBe(false);
+    }
   });
 });

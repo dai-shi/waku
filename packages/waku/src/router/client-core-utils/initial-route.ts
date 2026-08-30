@@ -1,5 +1,4 @@
 import {
-  startTransition,
   use,
   useEffect,
   useLayoutEffect,
@@ -7,22 +6,10 @@ import {
   useRef,
   useState,
 } from 'react';
-import {
-  unstable_fetchRsc as fetchRsc,
-  useElementsPromise_UNSTABLE as useElementsPromise,
-  useMergeElements_UNSTABLE as useMergeElements,
-  useRegisterRscReloadListener_UNSTABLE as useRegisterRscReloadListener,
-} from '../../minimal/client.js';
-import { encodeRoutePath } from '../isomorphic-utils/route-path.js';
+import { useElementsPromise_UNSTABLE as useElementsPromise } from '../../minimal/client.js';
 import type { RouteProps } from '../isomorphic-utils/route-path.js';
-import {
-  clearCaches,
-  createRscParams,
-  forEachRegisteredLazySlice,
-  learnStaticFromElements,
-} from './caches.js';
+import { createRscParams } from './caches.js';
 import { getRouteFromElements } from './element-meta.js';
-import { fetchSlice } from './slice.js';
 
 export const useInitialRoute = (proposed: RouteProps): RouteProps => {
   const elementsPromise = useElementsPromise();
@@ -100,42 +87,4 @@ export const useInitialRscParams = (
     releaseInitialRscParams(initialRscParams);
   }, [initialRscParams]);
   return initialRscParams;
-};
-
-export const useHmrRefetch = ({
-  getSettledRoute,
-  onBeforeRefetch,
-}: {
-  getSettledRoute: () => RouteProps;
-  onBeforeRefetch?: () => void;
-}): void => {
-  const mergeElements = useMergeElements();
-  const registerRscReloadListener = useRegisterRscReloadListener();
-  useEffect(() => {
-    if (import.meta.hot) {
-      const refetchRouteOnHmr = () => {
-        onBeforeRefetch?.();
-        clearCaches();
-        const settledRoute = getSettledRoute();
-        startTransition(() => {
-          // the reload clears the set, so the response has to teach it again
-          void mergeElements(
-            fetchRsc(
-              encodeRoutePath(settledRoute.path),
-              createRscParams(settledRoute.query),
-            ),
-          ).then(learnStaticFromElements, () => {});
-          forEachRegisteredLazySlice((id) => {
-            fetchSlice(id, mergeElements, { replace: true });
-          });
-        });
-      };
-      return registerRscReloadListener(refetchRouteOnHmr);
-    }
-  }, [
-    getSettledRoute,
-    mergeElements,
-    onBeforeRefetch,
-    registerRscReloadListener,
-  ]);
 };

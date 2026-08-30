@@ -9,7 +9,6 @@ export {
   hasCachedShell as unstable_hasCachedShell,
   learnStaticFromElements as unstable_learnStaticFromElements,
   prefetchRoute as unstable_prefetchRoute,
-  registerLazySlice as unstable_registerLazySlice,
 } from './client-core-utils/caches.js';
 export type {
   PrefetchHandle as Unstable_PrefetchHandle,
@@ -54,11 +53,12 @@ export {
   useSetSearch_UNSTABLE,
 } from './client-core-utils/route-hooks.js';
 
+export { useHmrRefetch as useHmrRefetch_UNSTABLE } from './client-core-utils/hmr.js';
+
 export {
-  useHmrRefetch as useHmrRefetch_UNSTABLE,
   useInitialRoute as useInitialRoute_UNSTABLE,
   useInitialRscParams as useInitialRscParams_UNSTABLE,
-} from './client-core-utils/route-state-hooks.js';
+} from './client-core-utils/initial-route.js';
 
 export {
   getRouteUrl as unstable_getRouteUrl,

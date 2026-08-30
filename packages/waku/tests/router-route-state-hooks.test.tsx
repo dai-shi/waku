@@ -16,17 +16,18 @@ import {
 import * as minimalClient from '../src/minimal/client.js';
 import { INTERNAL_ServerRoot } from '../src/minimal/client.js';
 import * as caches from '../src/router/client-core-utils/caches.js';
+import { clearCaches } from '../src/router/client-core-utils/caches.js';
+import { useHmrRefetch } from '../src/router/client-core-utils/hmr.js';
 import {
-  clearCaches,
-  clearRegisteredLazySlices,
-  registerLazySlice,
-} from '../src/router/client-core-utils/caches.js';
-import {
-  useHmrRefetch,
   useInitialRoute,
   useInitialRscParams,
-} from '../src/router/client-core-utils/route-state-hooks.js';
+} from '../src/router/client-core-utils/initial-route.js';
 import * as slice from '../src/router/client-core-utils/slice.js';
+import {
+  clearRegisteredLazySlices,
+  forEachRegisteredLazySlice,
+  registerLazySlice,
+} from '../src/router/client-core-utils/slice.js';
 import {
   ROUTE_ID,
   encodeRoutePath,
@@ -171,6 +172,14 @@ describe('useHmrRefetch', () => {
     (
       globalThis as { __WAKU_RSC_RELOAD_LISTENERS__?: (() => void)[] }
     ).__WAKU_RSC_RELOAD_LISTENERS__ = [];
+  });
+
+  test('cache clearing preserves lazy-slice registrations', () => {
+    registerLazySlice('slice-a');
+    clearCaches();
+    const ids: string[] = [];
+    forEachRegisteredLazySlice((id) => ids.push(id));
+    expect(ids).toEqual(['slice-a']);
   });
 
   test('clears caches then refetches the settled route and lazy slices', async () => {

@@ -1,7 +1,5 @@
-import { unstable_isImmutableElement as isImmutableElement } from '../../minimal/client.js';
 import {
   getRouteFromElements,
-  isMetaKey,
   isStaticFromElements,
 } from '../client-core-utils/element-meta.js';
 import { getRouteUrl } from '../client-core-utils/route-url.js';
@@ -92,11 +90,3 @@ export const getSettledRoute = (
     resolveServerRedirect(elements, routerState, fallback.path).route
   );
 };
-
-// symbol keys are client owned; they are carried, never fetched
-export const pinForSwr =
-  (getResolvedElements: () => Record<string, unknown>) =>
-  (key: string | symbol) =>
-    typeof key === 'symbol' ||
-    isMetaKey(key) ||
-    isImmutableElement(getResolvedElements(), key);

@@ -1,5 +1,5 @@
+import { pathnameToCurrentRoutePath } from '../client-core-utils/route-url.js';
 import type { RouteProps } from '../isomorphic-utils/route-path.js';
-import { pathnameToCurrentRoutePath } from './route-url.js';
 
 // a run decodes together, so a multi byte character survives
 const decodeHash = (raw: string) =>

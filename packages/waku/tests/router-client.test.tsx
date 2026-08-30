@@ -37,16 +37,14 @@ import {
   useMergeElements_UNSTABLE as useMergeElements,
 } from '../src/minimal/client.js';
 import * as routerCaches from '../src/router/client-core-utils/caches.js';
-import {
-  clearCaches,
-  clearRegisteredLazySlices,
-} from '../src/router/client-core-utils/caches.js';
+import { clearCaches } from '../src/router/client-core-utils/caches.js';
 import {
   RouterHostContext,
   useRouterHost,
 } from '../src/router/client-core-utils/host.js';
 import { PREFETCH_LIMIT } from '../src/router/client-core-utils/prefetch-cache.js';
 import {
+  clearRegisteredLazySlices,
   fetchSlice,
   getInFlightSliceCount,
   resetSliceFetches,
