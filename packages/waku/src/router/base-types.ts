@@ -21,9 +21,14 @@ export interface RouteConfig {
   // routes to be overridden by users
 }
 
-export interface CreatePagesConfig {
-  // routes to be overridden by users
-}
+/**
+ * Route metadata used by page, layout, and structured navigation types.
+ *
+ * The file-system router augments this from generated metadata. Manual
+ * augmentations must not refer to a `createPages` result because it includes
+ * component types and can create circular inference.
+ */
+export interface CreatePagesConfig {}
 
 export interface SearchCodecsConfig {
   // route path -> search codec, to be overridden by users (or fs-router typegen)

@@ -606,9 +606,6 @@ declare module 'waku/router' {
   interface RouteConfig {
     paths: PathsForPages<typeof pages>;
   }
-  interface CreatePagesConfig {
-    pages: typeof pages;
-  }
 }
 
 export default adapter(pages);

@@ -6,6 +6,7 @@
     "lib": ["esnext", "dom", "dom.iterable"]
   },
   "include": ["."],
+  "exclude": ["dist", "fixtures/create-pages-types"],
   "references": [
     {
       "path": ".."
