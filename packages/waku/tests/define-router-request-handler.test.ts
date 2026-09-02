@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import type { Unstable_RenderHtml } from '../src/lib/types.js';
 import {
   unstable_createCustomError,
   unstable_getErrorInfo,
@@ -33,7 +34,9 @@ const makeStream = () =>
 const makeUtils = (loadBuildMetadata = vi.fn()) => ({
   renderRsc: vi.fn().mockResolvedValue(makeStream()),
   parseRsc: vi.fn(),
-  renderHtml: vi.fn().mockResolvedValue(new Response('ok')),
+  renderHtml: vi
+    .fn<Unstable_RenderHtml>()
+    .mockResolvedValue(new Response('ok')),
   loadBuildMetadata,
 });
 
@@ -559,6 +562,38 @@ describe('request dispatch', () => {
       expect.anything(),
       expect.objectContaining({ status: 404 }),
     );
+  });
+
+  it('keeps the 404 fallback render from rethrowing', async () => {
+    const { handleRequest } = unstable_defineRouter({
+      getConfigs: async () => [
+        dynamicRoute('/not-found'),
+        dynamicRoute('/404'),
+      ],
+    });
+    const utils = makeUtils();
+    utils.renderHtml.mockImplementation(async (_stream, _html, options) => {
+      if (options.unstable_rethrowNotFound) {
+        unstable_notFound();
+      }
+      return new Response('not found', { status: options.status ?? 200 });
+    });
+    const res = await handleRequest(
+      {
+        type: 'http',
+        pathname: '/not-found',
+        req: new Request('http://localhost/not-found'),
+      },
+      utils,
+    );
+    expect(res).toBeInstanceOf(Response);
+    expect((res as Response).status).toBe(404);
+    expect(utils.renderHtml).toHaveBeenCalledTimes(2);
+    const elements = utils.renderRsc.mock.calls[1]?.[0] as Record<
+      string,
+      unknown
+    >;
+    expect(elements?.[ROUTE_ID]).toEqual(['/404', '']);
   });
 
   it('returns fallback for a noSsr route', async () => {

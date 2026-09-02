@@ -6,9 +6,8 @@ declare global {
   var __WAKU_SERVER_ENV__: Readonly<Record<string, string>> | undefined;
   var __WAKU_INITIAL_RSC__:
     import('./utils/initial-rsc.js').InitialRscEntry | undefined;
-  var __WAKU_DEBUG_CHANNELS__:
-    | Map<string, { readable: ReadableStream; writable: WritableStream }>
-    | undefined;
+  var __WAKU_DEBUG_CHANNEL_REGISTRY__:
+    import('./vite-plugins/rsc-devtools.js').DebugChannelRegistry | undefined;
   var __WAKU_ROUTER_PREFETCH__:
     ((path: string, callback: (id: string) => void) => void) | undefined;
   var __WAKU_HONO_NODE_SERVER_GET_REQUEST_LISTENER__:

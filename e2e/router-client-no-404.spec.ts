@@ -17,6 +17,19 @@ test.describe('router-client-no-404', () => {
     }
   });
 
+  test('direct not found renders the default fallback without /404 page', async ({
+    page,
+  }) => {
+    const response = await page.goto(
+      `http://localhost:${port}/trigger-not-found`,
+    );
+
+    expect(response?.status()).toBe(404);
+    await expect(
+      page.getByRole('heading', { name: 'Not Found' }),
+    ).toBeVisible();
+  });
+
   test('client navigation to missing route renders Not Found fallback without /404 page', async ({
     page,
   }) => {

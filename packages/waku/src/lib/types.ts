@@ -23,6 +23,7 @@ export type Unstable_RenderHtml = (
     status?: number;
     nonce?: string;
     unstable_extraScriptContent?: string;
+    unstable_rethrowNotFound?: boolean;
   },
 ) => Promise<Response>;
 

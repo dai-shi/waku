@@ -54,10 +54,11 @@ const toProcessRequest =
     const debugId =
       (import.meta.env.DEV && req.headers.get(DEBUG_ID_HEADER.toLowerCase())) ||
       undefined;
-    const debugChannels = globalThis.__WAKU_DEBUG_CHANNELS__;
-    const debugChannel = debugId ? debugChannels?.get(debugId) : undefined;
+    const debugChannelRegistry = globalThis.__WAKU_DEBUG_CHANNEL_REGISTRY__;
+    const [createDebugChannel, finishDebugChannel] =
+      (debugId && debugChannelRegistry?.get(debugId)) || [];
     if (debugId) {
-      debugChannels?.delete(debugId);
+      debugChannelRegistry?.delete(debugId);
     }
 
     const renderUtils = createRenderUtils(
@@ -65,7 +66,7 @@ const toProcessRequest =
       renderToReadableStream,
       loadSsrEntryModule,
       import.meta.env.WAKU_BUILD_ID ?? '',
-      debugChannel,
+      createDebugChannel,
       debugId,
     );
 
@@ -112,6 +113,8 @@ const toProcessRequest =
           }
         : {};
       return new Response(body, { status, headers });
+    } finally {
+      finishDebugChannel?.();
     }
 
     if (res instanceof ReadableStream) {

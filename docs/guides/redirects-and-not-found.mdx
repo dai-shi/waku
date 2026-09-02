@@ -134,6 +134,8 @@ A client-side navigation to a missing route is answered the same way: the server
 
 ## Status and Streaming Notes
 
-Redirects and not-found responses work best when they are thrown before the page has started streaming meaningful content. Once a response has started streaming to the browser, the server may not be able to change the HTTP status or response headers.
+When `notFound()` is thrown before the initial HTML shell is ready, a direct request server-renders the custom `/404` page and returns status 404. If it is thrown from inside a Suspense boundary after the shell has already been sent, the response keeps status 200 and the browser completes the not-found handling after hydration. This late path requires JavaScript; without it, the Suspense fallback remains.
+
+Redirects have the same streaming constraint. Once a response has started streaming to the browser, the server cannot change its HTTP status or response headers.
 
 For redirects that should happen before Waku handles the request at all, use middleware or a hosting-platform redirect map instead.

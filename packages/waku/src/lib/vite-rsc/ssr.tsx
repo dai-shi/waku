@@ -39,6 +39,7 @@ type RenderHtmlStream = (
     formState: ReactFormState | undefined;
     nonce: string | undefined;
     extraScriptContent: string | undefined;
+    rethrowNotFound: boolean | undefined;
     debugId: string | undefined;
   },
 ) => Promise<{ stream: ReadableStream; status: number | undefined }>;
@@ -111,8 +112,7 @@ export const renderHtmlStream: RenderHtmlStream = async (
     });
   } catch (e) {
     const info = getErrorInfo(e);
-    if (info?.location) {
-      // keep unstable_redirect error as http redirection
+    if (info?.location || (options.rethrowNotFound && info?.status === 404)) {
       throw e;
     }
     status = info?.status || 500;

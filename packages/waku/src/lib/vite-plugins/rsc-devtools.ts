@@ -8,8 +8,20 @@ import {
   assertIsDebugEventPayload,
 } from '../utils/react-debug-channel.js';
 
-const getDebugChannels = () =>
-  (globalThis.__WAKU_DEBUG_CHANNELS__ ||= new Map());
+type CreateDebugChannel = () => {
+  readable: ReadableStream<Uint8Array>;
+  writable: WritableStream<Uint8Array>;
+};
+
+type FinishDebugChannel = () => void;
+
+export type DebugChannelRegistry = Map<
+  string,
+  [CreateDebugChannel, FinishDebugChannel]
+>;
+
+const getDebugChannelRegistry = () =>
+  (globalThis.__WAKU_DEBUG_CHANNEL_REGISTRY__ ||= new Map());
 
 const setRequestHeader = (
   req: {
@@ -34,8 +46,10 @@ const setRequestHeader = (
 };
 
 type Session = {
-  pendingChunks?: Uint8Array[];
-  ended: boolean;
+  ready: boolean;
+  pendingChunks: Uint8Array[];
+  streamClosed: boolean;
+  requestDone: boolean;
   cmdController?: ReadableStreamDefaultController<Uint8Array>;
 };
 
@@ -45,6 +59,20 @@ export function rscDevtoolsPlugin(): Plugin {
     configureServer(server) {
       const hot = server.environments.client.hot;
       const sessions = new Map<string, Session>();
+
+      const getSession = (debugId: string) => {
+        let session = sessions.get(debugId);
+        if (!session) {
+          session = {
+            ready: false,
+            pendingChunks: [],
+            streamClosed: false,
+            requestDone: false,
+          };
+          sessions.set(debugId, session);
+        }
+        return session;
+      };
 
       const sendChunk = (debugId: string, chunk: Uint8Array) => {
         hot.send(DEBUG_DATA_EVENT, {
@@ -78,22 +106,11 @@ export function rscDevtoolsPlugin(): Plugin {
         }
       };
 
-      const flushPendingChunks = (debugId: string, session: Session) => {
-        const pendingChunks = session.pendingChunks;
-        if (!pendingChunks) {
+      const cleanupIfDone = (debugId: string, session: Session) => {
+        if (!session.ready || !session.streamClosed || !session.requestDone) {
           return;
         }
-        for (const chunk of pendingChunks) {
-          sendChunk(debugId, chunk);
-        }
-        delete session.pendingChunks;
-      };
-
-      const cleanupIfEnded = (debugId: string, session: Session) => {
-        if (session.pendingChunks || !session.ended) {
-          return;
-        }
-        getDebugChannels().delete(debugId);
+        getDebugChannelRegistry().delete(debugId);
         sessions.delete(debugId);
         hot.send(DEBUG_DATA_EVENT, {
           i: debugId,
@@ -105,60 +122,80 @@ export function rscDevtoolsPlugin(): Plugin {
         assertIsDebugEventPayload(payload);
         const session = sessions.get(payload.i);
         if ('d' in payload) {
-          // done
           if (session) {
             closeCmdController(session);
           }
           return;
         }
         if ('b' in payload) {
-          // chunk
           if (session) {
             enqueueCmdChunk(session, base64ToBytes(payload.b));
           }
           return;
         }
-        // ready
-        if (session) {
-          flushPendingChunks(payload.i, session);
-          cleanupIfEnded(payload.i, session);
-        } else {
-          sessions.set(payload.i, { ended: false });
+        const readySession = session ?? getSession(payload.i);
+        readySession.ready = true;
+        for (const chunk of readySession.pendingChunks) {
+          sendChunk(payload.i, chunk);
         }
+        readySession.pendingChunks.length = 0;
+        cleanupIfDone(payload.i, readySession);
       });
 
       const registerDebugChannel = (debugId: string) => {
-        let session = sessions.get(debugId);
-        if (!session) {
-          session = { pendingChunks: [], ended: false };
-          sessions.set(debugId, session);
-        }
-        const readable = new ReadableStream<Uint8Array>({
-          start(controller) {
-            session.cmdController = controller;
-          },
-          cancel() {
-            delete session.cmdController;
-          },
-        });
-        const writable = new WritableStream<Uint8Array>({
-          write(chunk) {
-            if (session.pendingChunks) {
-              session.pendingChunks.push(chunk);
-            } else {
-              sendChunk(debugId, chunk);
+        const session = getSession(debugId);
+        let deactivatePrevious: (() => void) | undefined;
+        const createDebugChannel = () => {
+          // The browser only receives the last render in a request.
+          deactivatePrevious?.();
+          let active = true;
+          deactivatePrevious = () => {
+            active = false;
+            closeCmdController(session);
+            session.pendingChunks.length = 0;
+            session.streamClosed = false;
+          };
+          const readable = new ReadableStream<Uint8Array>({
+            start(controller) {
+              session.cmdController = controller;
+            },
+            cancel() {
+              if (active) {
+                delete session.cmdController;
+              }
+            },
+          });
+          const closeStream = () => {
+            if (!active) {
+              return;
             }
-          },
-          close() {
-            session.ended = true;
-            cleanupIfEnded(debugId, session);
-          },
-          abort() {
-            session.ended = true;
-            cleanupIfEnded(debugId, session);
-          },
-        });
-        getDebugChannels().set(debugId, { writable, readable });
+            session.streamClosed = true;
+            cleanupIfDone(debugId, session);
+          };
+          const writable = new WritableStream<Uint8Array>({
+            write(chunk) {
+              if (!active) {
+                return;
+              }
+              if (session.ready) {
+                sendChunk(debugId, chunk);
+              } else {
+                session.pendingChunks.push(chunk);
+              }
+            },
+            close: closeStream,
+            abort: closeStream,
+          });
+          return { writable, readable };
+        };
+        const finishDebugChannel = () => {
+          session.requestDone = true;
+          cleanupIfDone(debugId, session);
+        };
+        getDebugChannelRegistry().set(debugId, [
+          createDebugChannel,
+          finishDebugChannel,
+        ]);
       };
 
       return () => {

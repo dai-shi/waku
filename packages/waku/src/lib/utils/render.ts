@@ -23,7 +23,10 @@ export function createRenderUtils(
     typeof import('../vite-entries/entry.ssr.js')
   >,
   buildId: string,
-  debugChannel?: { readable?: ReadableStream; writable?: WritableStream },
+  createDebugChannel?: () => {
+    readable: ReadableStream<Uint8Array>;
+    writable: WritableStream<Uint8Array>;
+  },
   debugId?: string,
 ): {
   renderRsc: Unstable_RenderRsc;
@@ -63,7 +66,7 @@ export function createRenderUtils(
         {
           temporaryReferences,
           onError,
-          debugChannel,
+          debugChannel: createDebugChannel?.(),
         },
         {
           onClientReference(metadata: {
@@ -88,6 +91,7 @@ export function createRenderUtils(
         formState: options.formState as never,
         nonce: options.nonce,
         extraScriptContent: options.unstable_extraScriptContent,
+        rethrowNotFound: options.unstable_rethrowNotFound,
         debugId,
       });
       return new Response(htmlResult.stream, {
