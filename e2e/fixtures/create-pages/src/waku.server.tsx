@@ -2,7 +2,11 @@ import { readFile } from 'node:fs/promises';
 import { Slice } from 'waku';
 import adapter from 'waku/adapters/default';
 import type { PathsForPages } from 'waku/router';
-import { createPages, unstable_redirect as redirect } from 'waku/router/server';
+import {
+  createPages,
+  unstable_notFound as notFound,
+  unstable_redirect as redirect,
+} from 'waku/router/server';
 import { DeeplyNestedLayout } from './components/DeeplyNestedLayout.js';
 import DynamicLayout from './components/DynamicLayout.js';
 import ErrorPage from './components/ErrorPage.js';
@@ -534,6 +538,13 @@ const pages: ReturnType<typeof createPages> = createPages(
       render: 'dynamic',
       path: '/no-ssr-server-only',
       component: () => <h2>No SSR Server Only</h2>,
+      unstable_disableSSR: true,
+    }),
+
+    createPage({
+      render: 'dynamic',
+      path: '/no-ssr-not-found',
+      component: () => notFound(),
       unstable_disableSSR: true,
     }),
 

@@ -853,6 +853,17 @@ test.describe(`create-pages`, () => {
     ).toBeVisible();
   });
 
+  test('no ssr not found with a layout stylesheet', async ({ page }) => {
+    await page.goto(`http://localhost:${port}/no-ssr-not-found`);
+    await expect(
+      page.getByRole('heading', { name: 'Not Found', exact: true }),
+    ).toBeVisible();
+    await expect(page.locator('body')).toHaveCSS(
+      'background-color',
+      'rgb(254, 254, 254)',
+    );
+  });
+
   test('slices with render=dynamic', async ({ page }) => {
     await page.goto(`http://localhost:${port}/slices`);
     await waitForHydration(page);
