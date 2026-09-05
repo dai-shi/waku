@@ -24,6 +24,10 @@ import NoSsr from './components/NoSsr.js';
 import NoSsrDynamic from './components/NoSsrDynamic.js';
 import RedirectToSearchPage from './components/RedirectToSearchPage.js';
 import { RerenderActionPage } from './components/RerenderActionPage.js';
+import {
+  createRerenderOrderLayout,
+  createRerenderOrderPage,
+} from './components/RerenderOrder.js';
 import SearchPage from './components/SearchPage.js';
 import { Slice001 } from './components/slice001.js';
 import { Slice002 } from './components/slice002.js';
@@ -416,6 +420,29 @@ const pages: ReturnType<typeof createPages> = createPages(
       render: 'dynamic',
       path: '/rerender-action',
       component: RerenderActionPage,
+    }),
+
+    // wakujs/waku#2288: the layout slot streams before the page slot
+    createLayout({
+      render: 'dynamic',
+      path: '/rerender-layout-first',
+      component: createRerenderOrderLayout(0),
+    }),
+    createPage({
+      render: 'dynamic',
+      path: '/rerender-layout-first',
+      component: createRerenderOrderPage('layout-first', 30),
+    }),
+    // control: the page slot streams before the layout slot
+    createLayout({
+      render: 'dynamic',
+      path: '/rerender-page-first',
+      component: createRerenderOrderLayout(400),
+    }),
+    createPage({
+      render: 'dynamic',
+      path: '/rerender-page-first',
+      component: createRerenderOrderPage('page-first', 30),
     }),
 
     createLayout({

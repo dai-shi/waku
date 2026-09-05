@@ -305,6 +305,27 @@ test.describe(`create-pages`, () => {
     await expect(page.locator('body')).not.toContainText('getRerender');
   });
 
+  // wakujs/waku#2288: the rerendered page suspends inside a Suspense boundary
+  // that is already showing content, and a row lands while React is yielding
+  // on it (the fixture's fetch enhancer arranges that). React 19.2 drops the
+  // wake-up for that row, so without the patch the old elements stay on
+  // screen even though the action returned the new ones.
+  test('server action rerender survives a layout-first stream', async ({
+    page,
+  }) => {
+    await page.goto(`http://localhost:${port}/rerender-layout-first`);
+    await waitForHydration(page);
+    const count = page.getByTestId('rerender-order-count');
+    await expect(count).toHaveText(/^count: \d+$/);
+    for (let i = 0; i < 3; i++) {
+      const before = Number(
+        (await count.textContent())!.slice('count: '.length),
+      );
+      await page.getByRole('button', { name: 'Bump layout-first' }).click();
+      await expect(count).toHaveText(`count: ${before + 1}`);
+    }
+  });
+
   test('server action rerenders route without js', async ({ browser }) => {
     const context = await browser.newContext({
       javaScriptEnabled: false,

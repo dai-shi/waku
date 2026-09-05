@@ -1,6 +1,7 @@
 'use server';
 
 import { unstable_rerenderRoute } from 'waku/router/server';
+import { incrementRerenderOrderCount } from './rerender-order-store.js';
 
 const PAGES = ['/nested/foo', '/nested/bar', '/nested/aaa', '/nested/bbb'];
 
@@ -19,4 +20,10 @@ export const throws = async (input: string): Promise<string> => {
     throw new Error('Input is required');
   }
   return input;
+};
+
+// wakujs/waku#2288
+export const bumpRerenderOrder = async (mode: string) => {
+  incrementRerenderOrderCount(mode);
+  unstable_rerenderRoute(`/rerender-${mode}`);
 };
