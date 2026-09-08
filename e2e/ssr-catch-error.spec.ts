@@ -33,6 +33,17 @@ test.describe(`ssr-catch-error`, () => {
     expect(res.status()).toBe(200);
   });
 
+  test('a redirect from a cached static element is followed', async ({
+    request,
+  }) => {
+    const res = await request.get(`http://localhost:${port}/redirect-static`, {
+      maxRedirects: 0,
+    });
+
+    expect(res.status()).toBe(307);
+    expect(res.headers()['location']).toBe('/no-error');
+  });
+
   test('error inside Suspense inside ErrorBoundary', async ({ page }) => {
     const res = await page.goto(`http://localhost:${port}/suspense`);
     expect(res?.status()).toBe(200);

@@ -40,7 +40,7 @@ declare module 'react-server-dom-webpack/server.edge' {
     identifierPrefix?: string;
     signal?: AbortSignal;
     temporaryReferences?: TemporaryReferenceSet | undefined;
-    onError?: ((error: unknown) => void) | undefined;
+    onError?: ((error: unknown) => string | undefined) | undefined;
     onPostpone?: ((reason: string) => void) | undefined;
   };
 
