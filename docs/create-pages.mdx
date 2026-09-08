@@ -241,7 +241,7 @@ export default adapter(pages);
 
 #### Disabling SSR
 
-`unstable_disableSSR` disables document SSR for a page. Runtime document requests return Waku's fallback HTML shell, and build output uses fallback HTML for that route. The RSC payload is still available to the client router.
+`unstable_disableSSR` disables document SSR for a page. Runtime document requests return Waku's fallback HTML shell, and the build writes that shell for a static page. The RSC payload is still available to the client router.
 
 ```tsx
 // ./src/waku.server.tsx

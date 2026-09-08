@@ -239,53 +239,36 @@ export const createBuildHandler = ({
               unstable_clientModuleCallback: (ids) =>
                 ids.forEach((id) => moduleIds.add(id)),
             });
-            const [stream1, stream2] = stream.tee();
-            await generateFile(rscPath2pathname(rscPath), stream1);
+            if (item.noSsr) {
+              await generateFile(rscPath2pathname(rscPath), stream);
+              await generateDefaultHtml(routePathToHtmlFilePath(routePath));
+            } else {
+              const [stream1, stream2] = stream.tee();
+              await generateFile(rscPath2pathname(rscPath), stream1);
+              htmlRenderTasks.add(() =>
+                runHandled(req, async () => {
+                  const html = (
+                    <INTERNAL_ServerRouter
+                      route={{ path: routePath, query: '', hash: '' }}
+                    />
+                  );
+                  const res = await renderHtml(stream2, html, {
+                    rscPath,
+                    unstable_extraScriptContent:
+                      getRouterPrefetchCode(path2moduleIds) +
+                      setupRouterSearchCodecs(configs),
+                  });
+                  await generateFile(
+                    routePathToHtmlFilePath(routePath),
+                    res.body || '',
+                  );
+                }),
+              );
+            }
             path2moduleIds[path2regexp(item.pathPattern || item.path)] =
               Array.from(moduleIds);
-            htmlRenderTasks.add(() =>
-              // Run inside the same request/router/interceptor scope as the RSC
-              // render, so the deferred HTML render is consistent with it.
-              runHandled(req, async () => {
-                const html = (
-                  <INTERNAL_ServerRouter
-                    route={{ path: routePath, query: '', hash: '' }}
-                  />
-                );
-                const res = await renderHtml(stream2, html, {
-                  rscPath,
-                  unstable_extraScriptContent:
-                    getRouterPrefetchCode(path2moduleIds) +
-                    setupRouterSearchCodecs(configs),
-                });
-                await generateFile(
-                  routePathToHtmlFilePath(routePath),
-                  res.body || '',
-                );
-              }),
-            );
           });
         });
-      }
-    };
-
-    const generateNoSsrDefaultHtml = () => {
-      for (const item of configs) {
-        if (item.type !== 'route') {
-          continue;
-        }
-        if (item.noSsr) {
-          const routePath = pathSpecToRoutePath(item.path);
-          if (!routePath) {
-            throw new Error('Pathname is required for noSsr routes on build');
-          }
-          if (skipBuild?.(routePath)) {
-            continue;
-          }
-          runTask(async () => {
-            await generateDefaultHtml(routePathToHtmlFilePath(routePath));
-          });
-        }
       }
     };
 
@@ -345,7 +328,6 @@ export const createBuildHandler = ({
     // HACK hopefully there is a better way than this
     await waitForTasks();
     htmlRenderTasks.forEach(runTask);
-    generateNoSsrDefaultHtml();
     buildStaticSlices();
     await waitForTasks();
     await persistBuildMetadata();

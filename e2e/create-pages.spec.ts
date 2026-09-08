@@ -864,6 +864,18 @@ test.describe(`create-pages`, () => {
     ).toBeVisible();
   });
 
+  test('no ssr with render=dynamic and a slug', async ({ page, request }) => {
+    const response = await request.get(
+      `http://localhost:${port}/no-ssr-slug/abc`,
+    );
+    expect(await response.text()).not.toContain('No SSR Slug');
+
+    await page.goto(`http://localhost:${port}/no-ssr-slug/abc`);
+    await expect(
+      page.getByRole('heading', { name: 'No SSR Slug abc', exact: true }),
+    ).toBeVisible();
+  });
+
   test('no ssr', async ({ page }) => {
     await page.goto(`http://localhost:${port}/no-ssr`);
     await expect(
@@ -957,7 +969,10 @@ test.describe(`create-pages STATIC`, { tag: '@prd' }, () => {
     await stopApp();
   });
 
-  test('no ssr', async ({ page }) => {
+  test('no ssr', async ({ page, request }) => {
+    const response = await request.get(`http://localhost:${port}/no-ssr`);
+    expect(await response.text()).not.toContain('No SSR');
+
     await page.goto(`http://localhost:${port}/no-ssr`);
     await expect(
       page.getByRole('heading', { name: 'No SSR', exact: true }),

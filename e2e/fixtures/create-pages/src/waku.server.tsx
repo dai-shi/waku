@@ -577,6 +577,13 @@ const pages: ReturnType<typeof createPages> = createPages(
 
     createPage({
       render: 'dynamic',
+      path: '/no-ssr-slug/[id]',
+      component: ({ id }) => <h2>No SSR Slug {id}</h2>,
+      unstable_disableSSR: true,
+    }),
+
+    createPage({
+      render: 'dynamic',
       path: '/slices',
       slices: ['slice001', 'slice002'],
       component: () => (
