@@ -24,6 +24,7 @@ export const UBUNTU_LTS_ONLY_SPECS = [
   'rsc-css-modules.spec.ts',
   'spa-example.spec.ts',
   'ssg-performance.prd.spec.ts',
+  'ssg-render-error.prd.spec.ts',
   'ssg-wildcard.spec.ts',
   'ssr-catch-error.spec.ts',
   'ssr-context-provider.spec.ts',
@@ -65,6 +66,7 @@ export const CHROMIUM_ONLY_SPECS = [
   'rsc-css-modules.spec.ts',
   'spa-example.spec.ts',
   'ssg-performance.prd.spec.ts',
+  'ssg-render-error.prd.spec.ts',
   'ssg-wildcard.spec.ts',
   'ssr-context-provider.spec.ts',
   'ssr-target-bundle.spec.ts',
@@ -85,6 +87,7 @@ export const PRD_ONLY_SPECS = [
   'partial-build.prd.spec.ts',
   'render-type.prd.spec.ts',
   'ssg-performance.prd.spec.ts',
+  'ssg-render-error.prd.spec.ts',
 ] as const;
 
 export const DEV_ONLY_SPECS = [

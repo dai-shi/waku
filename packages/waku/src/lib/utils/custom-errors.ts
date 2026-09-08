@@ -40,6 +40,11 @@ export const createCustomError = (message: string, errorInfo: ErrorInfo) => {
   return err;
 };
 
+export const getDigest = (err: unknown) =>
+  typeof (err as { digest?: unknown } | undefined)?.digest === 'string'
+    ? (err as { digest: string }).digest
+    : undefined;
+
 export const getErrorInfo = (err: unknown) => {
   const digest = (err as { digest?: string } | undefined)?.digest;
   if (typeof digest !== 'string' || !digest.startsWith(prefix)) {

@@ -7,13 +7,15 @@ const makeRenderUtils = () => {
     (_data: unknown, _options?: object, _extraOptions?: object) =>
       new ReadableStream(),
   );
-  const renderUtils = createRenderUtils(
-    undefined,
+  const onError = vi.fn();
+  const renderUtils = createRenderUtils({
+    temporaryReferences: undefined,
     renderToReadableStream,
-    async () => ({}) as any,
-    '',
-  );
-  return { renderToReadableStream, renderUtils };
+    loadSsrEntryModule: async () => ({}) as any,
+    buildId: '',
+    onError,
+  });
+  return { renderToReadableStream, renderUtils, onError };
 };
 
 describe('createRenderUtils', () => {
@@ -85,13 +87,14 @@ describe('createRenderUtils', () => {
       .fn()
       .mockReturnValueOnce(firstDebugChannel)
       .mockReturnValueOnce(secondDebugChannel);
-    const renderUtils = createRenderUtils(
-      undefined,
+    const renderUtils = createRenderUtils({
+      temporaryReferences: undefined,
       renderToReadableStream,
-      async () => ({}) as any,
-      '',
+      loadSsrEntryModule: async () => ({}) as any,
+      buildId: '',
       createDebugChannel,
-    );
+      onError: vi.fn(),
+    });
 
     await renderUtils.renderRsc({ App: 'first' });
     await renderUtils.renderRsc({ App: 'second' });
@@ -121,20 +124,60 @@ describe('createRenderUtils', () => {
       stream: fakeHtmlStream,
       status: undefined,
     });
-    const renderUtils = createRenderUtils(
-      undefined,
+    const onError = vi.fn();
+    const renderUtils = createRenderUtils({
+      temporaryReferences: undefined,
       renderToReadableStream,
-      async () =>
+      loadSsrEntryModule: async () =>
         ({
           INTERNAL_renderHtmlStream: renderHtmlStream,
         }) as any,
-      '',
-    );
+      buildId: '',
+      onError,
+    });
 
     const res = await renderUtils.renderHtml(new ReadableStream(), 'app', {
       rscPath: '',
     });
 
     expect(res.headers.get('content-type')).toBe('text/html; charset=utf-8');
+  });
+
+  test('passes onError to the html render', async () => {
+    const renderHtmlStream = vi.fn().mockResolvedValue({
+      stream: new ReadableStream(),
+      status: undefined,
+    });
+    const onError = vi.fn();
+    const renderToReadableStream = vi.fn(() => new ReadableStream());
+    const renderUtils = createRenderUtils({
+      temporaryReferences: undefined,
+      renderToReadableStream,
+      loadSsrEntryModule: async () =>
+        ({ INTERNAL_renderHtmlStream: renderHtmlStream }) as any,
+      buildId: '',
+      onError,
+    });
+
+    await renderUtils.renderHtml(new ReadableStream(), 'app', { rscPath: '' });
+
+    expect(renderToReadableStream).toHaveBeenCalledWith('app', { onError });
+    expect(renderHtmlStream).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({ onError }),
+    );
+  });
+
+  test('passes onError to the RSC render', async () => {
+    const { renderToReadableStream, renderUtils, onError } = makeRenderUtils();
+
+    await renderUtils.renderRsc({ App: 'app' });
+
+    expect(renderToReadableStream).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ onError }),
+      expect.anything(),
+    );
   });
 });

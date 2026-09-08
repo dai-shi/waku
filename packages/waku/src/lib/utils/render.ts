@@ -1,6 +1,5 @@
 import type { Unstable_RenderHtml, Unstable_RenderRsc } from '../types.js';
 import { ETAG_ID_PREFIX } from './etags.js';
-import { sanitizeLog } from './log.js';
 
 const validateRscElementIds = (elements: Record<string, unknown>) => {
   for (const id of Object.keys(elements)) {
@@ -12,38 +11,37 @@ const validateRscElementIds = (elements: Record<string, unknown>) => {
   }
 };
 
-export function createRenderUtils(
-  temporaryReferences: unknown,
+export function createRenderUtils({
+  temporaryReferences,
+  renderToReadableStream,
+  loadSsrEntryModule,
+  buildId,
+  createDebugChannel,
+  debugId,
+  onError,
+}: {
+  temporaryReferences: unknown;
   renderToReadableStream: (
     data: unknown,
     options?: object,
     extraOptions?: object,
-  ) => ReadableStream,
+  ) => ReadableStream;
   loadSsrEntryModule: () => Promise<
     typeof import('../vite-entries/entry.ssr.js')
-  >,
-  buildId: string,
-  createDebugChannel?: () => {
-    readable: ReadableStream<Uint8Array>;
-    writable: WritableStream<Uint8Array>;
-  },
-  debugId?: string,
-): {
+  >;
+  buildId: string;
+  createDebugChannel?:
+    | (() => {
+        readable: ReadableStream<Uint8Array>;
+        writable: WritableStream<Uint8Array>;
+      })
+    | undefined;
+  debugId?: string | undefined;
+  onError: (e: unknown) => string | undefined;
+}): {
   renderRsc: Unstable_RenderRsc;
   renderHtml: Unstable_RenderHtml;
 } {
-  const onError = (e: unknown) => {
-    if (
-      e &&
-      typeof e === 'object' &&
-      'digest' in e &&
-      typeof e.digest === 'string'
-    ) {
-      return e.digest;
-    }
-    console.error('Error during rendering:', sanitizeLog(e));
-  };
-
   return {
     async renderRsc(elements, options) {
       validateRscElementIds(elements);
@@ -83,9 +81,7 @@ export function createRenderUtils(
       const { INTERNAL_renderHtmlStream: renderHtmlStream } =
         await loadSsrEntryModule();
 
-      const rscHtmlStream = renderToReadableStream(html, {
-        onError,
-      });
+      const rscHtmlStream = renderToReadableStream(html, { onError });
       const htmlResult = await renderHtmlStream(elementsStream, rscHtmlStream, {
         rscPath: options.rscPath,
         formState: options.formState as never,
@@ -93,6 +89,7 @@ export function createRenderUtils(
         extraScriptContent: options.unstable_extraScriptContent,
         rethrowNotFound: options.unstable_rethrowNotFound,
         debugId,
+        onError,
       });
       return new Response(htmlResult.stream, {
         status: htmlResult.status || options.status || 200,

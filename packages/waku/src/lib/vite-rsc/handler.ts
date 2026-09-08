@@ -18,7 +18,7 @@ import type {
   Unstable_ProcessBuild as ProcessBuild,
   Unstable_ProcessRequest as ProcessRequest,
 } from '../types.js';
-import { getErrorInfo } from '../utils/custom-errors.js';
+import { getDigest, getErrorInfo } from '../utils/custom-errors.js';
 import { sanitizeLog } from '../utils/log.js';
 import { joinPath } from '../utils/path.js';
 import { DEBUG_ID_HEADER } from '../utils/react-debug-channel.js';
@@ -61,14 +61,21 @@ const toProcessRequest =
       debugChannelRegistry?.delete(debugId);
     }
 
-    const renderUtils = createRenderUtils(
+    const renderUtils = createRenderUtils({
       temporaryReferences,
       renderToReadableStream,
       loadSsrEntryModule,
-      import.meta.env.WAKU_BUILD_ID ?? '',
+      buildId: import.meta.env.WAKU_BUILD_ID ?? '',
       createDebugChannel,
       debugId,
-    );
+      onError: (e) => {
+        const digest = getDigest(e);
+        if (digest === undefined) {
+          console.error('Error during rendering:', sanitizeLog(e));
+        }
+        return digest;
+      },
+    });
 
     let res: Awaited<ReturnType<typeof handleRequest>>;
     try {
@@ -138,12 +145,19 @@ const toProcessRequest =
 const toProcessBuild =
   (handleBuild: HandleBuild): ProcessBuild =>
   async ({ emitFile, unstable_registerPrunableFile }) => {
-    const renderUtils = createRenderUtils(
-      undefined,
+    const errors: unknown[] = [];
+    const renderUtils = createRenderUtils({
+      temporaryReferences: undefined,
       renderToReadableStream,
       loadSsrEntryModule,
-      import.meta.env.WAKU_BUILD_ID ?? '',
-    );
+      buildId: import.meta.env.WAKU_BUILD_ID ?? '',
+      onError: (e) => {
+        if (!getErrorInfo(e)) {
+          errors.push(e);
+        }
+        return getDigest(e);
+      },
+    });
 
     let fallbackHtml: string | undefined;
     const getFallbackHtml = async () => {
@@ -184,6 +198,12 @@ const toProcessBuild =
       },
       unstable_registerPrunableFile,
     });
+    if (errors.length) {
+      throw new AggregateError(
+        errors,
+        'Render errors occurred while prerendering',
+      );
+    }
     await emitFile(
       joinPath(DIST_SERVER, BUILD_METADATA_FILE),
       stringToStream(
