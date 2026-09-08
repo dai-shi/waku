@@ -134,7 +134,7 @@ export const createRouteEntries = (configRegistry: ConfigRegistry) => {
         ? {
             immutable: true,
             render: async () => {
-              if (!elementCache.get(cacheId)) {
+              if (!elementCache.has(cacheId)) {
                 await elementCache.set(cacheId, await render());
               }
               return elementCache.get(cacheId);

@@ -20,6 +20,7 @@ export const createElementCache = (
     preload: (cacheId: CacheId, bytes: Uint8Array) => {
       cache.set(cacheId, Promise.resolve(bytes));
     },
+    has: (cacheId: CacheId) => cache.has(cacheId),
     get: (cacheId: CacheId) => {
       const cachedBytes = cache.get(cacheId);
       if (!cachedBytes) {

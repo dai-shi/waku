@@ -22,6 +22,17 @@ test.describe(`ssr-catch-error`, () => {
     await expect(page.getByText('Something went wrong')).toBeVisible();
   });
 
+  test('a static element that throws does not take the server down', async ({
+    request,
+  }) => {
+    await request.get(`http://localhost:${port}/redirect-static`, {
+      maxRedirects: 0,
+    });
+
+    const res = await request.get(`http://localhost:${port}/no-error`);
+    expect(res.status()).toBe(200);
+  });
+
   test('error inside Suspense inside ErrorBoundary', async ({ page }) => {
     const res = await page.goto(`http://localhost:${port}/suspense`);
     expect(res?.status()).toBe(200);

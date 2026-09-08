@@ -177,7 +177,7 @@ export const createBuildHandler = ({
         cacheId: CacheId,
         el: { isStatic: boolean; renderer: (o: RendererOption) => ReactNode },
       ) => {
-        if (!el.isStatic || buildElementCache.get(cacheId)) {
+        if (!el.isStatic || buildElementCache.has(cacheId)) {
           return;
         }
         const result = buildElementCache.set(cacheId, el.renderer(option));
