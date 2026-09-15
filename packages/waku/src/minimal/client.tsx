@@ -13,17 +13,18 @@ import {
 import type { ReactNode } from 'react';
 import RSDWClient from 'react-server-dom-webpack/client';
 import { createCustomError } from '../lib/utils/custom-errors.js';
-import {
-  ETAGS_HEADER,
-  ETAG_ID_PREFIX,
-  IMMUTABLE_ETAG,
-  isValidEtag,
-  serializeClientEtags,
-} from '../lib/utils/etags.js';
+import { ETAGS_HEADER, serializeClientEtags } from '../lib/utils/etags.js';
 import type { Etags } from '../lib/utils/etags.js';
 import { consumeInitialRscEntry } from '../lib/utils/initial-rsc.js';
 import { setupDebugChannel } from '../lib/utils/react-debug-channel.js';
 import { encodeFuncId, encodeRscPath } from '../lib/utils/rsc-path.js';
+import {
+  adoptElements,
+  collectEtags,
+  combineElements,
+  copyElement,
+  isImmutableElement,
+} from './client-utils/element-etags.js';
 import {
   CALL_SERVER_ELEMENTS_LISTENERS,
   FETCH_ENHANCERS,
@@ -92,26 +93,12 @@ const checkStatus = async (
 };
 
 // only the client adds symbol keys; a decoded server payload has string keys
-type Elements = Record<string | symbol, unknown>;
+type Elements = Readonly<Record<string | symbol, unknown>>;
 
-const collectCachedEtags = (elements: Elements): Etags => {
-  const etags: Etags = {};
-  for (const [key, value] of Object.entries(elements)) {
-    if (key.startsWith(ETAG_ID_PREFIX) && isValidEtag(value)) {
-      etags[key.slice(ETAG_ID_PREFIX.length)] = value;
-    }
-  }
-  return etags;
+export {
+  combineElements as unstable_combineElements,
+  isImmutableElement as unstable_isImmutableElement,
 };
-
-const updateCachedEtags = (store: RootStore, elements: Elements): void => {
-  store.etags = collectCachedEtags(elements);
-};
-
-export const unstable_isImmutableElement = (
-  elements: Elements,
-  slotId: string,
-): boolean => elements[ETAG_ID_PREFIX + slotId] === IMMUTABLE_ETAG;
 
 const getCached = <T,>(c: () => T, m: WeakMap<WeakKey, T>, k: object): T =>
   (m.has(k) ? m : m.set(k, c())).get(k) as T;
@@ -125,11 +112,7 @@ const mergeElementsPromise = (
   b: Promise<Elements> | Elements,
 ): Promise<Elements> => {
   const getResult = () =>
-    Promise.all([a, b]).then(([a, b]) => {
-      const nextElements = { ...a, ...b };
-      delete nextElements._value;
-      return nextElements;
-    });
+    Promise.all([a, b]).then(([a, b]) => combineElements(a, b));
   const cache2 = getCached(() => new WeakMap(), mergeCache, a);
   return getCached(getResult, cache2, b);
 };
@@ -142,22 +125,14 @@ const refreshElementsPromise = (
   b: Promise<Elements>,
 ): Promise<Elements> => {
   const getResult = () =>
-    Promise.all([a, b]).then(([aRes, bRes]) => {
-      const nextElements = { ...bRes };
-      delete nextElements._value;
-      for (const key of Object.getOwnPropertySymbols(aRes)) {
-        nextElements[key] = aRes[key];
-      }
-      return nextElements;
-    });
+    Promise.all([a, b]).then(([aRes, bRes]) =>
+      combineElements(bRes, aRes, {
+        unstable_filter: (key) => typeof key === 'symbol',
+      }),
+    );
   const cache2 = getCached(() => new WeakMap(), refreshCache, a);
   return getCached(getResult, cache2, b);
 };
-
-const slotIdOf = <K extends string | symbol>(key: K): K =>
-  typeof key === 'string' && key.startsWith(ETAG_ID_PREFIX)
-    ? (key.slice(ETAG_ID_PREFIX.length) as K)
-    : key;
 
 const swrCache = new WeakMap();
 const swrElementsPromise = (
@@ -173,30 +148,32 @@ const swrElementsPromise = (
         b.then((bRes) =>
           key in bRes ? bRes[key] : base && key in base ? base[key] : aRes[key],
         );
-      const nextElements: Elements = {};
+      const nextElements: Record<string | symbol, unknown> = {};
       for (const key of Reflect.ownKeys(aRes)) {
-        if (key === '_value') {
-          continue;
+        if (pin(key)) {
+          copyElement(nextElements, aRes, key);
+        } else {
+          nextElements[key] = holeFor(key);
         }
-        // an _etag:<slot> key follows its slot's swr-ness, not its own
-        nextElements[key] = pin(slotIdOf(key)) ? aRes[key] : holeFor(key);
       }
       if (base) {
         for (const key of Object.keys(base)) {
-          if (key === '_value' || key in nextElements) {
+          if (key in nextElements) {
             continue;
           }
           // pin only what the base proves immutable; pinning a mutable
           // base key would eagerly serve possibly-stale content
-          if (unstable_isImmutableElement(base, slotIdOf(key))) {
-            nextElements[key] = base[key];
+          if (isImmutableElement(base, key)) {
+            copyElement(nextElements, base, key);
           } else {
             nextElements[key] = holeFor(key);
           }
         }
       }
       if (overlay) {
-        Object.assign(nextElements, overlay);
+        for (const key of Reflect.ownKeys(overlay)) {
+          copyElement(nextElements, overlay, key);
+        }
       }
       resolvedMergeResults.set(result, nextElements);
       return nextElements;
@@ -227,26 +204,21 @@ const swrNewKeysElementsPromise = (
   if (
     prevRes &&
     !overlayKeys.length &&
-    !Object.keys(bRes).some((key) => key !== '_value' && !(key in prevRes))
+    !Object.keys(bRes).some((key) => !(key in prevRes))
   ) {
     return prev;
   }
   const getResult = () =>
     Promise.resolve(prev).then((prevRes) => {
-      const newKeys = Object.keys(bRes).filter(
-        (key) => key !== '_value' && !(key in prevRes),
-      );
+      const newKeys = Object.keys(bRes).filter((key) => !(key in prevRes));
       if (!newKeys.length && !overlayKeys.length) {
         return prevRes;
       }
-      const nextElements = { ...prevRes };
-      for (const key of newKeys) {
-        nextElements[key] = bRes[key];
-      }
-      for (const key of overlayKeys) {
-        nextElements[key] = bRes[key];
-      }
-      return nextElements;
+      return combineElements(prevRes, bRes, {
+        unstable_filter: (key) =>
+          typeof key === 'string' &&
+          (newKeys.includes(key) || overlayKeys.includes(key)),
+      });
     });
   const cache2 = getCached(() => new WeakMap(), swrNewKeysCache, prev);
   return getCached(getResult, cache2, bRes);
@@ -255,6 +227,10 @@ const swrNewKeysElementsPromise = (
 type FetchRscOptions = {
   signal?: AbortSignal;
   onBuildIdMismatch?: () => void;
+  /**
+   * Elements the response is combined over. The request sends their etags, so
+   * the server can skip the slots they hold.
+   */
   unstable_base?: Elements;
 };
 
@@ -410,11 +386,12 @@ export const unstable_callServerRsc = async (
   const rscPath = encodeFuncId(funcId);
   const rscParams =
     args.length === 1 && args[0] instanceof URLSearchParams ? args[0] : args;
-  const { _value: value, ...data } = await fetchRscElements(
+  const { _value: value, ...payload } = await fetchRscElements(
     rscPath,
     rscParams,
     { etags: rootStore?.etags ?? {} },
   );
+  const data = adoptElements(payload);
   if (Object.keys(data).length) {
     if (!rootStore) {
       throw new Error(
@@ -505,7 +482,7 @@ const fetchRootRsc = (
     rscPath,
     rscParams,
     initial ? { initial } : { etags: {} },
-  );
+  ).then(adoptElements);
 };
 
 /**
@@ -520,16 +497,16 @@ export const unstable_fetchRsc = (
   const base = options?.unstable_base;
   const elements = fetchRscElements(rscPath, rscParams, {
     // Etags can only claim elements from a base the caller retains.
-    etags: collectCachedEtags(base ?? {}),
+    etags: collectEtags(base ?? {}),
     ...(options?.signal ? { signal: options.signal } : {}),
     ...(options?.onBuildIdMismatch
       ? { onBuildIdMismatch: options.onBuildIdMismatch }
       : {}),
-  });
+  }).then(adoptElements);
   if (!base) {
     return elements;
   }
-  return elements.then((response) => ({ ...base, ...response }));
+  return elements.then((response) => combineElements(base, response));
 };
 
 const getInitialRsc = (
@@ -582,9 +559,9 @@ export const useRegisterCallServerElementsListener_UNSTABLE = () => {
 const ElementsContext = createContext<Promise<Elements> | null>(null);
 
 /**
- * Returns a function that merges an element record or pending RSC payload into
- * the current `Root_UNSTABLE`. A rejected payload leaves the current elements
- * unchanged.
+ * Returns a function that merges an element record, or a promise of one such
+ * as `unstable_fetchRsc` returns, into the current `Root_UNSTABLE`. A rejected
+ * payload leaves the current elements unchanged.
  */
 export const useMergeElements_UNSTABLE = () => {
   const store = useRootStore();
@@ -685,7 +662,9 @@ export const Root_UNSTABLE = ({
   }, [initialElements, initialInput, store]);
   useEffect(() => {
     elements.then(
-      (resolved) => updateCachedEtags(store, resolved),
+      (resolved) => {
+        store.etags = collectEtags(resolved);
+      },
       () => {},
     );
   }, [elements, store]);

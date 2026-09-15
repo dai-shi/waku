@@ -1,6 +1,7 @@
 /** @vitest-environment happy-dom */
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ETAG_ID_PREFIX, IMMUTABLE_ETAG } from '../src/lib/utils/etags.js';
+import { ETAGS_ID, IMMUTABLE_ETAG } from '../src/lib/utils/etags.js';
+import { adoptElements } from '../src/minimal/client-utils/element-etags.js';
 import { unstable_fetchRsc as fetchRsc } from '../src/minimal/client.js';
 import {
   canReuseStaticRoute,
@@ -32,9 +33,11 @@ type Elements = Record<string, unknown>;
 
 const route = (path: string, query = '', hash = '') => ({ path, query, hash });
 
-const immutable = (path: string) => ({
-  [ETAG_ID_PREFIX + getRouteSlotId(path)]: IMMUTABLE_ETAG,
-});
+const immutable = (path: string) =>
+  adoptElements({
+    [getRouteSlotId(path)]: {},
+    [ETAGS_ID]: { [getRouteSlotId(path)]: IMMUTABLE_ETAG },
+  });
 
 const pending = () => new Promise<Elements>(() => {});
 
@@ -65,11 +68,21 @@ describe('layer-1 router caches', () => {
     expect(hasCachedShell(route('/a'), {})).toBe(true);
   });
 
+  it('a repeat prefetch keeps the immutable route slot it merges into', async () => {
+    await settlePrefetch('/a', 'q=1', immutable('/a'));
+    await settlePrefetch('/a', 'q=2', adoptElements({ other: 'x' }));
+    expect(hasCachedShell(route('/a'), {})).toBe(true);
+  });
+
   it('hasCachedShell is false without an immutable etag for the slot', () => {
     expect(
-      hasCachedShell(route('/a'), {
-        [ETAG_ID_PREFIX + getRouteSlotId('/a')]: 'W/"mutable"',
-      }),
+      hasCachedShell(
+        route('/a'),
+        adoptElements({
+          [getRouteSlotId('/a')]: {},
+          [ETAGS_ID]: { [getRouteSlotId('/a')]: 'W/"mutable"' },
+        }),
+      ),
     ).toBe(false);
   });
 

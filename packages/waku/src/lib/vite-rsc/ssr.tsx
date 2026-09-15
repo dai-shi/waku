@@ -67,6 +67,8 @@ export const renderHtmlStream: RenderHtmlStream = async (
     // RSC stream needs to be deserialized inside SSR component.
     // This is for ReactDomServer preinit/preload (e.g. client reference modulepreload, css)
     // https://github.com/facebook/react/pull/31799#discussion_r1886166075
+    // FIXME unlike the client, this does not adopt the payload, so it keeps
+    // its reserved keys and unstable_isImmutableElement reads no etags from it
     elementsPromise ??= createFromReadableStream<RscElementsPayload>(stream1);
     htmlPromise ??= createFromReadableStream<RscHtmlPayload>(rscHtmlStream);
     return (

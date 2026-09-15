@@ -2,16 +2,20 @@
 
 // Proves the per-slot cache-validator carry/replay lives in the minimal layer
 // (router-agnostic), driving the real minimal Root.
-import { act, useEffect } from 'react';
+import { Suspense, act, useEffect } from 'react';
 import type { ReactElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   ETAGS_HEADER,
-  ETAG_ID_PREFIX,
+  ETAGS_ID,
   IMMUTABLE_ETAG,
   isValidEtag,
 } from '../src/lib/utils/etags.js';
+import {
+  adoptElements,
+  collectEtags,
+} from '../src/minimal/client-utils/element-etags.js';
 import {
   FETCH_ENHANCERS,
   fetchRscStore,
@@ -20,6 +24,8 @@ import { clearInitialRscEntries } from '../src/minimal/client-utils/initial-rsc-
 import { getDefaultRootStore } from '../src/minimal/client-utils/root-store.js';
 import {
   Root_UNSTABLE as Root,
+  Slot_UNSTABLE as Slot,
+  unstable_combineElements as combineElements,
   unstable_fetchRsc as fetchRsc,
   unstable_isImmutableElement as isImmutableElement,
   useMergeElements_UNSTABLE,
@@ -73,6 +79,7 @@ const renderApp = async (element: ReactElement) => {
     root.render(element);
   });
   return {
+    container,
     unmount: () => {
       act(() => root.unmount());
       container.remove();
@@ -93,18 +100,32 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+const sentEtags = () => {
+  const lastCall = vi.mocked(globalThis.fetch).mock.calls.at(-1);
+  const headers = new Headers(
+    (lastCall?.[1] as RequestInit | undefined)?.headers,
+  );
+  return JSON.parse(headers.get(ETAGS_HEADER) ?? 'null');
+};
+
 describe('minimal per-slot cache-validator (carry + replay)', () => {
   it('caches header-safe tags from a response and drops the clear/non-Latin1 ones', async () => {
     testHoisted.elements = {
       page: <div>page</div>,
-      [`${ETAG_ID_PREFIX}page`]: 'etag-foo',
-      [`${ETAG_ID_PREFIX}bar`]: 'etag-bar',
-      // numeric sentinel-style tag (opaque to minimal) is carried
-      [`${ETAG_ID_PREFIX}static`]: 1,
-      // empty string is the server's "clear" signal -> dropped
-      [`${ETAG_ID_PREFIX}cleared`]: '',
-      // non-Latin1 cannot ride in a header -> dropped
-      [`${ETAG_ID_PREFIX}nonLatin1`]: 'tag-☃',
+      bar: 'bar',
+      static: null,
+      cleared: <div>cleared</div>,
+      nonLatin1: <div>nonLatin1</div>,
+      [ETAGS_ID]: {
+        page: 'etag-foo',
+        bar: 'etag-bar',
+        // numeric sentinel-style tag (opaque to minimal) is carried
+        static: 1,
+        // empty string is the server's "clear" signal -> dropped
+        cleared: '',
+        // non-Latin1 cannot ride in a header -> dropped
+        nonLatin1: 'tag-☃',
+      },
     };
 
     const view = await renderApp(
@@ -124,20 +145,129 @@ describe('minimal per-slot cache-validator (carry + replay)', () => {
     view.unmount();
   });
 
-  it('isImmutableElement detects the immutable sentinel by tag', () => {
-    const elements = {
-      [`${ETAG_ID_PREFIX}static`]: IMMUTABLE_ETAG,
-      [`${ETAG_ID_PREFIX}dynamic`]: 'v1',
+  it('isImmutableElement answers for the record a slot arrived in and its merges', async () => {
+    testHoisted.elements = {
+      static: null,
+      dynamic: <div>dynamic</div>,
+      [ETAGS_ID]: { static: IMMUTABLE_ETAG, dynamic: 'v1' },
     };
+    const elements = await fetchRsc('R/foo');
+
     expect(isImmutableElement(elements, 'static')).toBe(true);
     expect(isImmutableElement(elements, 'dynamic')).toBe(false);
     expect(isImmutableElement(elements, 'missing')).toBe(false);
+    expect(isImmutableElement(combineElements({}, elements), 'static')).toBe(
+      true,
+    );
+    expect(
+      isImmutableElement(
+        combineElements(elements, { static: 'other' }),
+        'static',
+      ),
+    ).toBe(false);
   });
 
-  it('keeps a static slot etag eager through an instant-nav merge', async () => {
+  it('a merged record keeps the etags its values arrived with', async () => {
+    testHoisted.elements = {
+      page: <div>page</div>,
+      count: 0,
+      [ETAGS_ID]: { page: 'etag-page', count: 'etag-count' },
+    };
+    const first = await fetchRsc('R/foo');
+    testHoisted.elements = {
+      side: <div>side</div>,
+      [ETAGS_ID]: { side: 'etag-side' },
+    };
+    const second = await fetchRsc('R/foo');
+    testHoisted.elements = {};
+
+    await fetchRsc('R/bar', undefined, {
+      unstable_base: combineElements(first, second),
+    });
+    expect(sentEtags()).toEqual({
+      page: 'etag-page',
+      count: 'etag-count',
+      side: 'etag-side',
+    });
+
+    await fetchRsc('R/bar', undefined, {
+      unstable_base: combineElements({}, first, {
+        unstable_filter: (key) => key === 'page',
+      }),
+    });
+    expect(sentEtags()).toEqual({ page: 'etag-page' });
+  });
+
+  it('a copy made without combineElements claims nothing', async () => {
+    testHoisted.elements = {
+      page: <div>page</div>,
+      count: 0,
+      [ETAGS_ID]: { page: 'etag-page', count: 'etag-count' },
+    };
+    const elements = await fetchRsc('R/foo');
+    testHoisted.elements = {};
+
+    await fetchRsc('R/bar', undefined, { unstable_base: { ...elements } });
+    expect(sentEtags()).toEqual({});
+  });
+
+  it('a slot sent again without a tag has none, even for an equal value', async () => {
+    testHoisted.elements = {
+      content: 'same',
+      [ETAGS_ID]: { content: IMMUTABLE_ETAG },
+    };
+    const base = await fetchRsc('R/first');
+    testHoisted.elements = { content: 'same' };
+    const result = await fetchRsc('R/second', undefined, {
+      unstable_base: base,
+    });
+    testHoisted.elements = {};
+
+    expect(isImmutableElement(result, 'content')).toBe(false);
+    await fetchRsc('R/third', undefined, { unstable_base: result });
+    expect(sentEtags()).toEqual({});
+  });
+
+  it('a record the filter left out cannot lend its tag to a kept value', () => {
+    const first = adoptElements({
+      content: 'same',
+      [ETAGS_ID]: { content: 'v1' },
+    });
+    const second = adoptElements({
+      content: 'same',
+      [ETAGS_ID]: { content: IMMUTABLE_ETAG },
+    });
+
+    const kept = combineElements(first, second, {
+      unstable_filter: () => false,
+    });
+
+    expect(collectEtags(kept)).toEqual({ content: 'v1' });
+  });
+
+  it('two records keep their own claims for one slot', async () => {
+    testHoisted.elements = {
+      page: <div>x</div>,
+      [ETAGS_ID]: { page: 'xxx' },
+    };
+    const current = await fetchRsc('R/x');
+    testHoisted.elements = {
+      page: <div>y</div>,
+      [ETAGS_ID]: { page: 'yyy' },
+    };
+    const prefetched = await fetchRsc('R/y');
+    testHoisted.elements = {};
+
+    await fetchRsc('R/x', undefined, { unstable_base: current });
+    expect(sentEtags()).toEqual({ page: 'xxx' });
+    await fetchRsc('R/y', undefined, { unstable_base: prefetched });
+    expect(sentEtags()).toEqual({ page: 'yyy' });
+  });
+
+  it('keeps a static slot painted and tagged through an instant-nav merge', async () => {
     testHoisted.elements = {
       page: <div>a</div>,
-      [`${ETAG_ID_PREFIX}page`]: IMMUTABLE_ETAG,
+      [ETAGS_ID]: { page: IMMUTABLE_ETAG },
     };
     let refetch!: Refetch;
     const Capture = () => {
@@ -149,25 +279,36 @@ describe('minimal per-slot cache-validator (carry + replay)', () => {
     };
     const view = await renderApp(
       <Root initialRscPath="R/foo">
+        <Suspense fallback="L">
+          <Slot id="page" />
+        </Suspense>
         <Capture />
       </Root>,
     );
     await flush();
+    expect(view.container.textContent).toBe('a');
 
-    // an instant nav: a fresh fetch, with the static slot marked eager
-    testHoisted.elements = {
-      page: <div>b</div>,
-      [`${ETAG_ID_PREFIX}page`]: IMMUTABLE_ETAG,
-    };
+    const response = Promise.withResolvers<Response>();
+    vi.mocked(globalThis.fetch).mockReturnValueOnce(response.promise);
+    let refetched: Promise<unknown> | undefined;
     await act(async () => {
-      await refetch('R/bar', undefined, {
+      refetched = refetch('R/bar', undefined, {
         unstable_swr: { pin: (key) => key === 'page' },
       });
     });
+    expect(view.container.textContent).toBe('a');
+
+    testHoisted.elements = {
+      page: <div>b</div>,
+      [ETAGS_ID]: { page: IMMUTABLE_ETAG },
+    };
+    await act(async () => {
+      response.resolve(new Response(null, { status: 200 }));
+      await refetched;
+    });
     await flush();
 
-    // the _etag: key follows its slot's swr-ness through the eager merge, so a
-    // pinned static slot's etag stays a concrete value and survives in the cache
+    expect(view.container.textContent).toBe('a');
     expect(getDefaultRootStore()?.etags.page).toBe(IMMUTABLE_ETAG);
 
     view.unmount();
@@ -178,7 +319,7 @@ describe('minimal per-slot cache-validator (carry + replay)', () => {
     // etags, so the server skips re-rendering and re-sending them.
     testHoisted.elements = {
       page: <div>a</div>,
-      [`${ETAG_ID_PREFIX}page`]: 'etag-page',
+      [ETAGS_ID]: { page: 'etag-page' },
     };
     let refetch!: Refetch;
     const Capture = () => {
@@ -200,12 +341,11 @@ describe('minimal per-slot cache-validator (carry + replay)', () => {
       await refetch('R/bar', undefined, {
         unstable_swr: {
           pin: () => false,
-          base: {
+          base: adoptElements({
             widget: <div>w</div>,
-            [`${ETAG_ID_PREFIX}widget`]: 'etag-widget',
+            [ETAGS_ID]: { widget: 'etag-widget', page: 'etag-page-2' },
             page: <div>p</div>,
-            [`${ETAG_ID_PREFIX}page`]: 'etag-page-2',
-          },
+          }),
         },
       });
     });
@@ -236,31 +376,24 @@ describe('minimal per-slot cache-validator (carry + replay)', () => {
 
   it('a prefetch claims the etags of its base and returns the merge', async () => {
     testHoisted.elements = {
-      page: <div>b</div>,
-      [`${ETAG_ID_PREFIX}page`]: 'etag-page-2',
+      widget: <div>w</div>,
+      [ETAGS_ID]: { widget: 'etag-widget' },
     };
-    const result = await fetchRsc('R/bar', undefined, {
-      unstable_base: {
-        widget: <div>w</div>,
-        [`${ETAG_ID_PREFIX}widget`]: 'etag-widget',
-      },
-    });
+    const base = await fetchRsc('R/base');
+    testHoisted.elements = {
+      page: <div>b</div>,
+      [ETAGS_ID]: { page: 'etag-page-2' },
+    };
+    const result = await fetchRsc('R/bar', undefined, { unstable_base: base });
 
-    const lastCall = vi.mocked(globalThis.fetch).mock.calls.at(-1);
-    const headers = new Headers(
-      (lastCall?.[1] as RequestInit | undefined)?.headers,
-    );
-    const sent = JSON.parse(headers.get(ETAGS_HEADER) ?? '{}');
     // only the base's etags are claimed: a live copy the prefetch does not
     // retain must not let the server omit an element
-    expect(sent.widget).toBe('etag-widget');
-    expect(sent.page).toBeUndefined();
+    expect(sentEtags()).toEqual({ widget: 'etag-widget' });
 
-    // a key the response omits is kept from the base, with its etag: a
-    // caller cannot claim copies it does not keep
-    expect(result.widget).toBeDefined();
-    expect(result[`${ETAG_ID_PREFIX}widget`]).toBe('etag-widget');
-    expect(result[`${ETAG_ID_PREFIX}page`]).toBe('etag-page-2');
+    // a key the response omits is kept from the base, with its etag
+    testHoisted.elements = {};
+    await fetchRsc('R/baz', undefined, { unstable_base: result });
+    expect(sentEtags()).toEqual({ widget: 'etag-widget', page: 'etag-page-2' });
   });
 
   it('caches the etag of a slot a response newly introduces in an instant-nav merge', async () => {
@@ -268,7 +401,7 @@ describe('minimal per-slot cache-validator (carry + replay)', () => {
     // and its etag must enter the cache like any other.
     testHoisted.elements = {
       page: <div>a</div>,
-      [`${ETAG_ID_PREFIX}page`]: IMMUTABLE_ETAG,
+      [ETAGS_ID]: { page: IMMUTABLE_ETAG },
     };
     let refetch!: Refetch;
     const Capture = () => {
@@ -287,9 +420,8 @@ describe('minimal per-slot cache-validator (carry + replay)', () => {
 
     testHoisted.elements = {
       page: <div>b</div>,
-      [`${ETAG_ID_PREFIX}page`]: IMMUTABLE_ETAG,
+      [ETAGS_ID]: { page: IMMUTABLE_ETAG, widget: 'etag-widget' },
       widget: <div>w</div>,
-      [`${ETAG_ID_PREFIX}widget`]: 'etag-widget',
     };
     await act(async () => {
       await refetch('R/bar', undefined, {

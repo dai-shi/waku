@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { createElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import {
-  ETAG_ID_PREFIX,
+  ETAGS_ID,
   IMMUTABLE_ETAG,
   parseClientEtags,
 } from '../src/lib/utils/etags.js';
@@ -50,8 +50,8 @@ const buildRouter = (elements: Record<string, ElementSpec>) =>
   });
 
 // Drive a single RSC request and reconstruct the on-wire record: the `elements`
-// the router passes to renderRsc, merged with its `etags` re-encoded as
-// `_etag:<slot>` keys (what renderRsc attaches post-validation).
+// the router passes to renderRsc, merged with its `etags` re-encoded as one
+// `_etags` object (what renderRsc attaches post-validation).
 const drive = async (
   router: ReturnType<typeof unstable_defineRouter>,
   etags: Etags,
@@ -73,10 +73,7 @@ const drive = async (
           elements: Record<string, unknown>,
           options?: { etags?: Record<string, unknown> },
         ) => {
-          captured = { ...elements };
-          for (const [slotId, tag] of Object.entries(options?.etags ?? {})) {
-            captured[ETAG_ID_PREFIX + slotId] = tag;
-          }
+          captured = { ...elements, [ETAGS_ID]: options?.etags ?? {} };
           return makeStream();
         },
       ),
@@ -126,7 +123,8 @@ const driveHtml = async (
   return captured;
 };
 
-const etagKey = (slotId: string) => `${ETAG_ID_PREFIX}${slotId}`;
+const etagOf = (entries: Record<string, unknown>, slotId: string) =>
+  (entries[ETAGS_ID] as Etags | undefined)?.[slotId];
 
 describe('define-router etags (per-slot omit)', () => {
   it('sends a dynamic slot with its etag when the client has none', async () => {
@@ -140,7 +138,7 @@ describe('define-router etags (per-slot omit)', () => {
 
     const entries = await getEntries(router);
     expect('page' in entries).toBe(true);
-    expect(entries[etagKey('page')]).toBe('v1');
+    expect(etagOf(entries, 'page')).toBe('v1');
   });
 
   it('omits a dynamic slot when the client etag still matches', async () => {
@@ -154,7 +152,7 @@ describe('define-router etags (per-slot omit)', () => {
 
     const entries = await getEntries(router, { page: 'v1' });
     expect('page' in entries).toBe(false);
-    expect(etagKey('page') in entries).toBe(false);
+    expect(etagOf(entries, 'page')).toBeUndefined();
   });
 
   it('keeps a slot in html even when the client etag matches', async () => {
@@ -184,7 +182,7 @@ describe('define-router etags (per-slot omit)', () => {
     tag = 'v2';
     const entries = await getEntries(router, { page: 'v1' });
     expect('page' in entries).toBe(true);
-    expect(entries[etagKey('page')]).toBe('v2');
+    expect(etagOf(entries, 'page')).toBe('v2');
   });
 
   it('always sends a dynamic slot without a getEtag (no etag carried)', async () => {
@@ -197,7 +195,7 @@ describe('define-router etags (per-slot omit)', () => {
 
     const entries = await getEntries(router);
     expect('page' in entries).toBe(true);
-    expect(etagKey('page') in entries).toBe(false);
+    expect(etagOf(entries, 'page')).toBeUndefined();
   });
 
   it('clears a stale etag when a dynamic slot no longer provides one', async () => {
@@ -215,7 +213,7 @@ describe('define-router etags (per-slot omit)', () => {
     tag = undefined;
     const entries = await getEntries(router, { page: 'v1' });
     expect('page' in entries).toBe(true);
-    expect(entries[etagKey('page')]).toBe('');
+    expect(etagOf(entries, 'page')).toBe('');
   });
 
   it('uses the static sentinel etag for static slots and omits on match', async () => {
@@ -225,11 +223,11 @@ describe('define-router etags (per-slot omit)', () => {
 
     const first = await getEntries(router);
     expect('page' in first).toBe(true);
-    expect(first[etagKey('page')]).toBe(IMMUTABLE_ETAG);
+    expect(etagOf(first, 'page')).toBe(IMMUTABLE_ETAG);
 
     const second = await getEntries(router, { page: IMMUTABLE_ETAG });
     expect('page' in second).toBe(false);
-    expect(etagKey('page') in second).toBe(false);
+    expect(etagOf(second, 'page')).toBeUndefined();
   });
 
   it('ignores a getEtag on a static slot (tag stays the sentinel)', async () => {
@@ -242,7 +240,7 @@ describe('define-router etags (per-slot omit)', () => {
     });
 
     const entries = await getEntries(router);
-    expect(entries[etagKey('page')]).toBe(IMMUTABLE_ETAG);
+    expect(etagOf(entries, 'page')).toBe(IMMUTABLE_ETAG);
   });
 
   it('passes the element option to getEtag', async () => {
@@ -288,7 +286,7 @@ describe('define-router etags (per-slot omit)', () => {
 
     const first = await getEntries(router);
     expect(slot in first).toBe(true);
-    expect(first[etagKey(slot)]).toBe('sv1');
+    expect(etagOf(first, slot)).toBe('sv1');
 
     const omitted = await getEntries(router, { [slot]: 'sv1' });
     expect(slot in omitted).toBe(false);
@@ -297,7 +295,7 @@ describe('define-router etags (per-slot omit)', () => {
     sliceTag = 'sv2';
     const resent = await getEntries(router, { [slot]: 'sv1' });
     expect(slot in resent).toBe(true);
-    expect(resent[etagKey(slot)]).toBe('sv2');
+    expect(etagOf(resent, slot)).toBe('sv2');
   });
 
   it('resolves the etag before rendering on a slice request, so a concurrent invalidation cannot tag stale content', async () => {
@@ -345,7 +343,7 @@ describe('define-router etags (per-slot omit)', () => {
 
     const first = await getEntries(router);
     expect('root' in first).toBe(true);
-    expect(first[etagKey('root')]).toBe('r1');
+    expect(etagOf(first, 'root')).toBe('r1');
 
     const omitted = await getEntries(router, { root: 'r1' });
     expect('root' in omitted).toBe(false);
@@ -354,7 +352,7 @@ describe('define-router etags (per-slot omit)', () => {
     tag = 'r2';
     const resent = await getEntries(router, { root: 'r1' });
     expect('root' in resent).toBe(true);
-    expect(resent[etagKey('root')]).toBe('r2');
+    expect(etagOf(resent, 'root')).toBe('r2');
   });
 
   it('resolves each slot independently in one response', async () => {
@@ -402,9 +400,9 @@ describe('define-router etags (per-slot omit)', () => {
 
     expect('root' in entries).toBe(false); // unchanged -> omitted
     expect(entries.page).toBeDefined(); // changed -> re-sent
-    expect(entries[etagKey('page')]).toBe('p2');
+    expect(etagOf(entries, 'page')).toBe('p2');
     expect(entries['slice:mySlice']).toBeDefined(); // lost tag -> re-sent
-    expect(entries[etagKey('slice:mySlice')]).toBe(''); // cleared
+    expect(etagOf(entries, 'slice:mySlice')).toBe(''); // cleared
   });
 
   it('marks a static slice by the etag sentinel, not an IS_STATIC marker', async () => {
@@ -435,7 +433,7 @@ describe('define-router etags (per-slot omit)', () => {
 
     const entries = await getEntries(router);
     expect(entries['slice:mySlice']).toBeDefined();
-    expect(entries[etagKey('slice:mySlice')]).toBe(IMMUTABLE_ETAG);
+    expect(etagOf(entries, 'slice:mySlice')).toBe(IMMUTABLE_ETAG);
     // the etag is the only static signal; no IS_STATIC:<slot> marker
     expect(`${IS_STATIC_ID}:slice:mySlice` in entries).toBe(false);
   });
@@ -454,7 +452,7 @@ describe('define-router etags (per-slot omit)', () => {
     ]) {
       const entries = await getEntriesWithEtagsHeader(build(), header);
       expect('page' in entries).toBe(true);
-      expect(entries[etagKey('page')]).toBe(IMMUTABLE_ETAG);
+      expect(etagOf(entries, 'page')).toBe(IMMUTABLE_ETAG);
     }
   });
 

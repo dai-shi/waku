@@ -1,4 +1,4 @@
-export const ETAG_ID_PREFIX = '_etag:';
+export const ETAGS_ID = '_etags';
 export const ETAGS_HEADER = 'X-Waku-Etags';
 
 // Non-string sentinel, so it cannot collide with a (string) content validator.

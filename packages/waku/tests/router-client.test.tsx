@@ -25,7 +25,12 @@ import {
   vi,
 } from 'vitest';
 import { createCustomError } from '../src/lib/utils/custom-errors.js';
-import { ETAG_ID_PREFIX, IMMUTABLE_ETAG } from '../src/lib/utils/etags.js';
+import { ETAGS_ID, IMMUTABLE_ETAG } from '../src/lib/utils/etags.js';
+import type { Etags } from '../src/lib/utils/etags.js';
+import {
+  adoptElements,
+  collectEtags,
+} from '../src/minimal/client-utils/element-etags.js';
 import { fetchRscStore } from '../src/minimal/client-utils/fetch-store.js';
 import {
   Children_UNSTABLE as Children,
@@ -33,6 +38,7 @@ import {
   Root_UNSTABLE as Root,
   Slot_UNSTABLE as Slot,
   unstable_fetchRsc as fetchRsc,
+  unstable_isImmutableElement as isImmutableElement,
   useElementsPromise_UNSTABLE as useElementsPromise,
   useMergeElements_UNSTABLE as useMergeElements,
 } from '../src/minimal/client.js';
@@ -259,6 +265,9 @@ vi.mock('../src/minimal/client.js', async () => {
     typeof import('../src/minimal/client.js')
   >('../src/minimal/client.js');
   const React = await vi.importActual<typeof import('react')>('react');
+  const { adoptElements } = await vi.importActual<
+    typeof import('../src/minimal/client-utils/element-etags.js')
+  >('../src/minimal/client-utils/element-etags.js');
 
   const makeThenable = (value: Record<string, unknown>) =>
     Object.assign(Promise.resolve(value), {
@@ -287,8 +296,10 @@ vi.mock('../src/minimal/client.js', async () => {
           : undefined;
       result =
         prevValue && !('then' in data)
-          ? makeThenable({ ...prevValue, ...data })
-          : Promise.all([prev, data]).then(([a, b]) => ({ ...a, ...b }));
+          ? makeThenable(actual.unstable_combineElements(prevValue, data))
+          : Promise.all([prev, data]).then(([a, b]) =>
+              actual.unstable_combineElements(a, b),
+            );
       byData.set(data, result);
     }
     return result;
@@ -314,19 +325,12 @@ vi.mock('../src/minimal/client.js', async () => {
     }
     let merged = byResult.get(result);
     if (!merged) {
-      merged = Promise.resolve(prev).then((prevRes) => {
-        const next: Record<string | symbol, unknown> = { ...prevRes };
-        const from: Record<string | symbol, unknown> = result;
-        for (const key of Reflect.ownKeys(result)) {
-          if (key === '_value') {
-            continue;
-          }
-          if (!(key in prevRes) || (overlay && key in overlay) || !pin(key)) {
-            next[key] = from[key];
-          }
-        }
-        return next as Record<string, unknown>;
-      });
+      merged = Promise.resolve(prev).then((prevRes) =>
+        actual.unstable_combineElements(prevRes, result, {
+          unstable_filter: (key) =>
+            !(key in prevRes) || (!!overlay && key in overlay) || !pin(key),
+        }),
+      );
       byResult.set(result, merged);
     }
     return merged;
@@ -339,10 +343,10 @@ vi.mock('../src/minimal/client.js', async () => {
   const StatefulRoot = (props: { children?: ReactNode }) => {
     const valueRef = React.useRef<Record<string, unknown>>(undefined);
     if (!valueRef.current) {
-      valueRef.current = {
+      valueRef.current = adoptElements({
         root: React.createElement(actual.Children_UNSTABLE),
         ...testHoisted.elements,
-      };
+      });
     }
     const [elements, setElements] = React.useState<
       Promise<Record<string, unknown>>
@@ -426,12 +430,15 @@ vi.mock('../src/minimal/client.js', async () => {
         if (data instanceof Promise || 'then' in data) {
           store?.applyAsync(
             dataPromise.then(
-              (result) => ({ ...result, ...overlay }),
+              (result) =>
+                actual.unstable_combineElements(result, overlay ?? {}),
               () => ({}),
             ),
           );
         } else {
-          store?.applySync({ ...data, ...overlay });
+          store?.applySync(
+            actual.unstable_combineElements(data, overlay ?? {}),
+          );
         }
         return dataPromise;
       };
@@ -498,10 +505,14 @@ vi.mock('../src/minimal/client.js', async () => {
             : testHoisted.inner!)(rscPath, ...rest),
         );
         const data = abortable(requested, options?.signal);
-        return data.then((result) => ({
-          ...options?.unstable_base,
-          ...withRouteMeta(result, rscPath, rscParams),
-        }));
+        return data.then((result) => {
+          const response = adoptElements(
+            withRouteMeta(result, rscPath, rscParams),
+          );
+          return options?.unstable_base
+            ? actual.unstable_combineElements(options.unstable_base, response)
+            : response;
+        });
       },
     ),
   };
@@ -1791,7 +1802,7 @@ describe('Slice', () => {
     const slotId = unstable_getSliceSlotId('slice-1');
     const elements = {
       [slotId]: <div>loaded</div>,
-      [`${ETAG_ID_PREFIX}${slotId}`]: IMMUTABLE_ETAG,
+      [ETAGS_ID]: { [slotId]: IMMUTABLE_ETAG },
     };
 
     const view = await renderWithMinimalRoot(
@@ -1810,7 +1821,7 @@ describe('Slice', () => {
     const slotId = unstable_getSliceSlotId('slice-1');
     const elements = {
       [slotId]: <div>loaded</div>,
-      [`${ETAG_ID_PREFIX}${slotId}`]: 'v1',
+      [ETAGS_ID]: { [slotId]: 'v1' },
     };
 
     const view = await renderWithMinimalRoot(
@@ -2129,6 +2140,66 @@ describe('Router integration', () => {
     view.unmount();
   });
 
+  test('a cancelled navigation keeps the etags of the elements on screen', async () => {
+    const startSlot = unstable_getRouteSlotId('/start');
+    const never = new Promise<never>(() => {});
+    const Never = () => use(never);
+    installRefetch(
+      vi.fn<RefetchInner>(async (rscPath) =>
+        rscPath === unstable_encodeRoutePath('/never')
+          ? {
+              [unstable_getRouteSlotId('/never')]: <Never />,
+              [ROUTE_ID]: ['/never', ''],
+              [IS_STATIC_ID]: false,
+            }
+          : never,
+      ),
+    );
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const Immutable = () => {
+      const elements = use(useElementsPromise());
+      return (
+        <i data-testid="immutable">
+          {String(isImmutableElement(elements, startSlot))}
+        </i>
+      );
+    };
+    const view = await renderRouter(
+      { initialRoute: { path: '/start', query: '', hash: '' } },
+      {
+        [startSlot]: (
+          <>
+            <Probe />
+            <Immutable />
+          </>
+        ),
+        [ROUTE_ID]: ['/start', ''],
+        [IS_STATIC_ID]: true,
+        [ETAGS_ID]: { [startSlot]: IMMUTABLE_ETAG },
+      },
+    );
+    try {
+      const immutable = () =>
+        view.container.querySelector('[data-testid="immutable"]')?.textContent;
+      expect(immutable()).toBe('true');
+      // /never's merge waits in its transition; reusing the static /start
+      // cancels it and merges back the elements on screen
+      await act(async () => {
+        void capture.router!.push('/never');
+        await flush();
+      });
+      await act(async () => {
+        void capture.router!.push('/start?x=1');
+        await flush();
+      });
+
+      expect(immutable()).toBe('true');
+    } finally {
+      view.unmount();
+    }
+  });
+
   test('a server function 404 keeps the requested url', async () => {
     window.history.replaceState({}, '', '/start?a=1');
     const capture = { router: null as RouterApi | null };
@@ -2270,7 +2341,6 @@ describe('Router integration', () => {
     const capture = { router: null as RouterApi | null };
     const Probe = makeProbe(capture);
     const slotId = unstable_getRouteSlotId('/start');
-    const etagId = `${ETAG_ID_PREFIX}${slotId}`;
     let mergeElements: ReturnType<typeof useMergeElements> | undefined;
     const Content = ({ label }: { label: string }) => {
       mergeElements = useMergeElements();
@@ -2285,7 +2355,7 @@ describe('Router integration', () => {
       { initialRoute: { path: '/start', query: '', hash: '' } },
       {
         [slotId]: <Content label="initial" />,
-        [etagId]: 'initial',
+        [ETAGS_ID]: { [slotId]: 'initial' },
         [ROUTE_ID]: ['/start', ''],
         [IS_STATIC_ID]: false,
       },
@@ -2297,16 +2367,18 @@ describe('Router integration', () => {
         await Promise.resolve();
       });
       await act(async () => {
-        await mergeElements!({
-          [slotId]: <Content label="action" />,
-          [etagId]: 'action',
-        });
+        await mergeElements!(
+          adoptElements({
+            [slotId]: <Content label="action" />,
+            [ETAGS_ID]: { [slotId]: 'action' },
+          }),
+        );
       });
 
       await act(async () => {
         pending.resolve({
           [slotId]: <Content label="destination" />,
-          [etagId]: 'destination',
+          [ETAGS_ID]: { [slotId]: 'destination' },
           [IS_STATIC_ID]: false,
         });
         await pushed;
@@ -2316,17 +2388,19 @@ describe('Router integration', () => {
       expect(view.container.textContent).toContain('destination');
       expect(view.container.textContent).not.toContain('action');
 
-      refetch.mockResolvedValueOnce({
-        [slotId]: <Content label="reloaded" />,
-        [etagId]: 'reloaded',
-        [IS_STATIC_ID]: false,
+      let reloadEtags: Etags | undefined;
+      refetch.mockImplementationOnce(async (_rscPath, _rscParams, options) => {
+        reloadEtags = collectEtags(options?.unstable_base ?? {});
+        return {
+          [slotId]: <Content label="reloaded" />,
+          [ETAGS_ID]: { [slotId]: 'reloaded' },
+          [IS_STATIC_ID]: false,
+        };
       });
       await act(async () => {
         await capture.router!.reload();
       });
-      expect(refetch.mock.calls[1]?.[2]?.unstable_base?.[etagId]).toBe(
-        'destination',
-      );
+      expect(reloadEtags).toEqual({ [slotId]: 'destination' });
     } finally {
       view.unmount();
     }
@@ -2613,7 +2687,7 @@ describe('Router integration', () => {
         [nextSlotId]: <div>shell</div>,
         [ROUTE_ID]: ['/start', ''],
         [IS_STATIC_ID]: false,
-        [`${ETAG_ID_PREFIX}${nextSlotId}`]: IMMUTABLE_ETAG,
+        [ETAGS_ID]: { [nextSlotId]: IMMUTABLE_ETAG },
       },
     );
     try {
@@ -2787,7 +2861,7 @@ describe('Router integration', () => {
         extra: <div>placeholder</div>,
         [ROUTE_ID]: ['/start', ''],
         [IS_STATIC_ID]: false,
-        [`${ETAG_ID_PREFIX}${nextSlotId}`]: IMMUTABLE_ETAG,
+        [ETAGS_ID]: { [nextSlotId]: IMMUTABLE_ETAG },
       },
     );
     try {
@@ -3845,13 +3919,16 @@ describe('Router integration', () => {
 
   // The instant shell: a cached prefetch is the navigation's data source,
   // while the eager merge paints the static shell and the base.
-  const instantNavElements = () => ({
+  const instantNavElements = (etags: Record<string, unknown> = {}) => ({
     [unstable_getRouteSlotId('/start')]: <div>start</div>,
     [unstable_getRouteSlotId('/next')]: <div>next</div>,
     [ROUTE_ID]: ['/start', ''],
     [IS_STATIC_ID]: false,
-    // mark /next's route slot static so the instant branch engages
-    [`${ETAG_ID_PREFIX}${unstable_getRouteSlotId('/next')}`]: IMMUTABLE_ETAG,
+    [ETAGS_ID]: {
+      // mark /next's route slot static so the instant branch engages
+      [unstable_getRouteSlotId('/next')]: IMMUTABLE_ETAG,
+      ...etags,
+    },
   });
 
   test('instant Link bypasses a custom transition for a known static route', async () => {
@@ -4041,12 +4118,12 @@ describe('Router integration', () => {
     const view = await renderRouter(
       { initialRoute: { path: '/start', query: '', hash: '' } },
       {
-        ...instantNavElements(),
+        ...instantNavElements({
+          [unstable_getRouteSlotId('/slow')]: IMMUTABLE_ETAG,
+        }),
         [unstable_getRouteSlotId('/start')]: <Probe />,
         [unstable_getRouteSlotId('/slow')]: <Probe />,
         [unstable_getRouteSlotId('/next')]: <Probe />,
-        [`${ETAG_ID_PREFIX}${unstable_getRouteSlotId('/slow')}`]:
-          IMMUTABLE_ETAG,
       },
     );
 
@@ -4788,7 +4865,7 @@ describe('Router integration', () => {
   test('mode once fetches a route only once per session', async () => {
     const shell = {
       [unstable_getRouteSlotId('/next')]: <div>next-shell</div>,
-      [`${ETAG_ID_PREFIX}${unstable_getRouteSlotId('/next')}`]: IMMUTABLE_ETAG,
+      [ETAGS_ID]: { [unstable_getRouteSlotId('/next')]: IMMUTABLE_ETAG },
       [ROUTE_ID]: ['/next', ''],
       [IS_STATIC_ID]: false,
     };
@@ -5078,7 +5155,7 @@ describe('Router integration', () => {
     const freshSlotId = unstable_getRouteSlotId('/fresh');
     const shell = {
       [freshSlotId]: <div>fresh-shell</div>,
-      [`${ETAG_ID_PREFIX}${freshSlotId}`]: IMMUTABLE_ETAG,
+      [ETAGS_ID]: { [freshSlotId]: IMMUTABLE_ETAG },
       [ROUTE_ID]: ['/fresh', ''],
       [IS_STATIC_ID]: false,
     };
@@ -5118,23 +5195,16 @@ describe('Router integration', () => {
     expect(refetch).toHaveBeenCalledWith(
       unstable_encodeRoutePath('/fresh'),
       expect.any(URLSearchParams),
-      expect.objectContaining({
-        unstable_base: expect.objectContaining({
-          [freshSlotId]: expect.anything(),
-          [`${ETAG_ID_PREFIX}${freshSlotId}`]: IMMUTABLE_ETAG,
-        }),
-      }),
+      expect.objectContaining({ unstable_base: expect.any(Object) }),
     );
-    expect(testHoisted.mergeOptions).toContainEqual(
-      expect.objectContaining({
-        unstable_swr: expect.objectContaining({
-          base: expect.objectContaining({
-            [freshSlotId]: expect.anything(),
-            [`${ETAG_ID_PREFIX}${freshSlotId}`]: IMMUTABLE_ETAG,
-          }),
-        }),
-      }),
-    );
+    const refetchBase = refetch.mock.calls.at(-1)?.[2]?.unstable_base ?? {};
+    expect(collectEtags(refetchBase)).toEqual({
+      [freshSlotId]: IMMUTABLE_ETAG,
+    });
+    const swrBase =
+      testHoisted.mergeOptions.find((options) => options?.unstable_swr?.base)
+        ?.unstable_swr?.base ?? {};
+    expect(collectEtags(swrBase)).toEqual({ [freshSlotId]: IMMUTABLE_ETAG });
 
     dateNow.mockRestore();
     view.unmount();
@@ -5947,7 +6017,7 @@ describe('Router integration', () => {
       [ROUTE_ID]: ['/start', ''],
       [IS_STATIC_ID]: false,
       [HAS404_ID]: true,
-      [`${ETAG_ID_PREFIX}${profileSlotId}`]: IMMUTABLE_ETAG,
+      [ETAGS_ID]: { [profileSlotId]: IMMUTABLE_ETAG },
     };
 
     const view = await renderRouter(
@@ -6125,7 +6195,7 @@ describe('Router integration', () => {
       [unstable_getRouteSlotId('/account/login')]: <Probe />,
       [ROUTE_ID]: ['/start', ''],
       [IS_STATIC_ID]: false,
-      [`${ETAG_ID_PREFIX}${profileSlotId}`]: IMMUTABLE_ETAG,
+      [ETAGS_ID]: { [profileSlotId]: IMMUTABLE_ETAG },
     };
 
     const view = await renderRouter(
@@ -6625,7 +6695,7 @@ describe('Router integration', () => {
       [profileSlotId]: <ThrowRedirect />,
       [ROUTE_ID]: ['/start', ''],
       [IS_STATIC_ID]: false,
-      [`${ETAG_ID_PREFIX}${profileSlotId}`]: IMMUTABLE_ETAG,
+      [ETAGS_ID]: { [profileSlotId]: IMMUTABLE_ETAG },
     };
 
     const view = await renderRouter(
@@ -7347,7 +7417,7 @@ describe('Router integration', () => {
         [unstable_getRouteSlotId('/other')]: <div>other</div>,
         [ROUTE_ID]: ['/start', ''],
         [IS_STATIC_ID]: false,
-        [`${ETAG_ID_PREFIX}${nextSlotId}`]: IMMUTABLE_ETAG,
+        [ETAGS_ID]: { [nextSlotId]: IMMUTABLE_ETAG },
         [HAS404_ID]: false,
       },
     );
@@ -7425,7 +7495,7 @@ describe('Router integration', () => {
         extra: <div>placeholder</div>,
         [ROUTE_ID]: ['/start', ''],
         [IS_STATIC_ID]: false,
-        [`${ETAG_ID_PREFIX}${nextSlotId}`]: IMMUTABLE_ETAG,
+        [ETAGS_ID]: { [nextSlotId]: IMMUTABLE_ETAG },
       },
     );
     try {

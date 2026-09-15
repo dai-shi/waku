@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from 'vitest';
-import { ETAG_ID_PREFIX, IMMUTABLE_ETAG } from '../src/lib/utils/etags.js';
+import { ETAGS_ID, IMMUTABLE_ETAG } from '../src/lib/utils/etags.js';
 import { createRenderUtils } from '../src/lib/utils/render.js';
 
 const makeRenderUtils = () => {
@@ -46,20 +46,24 @@ describe('createRenderUtils', () => {
     );
   });
 
-  test('attaches _etag:<slot> keys from the etags option, past id validation', async () => {
+  test('attaches the etags option as one _etags object, past id validation', async () => {
     const { renderToReadableStream, renderUtils } = makeRenderUtils();
 
     await renderUtils.renderRsc(
       { App: 'app' },
       { etags: { page: 'v1', slice: IMMUTABLE_ETAG } },
     );
+    await renderUtils.renderRsc({ App: 'app' }, { etags: {} });
 
-    expect(renderToReadableStream).toHaveBeenCalledWith(
-      expect.objectContaining({
-        App: 'app',
-        [`${ETAG_ID_PREFIX}page`]: 'v1',
-        [`${ETAG_ID_PREFIX}slice`]: IMMUTABLE_ETAG,
-      }),
+    expect(renderToReadableStream).toHaveBeenNthCalledWith(
+      1,
+      { App: 'app', [ETAGS_ID]: { page: 'v1', slice: IMMUTABLE_ETAG } },
+      expect.anything(),
+      expect.anything(),
+    );
+    expect(renderToReadableStream).toHaveBeenNthCalledWith(
+      2,
+      { App: 'app' },
       expect.anything(),
       expect.anything(),
     );

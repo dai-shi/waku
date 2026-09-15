@@ -1,5 +1,5 @@
 import type { Unstable_RenderHtml, Unstable_RenderRsc } from '../types.js';
-import { ETAG_ID_PREFIX } from './etags.js';
+import { ETAGS_ID } from './etags.js';
 
 const validateRscElementIds = (elements: Record<string, unknown>) => {
   for (const id of Object.keys(elements)) {
@@ -54,10 +54,8 @@ export function createRenderUtils({
       if (options?.documentLocation) {
         data._location = options.documentLocation;
       }
-      if (options?.etags) {
-        for (const [slotId, etag] of Object.entries(options.etags)) {
-          data[ETAG_ID_PREFIX + slotId] = etag;
-        }
+      if (options?.etags && Object.keys(options.etags).length) {
+        data[ETAGS_ID] = options.etags;
       }
       return renderToReadableStream(
         data,

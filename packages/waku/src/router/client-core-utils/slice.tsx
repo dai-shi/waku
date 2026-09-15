@@ -12,7 +12,7 @@ import {
   getSliceSlotId,
 } from '../isomorphic-utils/route-path.js';
 
-type Elements = Record<string | symbol, unknown>;
+type Elements = Readonly<Record<string | symbol, unknown>>;
 
 export type SliceId = string;
 

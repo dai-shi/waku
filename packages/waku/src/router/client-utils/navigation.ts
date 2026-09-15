@@ -46,7 +46,7 @@ import {
 import type { RouterState } from './router-state.js';
 import { scrollToHash, shouldScrollForRouteChange } from './scroll.js';
 
-type Elements = Record<string | symbol, unknown>;
+type Elements = Readonly<Record<string | symbol, unknown>>;
 
 type HistoryIntent = ChangeRouteOptions['history'];
 
@@ -157,9 +157,8 @@ export const useNavigation = (
       // Append the committed snapshot after the superseded transition update.
       // The explicit key also clears state absent from the initial snapshot.
       const committed = getElements();
-      void mergeElements({
-        ...committed,
-        [ROUTER_STATE_ID]: getRouterState(committed),
+      void mergeElements(committed, {
+        unstable_overlay: { [ROUTER_STATE_ID]: getRouterState(committed) },
       });
     }
     pendingNavigationRef.current = null;
@@ -396,9 +395,8 @@ export const useNavigation = (
             base,
             { settled: settledRoute },
           );
-          void mergeElements({
-            ...patch,
-            [ROUTER_STATE_ID]: finalState,
+          void mergeElements(patch, {
+            unstable_overlay: { [ROUTER_STATE_ID]: finalState },
           });
         },
         options.startTransition || startTransition,

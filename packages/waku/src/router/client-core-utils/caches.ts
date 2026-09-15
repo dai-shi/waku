@@ -15,7 +15,7 @@ import {
   createPrefetchManager,
 } from './prefetch-cache.js';
 
-type Elements = Record<string | symbol, unknown>;
+type Elements = Readonly<Record<string | symbol, unknown>>;
 
 export type { PrefetchOptions } from './prefetch-cache.js';
 

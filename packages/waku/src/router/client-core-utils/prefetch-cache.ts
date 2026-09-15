@@ -1,4 +1,6 @@
-type Elements = Record<string | symbol, unknown>;
+import { unstable_combineElements as combineElements } from '../../minimal/client.js';
+
+type Elements = Readonly<Record<string | symbol, unknown>>;
 
 export type PrefetchMode = 'always' | 'once';
 
@@ -88,7 +90,7 @@ const mergePrefetchedElements = (
   const existing = prefetchedElementsCache.get(rscPath);
   prefetchedElementsCache.set(
     rscPath,
-    existing ? { ...existing, ...elements } : elements,
+    existing ? combineElements(existing, elements) : elements,
   );
 };
 

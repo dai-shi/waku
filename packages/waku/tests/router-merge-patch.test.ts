@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { ETAG_ID_PREFIX } from '../src/lib/utils/etags.js';
+import { ETAGS_ID } from '../src/lib/utils/etags.js';
+import {
+  adoptElements,
+  collectEtags,
+} from '../src/minimal/client-utils/element-etags.js';
 import { buildMergePatch } from '../src/router/client-core-utils/merge-patch.js';
 import { ROUTER_STATE_ID } from '../src/router/client-utils/router-state.js';
 import {
@@ -60,19 +64,27 @@ describe('buildMergePatch', () => {
     expect(patchRemoved.extra).toBeUndefined();
   });
 
-  it('always lands the new route slot and etag when the rsc route changed', () => {
+  it('always lands the new route slot, with its etag, when the rsc route changed', () => {
     const slot = getRouteSlotId('/next');
-    const etag = ETAG_ID_PREFIX + slot;
-    const base = { [slot]: 'start', [etag]: 'v1' };
-    const current = { [slot]: 'action', [etag]: 'v-action' };
+    const base = adoptElements({
+      [slot]: 'start',
+      [ETAGS_ID]: { [slot]: 'v1' },
+    });
+    const current = adoptElements({
+      [slot]: 'action',
+      [ETAGS_ID]: { [slot]: 'v-action' },
+    });
     const patch = buildMergePatch(
-      loaded('/next', { [slot]: 'next', [etag]: 'v2' }),
+      loaded(
+        '/next',
+        adoptElements({ [slot]: 'next', [ETAGS_ID]: { [slot]: 'v2' } }),
+      ),
       current,
       base,
       { settled: route('/start') },
     );
     expect(patch[slot]).toBe('next');
-    expect(patch[etag]).toBe('v2');
+    expect(collectEtags(patch)).toEqual({ [slot]: 'v2' });
   });
 
   it('does not force the route slot when the rsc route is unchanged', () => {
@@ -107,7 +119,7 @@ describe('buildMergePatch', () => {
     expect(patch[ROUTE_ID]).toEqual(['/next', 'q=1']);
     expect(patch[HAS404_ID]).toBe(true);
     expect(patch[IS_STATIC_ID]).toBe(false);
-    expect(Reflect.ownKeys(patch)).toEqual([HAS404_ID, ROUTE_ID, IS_STATIC_ID]);
+    expect(Reflect.ownKeys(patch)).toEqual([ROUTE_ID, HAS404_ID, IS_STATIC_ID]);
   });
 
   it('omits meta keys the response did not send', () => {
@@ -123,10 +135,11 @@ describe('buildMergePatch', () => {
   });
 
   it('does not write RouterState — that stays with the binding', () => {
+    const base = { page: 1, [ROUTER_STATE_ID]: 'state' };
     const patch = buildMergePatch(
-      loaded('/next', { page: 1 }),
-      { page: 1 },
-      { page: 1 },
+      loaded('/next', { page: 1, [ROUTER_STATE_ID]: 'state' }),
+      base,
+      base,
       { settled: route('/start') },
     );
     expect(ROUTER_STATE_ID in patch).toBe(false);

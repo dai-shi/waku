@@ -24,7 +24,7 @@ import type { RouteProps } from '../isomorphic-utils/route-path.js';
 import { ROUTER_STATE_ID } from './router-state.js';
 import type { RouterState } from './router-state.js';
 
-type Elements = Record<string | symbol, unknown>;
+type Elements = Readonly<Record<string | symbol, unknown>>;
 
 type InstantAttempt = {
   route: RouteProps;

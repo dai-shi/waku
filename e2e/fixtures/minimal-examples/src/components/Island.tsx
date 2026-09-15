@@ -4,6 +4,7 @@ import { use, useCallback, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import {
   Slot_UNSTABLE as Slot,
+  unstable_combineElements as combineElements,
   unstable_fetchRsc,
   useElementsPromise_UNSTABLE as useElementsPromise,
   useMergeElements_UNSTABLE,
@@ -13,7 +14,14 @@ import { Counter } from './Counter';
 const useRefetch = () => {
   const mergeElements = useMergeElements_UNSTABLE();
   return useCallback(
-    (rscPath: string) => mergeElements(unstable_fetchRsc(rscPath)),
+    (rscPath: string, slotId: string) => {
+      const isSlot = (key: string | symbol) => key === slotId;
+      return mergeElements(
+        unstable_fetchRsc(rscPath).then((next) =>
+          combineElements({}, next, { unstable_filter: isSlot }),
+        ),
+      );
+    },
     [mergeElements],
   );
 };
@@ -41,11 +49,11 @@ function Slice({
   const hasSlice = slotId in elements;
   useEffect(() => {
     if (!hasSlice) {
-      refetch('island').catch((e) => {
+      refetch('island', slotId).catch((e) => {
         console.error('Failed to refetch island:', e);
       });
     }
-  }, [hasSlice, refetch]);
+  }, [hasSlice, refetch, slotId]);
   if (!hasSlice) {
     return fallback;
   }

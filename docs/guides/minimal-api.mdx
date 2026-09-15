@@ -38,6 +38,7 @@ The minimal API is small, but it exposes both server-side handlers and client-si
 | `waku/minimal/client` | `Children_UNSTABLE`          | Placing client-side `Slot` children inside a server-rendered element. |
 | `waku/minimal/client` | `unstable_fetchRsc`          | Fetching and decoding an RSC payload.                                 |
 | `waku/minimal/client` | `useMergeElements_UNSTABLE`  | Merging an RSC payload into the current element map.                  |
+| `waku/minimal/client` | `unstable_combineElements`   | Combining element maps without losing their etags.                    |
 | `waku/minimal/client` | `unstable_*` helpers         | Building router-like abstractions.                                    |
 
 Examples below often import these as shorter names.
@@ -561,6 +562,7 @@ Important behavior:
 
 - `refetch(...)` requests a new RSC payload for the given `rscPath` and optional `rscParams`.
 - The returned payload is merged into the current element map by key.
+- Each slot's etag stays with the element map Minimal made it in. Passing a map as `unstable_base` to `fetchRsc` sends its etags, so the server can skip the slots it holds. A map made by `combineElements` keeps them; a copy made with a spread or `Object.assign` does not.
 - The reload registration keeps development HMR on the refetched RSC path and has no effect in production.
 - If you return only `InnerApp`, previously rendered elements such as `App` stay mounted.
 - If the refetch fails, the existing element map stays in place.

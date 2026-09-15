@@ -5,7 +5,7 @@ import { canReuseStaticRoute, createRscParams, getPrefetch } from './caches.js';
 import { MAX_FOLLOWS_PER_NAVIGATION, decideFollow } from './error-route.js';
 import { getRouteUrl, isSameRscRoute } from './route-url.js';
 
-type Elements = Record<string | symbol, unknown>;
+type Elements = Readonly<Record<string | symbol, unknown>>;
 
 export type LoadOutcome =
   | {

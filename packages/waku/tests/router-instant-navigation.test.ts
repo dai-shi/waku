@@ -1,6 +1,7 @@
 /** @vitest-environment happy-dom */
 import { describe, expect, test } from 'vitest';
-import { ETAG_ID_PREFIX, IMMUTABLE_ETAG } from '../src/lib/utils/etags.js';
+import { ETAGS_ID, IMMUTABLE_ETAG } from '../src/lib/utils/etags.js';
+import { adoptElements } from '../src/minimal/client-utils/element-etags.js';
 import {
   canPaintInstantOverlay,
   pinForSwr,
@@ -13,9 +14,11 @@ import {
   getRouteSlotId,
 } from '../src/router/isomorphic-utils/route-path.js';
 
-const immutable = (slotId: string) => ({
-  [ETAG_ID_PREFIX + slotId]: IMMUTABLE_ETAG,
-});
+const immutable = (slotId: string) =>
+  adoptElements({
+    [slotId]: {},
+    [ETAGS_ID]: { [slotId]: IMMUTABLE_ETAG },
+  });
 
 describe('canPaintInstantOverlay', () => {
   const route = { path: '/a', query: '', hash: '' };

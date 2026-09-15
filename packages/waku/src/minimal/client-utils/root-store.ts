@@ -1,6 +1,6 @@
 import type { Etags } from '../../lib/utils/etags.js';
 
-type Elements = Record<string | symbol, unknown>;
+type Elements = Readonly<Record<string | symbol, unknown>>;
 
 export type CallServerElementsListener = (elements: Elements) => void;
 

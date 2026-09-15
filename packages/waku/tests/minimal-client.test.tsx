@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 
-import { StrictMode, Suspense, act, useEffect, useState } from 'react';
+import { StrictMode, Suspense, act, use, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
@@ -14,7 +14,8 @@ import {
   vi,
 } from 'vitest';
 import { getErrorInfo } from '../src/lib/utils/custom-errors.js';
-import { ETAG_ID_PREFIX, IMMUTABLE_ETAG } from '../src/lib/utils/etags.js';
+import { ETAGS_ID, IMMUTABLE_ETAG } from '../src/lib/utils/etags.js';
+import { adoptElements } from '../src/minimal/client-utils/element-etags.js';
 import { fetchRscStore } from '../src/minimal/client-utils/fetch-store.js';
 import {
   clearInitialRscEntries,
@@ -22,6 +23,7 @@ import {
 } from '../src/minimal/client-utils/initial-rsc-store.js';
 import {
   clearRootCachedEtags,
+  getDefaultRootStore,
   registerRootStore,
 } from '../src/minimal/client-utils/root-store.js';
 import type { CallServerElementsListener } from '../src/minimal/client-utils/root-store.js';
@@ -140,7 +142,7 @@ describe('minimal/client fetch', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(mocks.createFromFetch).toHaveBeenCalledTimes(1);
-    expect(elements).toEqual({ _value: null, text: 'prefetched' });
+    expect(elements).toEqual({ text: 'prefetched' });
   });
 
   test('each fetch issues a new request for the same input', async () => {
@@ -372,7 +374,12 @@ describe('minimal/client server actions', () => {
     expect(container.textContent).toBe('A');
 
     // A server action returns an updated slot and a return value.
-    mocks.createFromFetch.mockResolvedValueOnce({ _value: 'result', App: 'B' });
+    mocks.createFromFetch.mockResolvedValueOnce({
+      _value: 'result',
+      _buildId: 'build',
+      [ETAGS_ID]: { App: 'v' },
+      App: 'B',
+    });
     let value: unknown;
     await act(async () => {
       value = await unstable_callServerRsc('actions#do', []);
@@ -380,6 +387,7 @@ describe('minimal/client server actions', () => {
 
     expect(value).toBe('result');
     expect(container.textContent).toBe('B');
+    expect(getDefaultRootStore()?.etags).toEqual({ App: 'v' });
     expect(listener).toHaveBeenCalledWith({ App: 'B' });
     expect(rootListener).toHaveBeenCalledWith({ App: 'B' });
 
@@ -412,6 +420,16 @@ describe('minimal/client server actions', () => {
     await expect(unstable_callServerRsc('actions#do', [])).rejects.toThrow(
       'Server action returned elements without a mounted Root component',
     );
+  });
+
+  test('a value-only action needs no Root, whatever reserved keys it carries', async () => {
+    mocks.createFromFetch.mockResolvedValueOnce({
+      _value: 'v',
+      _buildId: 'build',
+    });
+    stubFetch();
+
+    await expect(unstable_callServerRsc('actions#do', [])).resolves.toBe('v');
   });
 
   test('an action response and listeners target its request-time Root', async () => {
@@ -1291,13 +1309,13 @@ describe('minimal/client eager merge', () => {
           // the pin predicate governs previous elements only: shell pins
           // because the base proves it immutable, not because of this
           pin: (key) => key === 'cached',
-          base: {
+          base: adoptElements({
             cached: 'STALE',
             shell: 'S',
-            [`${ETAG_ID_PREFIX}shell`]: IMMUTABLE_ETAG,
+            [ETAGS_ID]: { shell: IMMUTABLE_ETAG },
             kept: 'K',
             lazy: 'STALE',
-          },
+          }),
         },
       });
       mountExtra();
@@ -1374,6 +1392,275 @@ describe('minimal/client eager merge', () => {
   });
 });
 
+describe('minimal/client swr landing', () => {
+  type Merge = ReturnType<typeof useMergeElements_UNSTABLE>;
+
+  const renderRoot = async (
+    initial: Record<string, unknown>,
+    ui: ReactNode,
+    fallbackAboveRoot?: ReactNode,
+  ) => {
+    mocks.createFromFetch.mockReturnValueOnce(resolvedThenable(initial));
+    stubFetch();
+    let merge: Merge | undefined;
+    const Probe = () => {
+      const mergeValue = useMergeElements_UNSTABLE();
+      useEffect(() => {
+        merge = mergeValue;
+      });
+      return null;
+    };
+    const container = document.createElement('div');
+    const root = createRoot(container);
+    const app = (
+      <Root initialRscPath="R/app.txt">
+        {ui}
+        <Probe />
+      </Root>
+    );
+    await act(async () => {
+      root.render(
+        fallbackAboveRoot === undefined ? (
+          app
+        ) : (
+          <Suspense fallback={fallbackAboveRoot}>{app}</Suspense>
+        ),
+      );
+    });
+    return {
+      container,
+      merge: merge!,
+      unmount: () => act(() => root.unmount()),
+    };
+  };
+
+  const Keys = () => {
+    const elements = use(useElementsPromise_UNSTABLE());
+    return <i>{Object.keys(elements).join(',')}</i>;
+  };
+
+  test('a slot painted from pin or the base stays when the payload lands', async () => {
+    const Side = () => {
+      const elements = use(useElementsPromise_UNSTABLE());
+      return 'side' in elements ? <Slot id="side" /> : null;
+    };
+    const view = await renderRoot(
+      { shell: 'S1', page: 'P1' },
+      <>
+        <Slot id="shell" />
+        <Suspense fallback="…">
+          <Slot id="page" />
+          <Side />
+        </Suspense>
+      </>,
+    );
+    const payload = Promise.withResolvers<Record<string, unknown>>();
+
+    await act(async () => {
+      void view.merge(payload.promise, {
+        unstable_swr: {
+          pin: (key) => key === 'shell',
+          base: adoptElements({
+            side: 'B',
+            [ETAGS_ID]: { side: IMMUTABLE_ETAG },
+          }),
+        },
+      });
+    });
+    await act(async () => {
+      payload.resolve(
+        adoptElements({
+          shell: 'S2',
+          page: 'P2',
+          side: 'N',
+          [ETAGS_ID]: { shell: 'v2', side: 'v2' },
+        }),
+      );
+      await payload.promise;
+    });
+
+    expect(view.container.textContent).toBe('S1P2B');
+    expect(getDefaultRootStore()?.etags).toEqual({ side: IMMUTABLE_ETAG });
+    view.unmount();
+  });
+
+  test('a payload with no new slot settles without showing the fallback above the Root', async () => {
+    const AboveRoot = vi.fn(() => 'ABOVE');
+    const view = await renderRoot(
+      { shell: 'S1', page: 'P1' },
+      <>
+        <Slot id="shell" />
+        <Suspense fallback="…">
+          <Slot id="page" />
+        </Suspense>
+      </>,
+      <AboveRoot />,
+    );
+    const payload = Promise.withResolvers<Record<string, unknown>>();
+    await act(async () => {
+      void view.merge(payload.promise, {
+        unstable_swr: { pin: (key) => key === 'shell' },
+      });
+    });
+    expect(view.container.textContent).toBe('S1…');
+    AboveRoot.mockClear();
+
+    await act(async () => {
+      payload.resolve({ shell: 'S1', page: 'P2' });
+      await payload.promise;
+    });
+
+    expect(view.container.textContent).toBe('S1P2');
+    expect(AboveRoot).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
+  test('the paint keeps the etags of an overlay made by Minimal', async () => {
+    const view = await renderRoot({ page: 'P1' }, <Keys />);
+    const payload = Promise.withResolvers<Record<string, unknown>>();
+
+    await act(async () => {
+      void view.merge(payload.promise, {
+        unstable_overlay: adoptElements({
+          lazy: 'L',
+          [ETAGS_ID]: { lazy: IMMUTABLE_ETAG },
+        }),
+        unstable_swr: { pin: () => true },
+      });
+    });
+
+    expect(view.container.textContent).toBe('page,lazy');
+    expect(getDefaultRootStore()?.etags).toEqual({ lazy: IMMUTABLE_ETAG });
+    await act(async () => {
+      payload.resolve({ page: 'P1' });
+      await payload.promise;
+    });
+    view.unmount();
+  });
+
+  test("an overlay's client-only symbol key keeps its value when the payload lands", async () => {
+    const state = Symbol('state');
+    const State = () => {
+      const elements = use(useElementsPromise_UNSTABLE());
+      return <b>{String(elements[state])}</b>;
+    };
+    const view = await renderRoot({ page: 'P1' }, <State />);
+    const payload = Promise.withResolvers<Record<string | symbol, unknown>>();
+
+    await act(async () => {
+      void view.merge(payload.promise, {
+        unstable_overlay: { [state]: 'new' },
+        unstable_swr: { pin: () => true },
+      });
+    });
+    // a response built on the current elements carries their symbol keys
+    await act(async () => {
+      payload.resolve({ page: 'P1', extra: 'X', [state]: 'old' });
+      await payload.promise;
+    });
+
+    expect(view.container.textContent).toBe('new');
+    view.unmount();
+  });
+
+  test("a payload's symbol key the paint lacks does not land", async () => {
+    const state = Symbol('state');
+    const Has = () => {
+      const elements = use(useElementsPromise_UNSTABLE());
+      return <b>{String(state in elements)}</b>;
+    };
+    const view = await renderRoot({ page: 'P1' }, <Has />);
+    const payload = Promise.withResolvers<Record<string | symbol, unknown>>();
+
+    await act(async () => {
+      void view.merge(payload.promise, { unstable_swr: { pin: () => true } });
+    });
+    await act(async () => {
+      payload.resolve({ page: 'P1', extra: 'X', [state]: 'from the payload' });
+      await payload.promise;
+    });
+
+    expect(view.container.textContent).toBe('false');
+    view.unmount();
+  });
+
+  test('a payload that rejects leaves the paint with the old values', async () => {
+    const view = await renderRoot(
+      { shell: 'S1', page: 'P1', meta: 'M0' },
+      <>
+        <Slot id="shell" />
+        <Suspense fallback="…">
+          <Slot id="page" />
+        </Suspense>
+        <Suspense fallback="">
+          <Slot id="meta" />
+        </Suspense>
+      </>,
+    );
+    const payload = Promise.withResolvers<Record<string, unknown>>();
+
+    let merged: Promise<unknown> | undefined;
+    await act(async () => {
+      merged = view.merge(payload.promise, {
+        unstable_overlay: { meta: 'M' },
+        unstable_swr: { pin: (key) => key === 'shell' },
+      });
+    });
+    expect(view.container.textContent).toBe('S1…M');
+    await act(async () => {
+      payload.reject(new Error('failed'));
+      await merged?.catch(() => {});
+    });
+
+    expect(view.container.textContent).toBe('S1P1M');
+    view.unmount();
+  });
+
+  test('two Roots that merge one payload each land it', async () => {
+    mocks.createFromFetch.mockReturnValueOnce(resolvedThenable({ page: 'P' }));
+    stubFetch();
+    const merges: Merge[] = [];
+    const Probe = () => {
+      const merge = useMergeElements_UNSTABLE();
+      useEffect(() => {
+        merges.push(merge);
+      }, [merge]);
+      return null;
+    };
+    const container = document.createElement('div');
+    const root = createRoot(container);
+    // mounted together, they start from one shared initial payload
+    await act(async () => {
+      root.render(
+        <>
+          <Root initialRscPath="R/app.txt">
+            <Keys />
+            <Probe />
+          </Root>
+          <Root initialRscPath="R/app.txt">
+            <Keys />
+            <Probe />
+          </Root>
+        </>,
+      );
+    });
+    const payload = Promise.withResolvers<Record<string, unknown>>();
+
+    await act(async () => {
+      for (const merge of merges) {
+        void merge(payload.promise, { unstable_swr: { pin: () => true } });
+      }
+    });
+    await act(async () => {
+      payload.resolve({ page: 'P', extra: 'X' });
+      await payload.promise;
+    });
+
+    expect(container.textContent).toBe('page,extrapage,extra');
+    act(() => root.unmount());
+  });
+});
+
 describe('minimal/client refetch scenarios', () => {
   // No-router scenario tests for refetch's merge behavior.
   const mount = async (
@@ -1432,6 +1719,35 @@ describe('minimal/client refetch scenarios', () => {
     });
     expect(view.container.textContent).toBe('M2');
 
+    view.unmount();
+  });
+
+  test('a merge that fails while an earlier one waits is not left unhandled', async () => {
+    const unhandled = vi.fn();
+    process.on('unhandledRejection', unhandled);
+    const view = await mount({ main: 'M1' }, () => (
+      <Suspense fallback={<span>loading</span>}>
+        <Slot id="main" />
+      </Suspense>
+    ));
+    const first = Promise.withResolvers<Record<string, unknown>>();
+
+    await act(async () => {
+      mocks.createFromFetch.mockReturnValueOnce(first.promise);
+      mocks.createFromFetch.mockReturnValueOnce(
+        Promise.reject(new Error('offline')),
+      );
+      void view.refetch()('R/first.txt');
+      void view.refetch()('R/second.txt');
+    });
+    await wait();
+    process.off('unhandledRejection', unhandled);
+
+    expect(unhandled).not.toHaveBeenCalled();
+    await act(async () => {
+      first.resolve({ main: 'M2' });
+      await wait();
+    });
     view.unmount();
   });
 
