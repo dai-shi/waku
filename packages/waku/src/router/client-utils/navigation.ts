@@ -9,13 +9,10 @@ import {
 } from 'react';
 import {
   useMergeElements_UNSTABLE as useMergeElements,
-  useRegisterCallServerElementsListener_UNSTABLE as useRegisterCallServerElementsListener,
+  useRegisterRscEnhancer_UNSTABLE as useRegisterRscEnhancer,
   useRegisterRscReloadListener_UNSTABLE as useRegisterRscReloadListener,
 } from '../../minimal/client.js';
-import {
-  canReuseStaticRoute,
-  learnStaticFromElements,
-} from '../client-core-utils/caches.js';
+import { useRouterCache } from '../client-core-utils/caches.js';
 import { has404FromElements } from '../client-core-utils/element-meta.js';
 import { isFollowable } from '../client-core-utils/error-route.js';
 import { useHmrRefetch } from '../client-core-utils/hmr.js';
@@ -47,6 +44,8 @@ import type { RouterState } from './router-state.js';
 import { scrollToHash, shouldScrollForRouteChange } from './scroll.js';
 
 type Elements = Readonly<Record<string | symbol, unknown>>;
+
+const ACTION_ENHANCER_ORDER = 100;
 
 type HistoryIntent = ChangeRouteOptions['history'];
 
@@ -87,12 +86,13 @@ export const useNavigation = (
   fallbackRoute: RouteProps,
   routeInterceptor: ((route: RouteProps) => RouteProps | false) | undefined,
 ): Navigation => {
+  const cache = useRouterCache();
   const routeFallback = useInitialRoute(fallbackRoute);
   const has404 = has404FromElements(elements);
   const initialElementsRef = useRef(elements);
   useEffect(() => {
-    learnStaticFromElements(initialElementsRef.current);
-  }, []);
+    cache.learnStaticFromElements(initialElementsRef.current);
+  }, [cache]);
 
   const resolvedElementsRef = useRef(elements);
   useLayoutEffect(() => {
@@ -102,8 +102,7 @@ export const useNavigation = (
 
   const startInstantPaint = useStartInstantPaint(getElements, reloadWithUrl);
   const mergeElements = useMergeElements();
-  const registerCallServerElementsListener =
-    useRegisterCallServerElementsListener();
+  const registerRscEnhancer = useRegisterRscEnhancer();
   const registerRscReloadListener = useRegisterRscReloadListener();
   const [navigationError, setNavigationError] = useState<NavigationError>();
   useEffect(() => {
@@ -131,7 +130,7 @@ export const useNavigation = (
   useLayoutEffect(() => {
     const queuedState = pendingNavigationRef.current?.queuedState;
     if (queuedState && queuedState === routerState) {
-      learnStaticFromElements(elements);
+      cache.learnStaticFromElements(elements);
       pendingNavigationRef.current = null;
     }
     if (!routerState || !destinationHref) {
@@ -148,7 +147,7 @@ export const useNavigation = (
     }
     const { pathChanged } = routerState.scroll;
     scrollToHash(currentHash, pathChanged ? 'instant' : 'auto', pathChanged);
-  }, [elements, routerState, destinationHref, currentHash]);
+  }, [cache, elements, routerState, destinationHref, currentHash]);
 
   const cancelPendingNavigation = useCallback(() => {
     const pendingNavigation = pendingNavigationRef.current;
@@ -183,8 +182,13 @@ export const useNavigation = (
       if (
         options.pendingTransition &&
         shouldRefetch &&
-        !canReuseStaticRoute(nextRoute, getElements()) &&
-        !canPaintInstantOverlay(options.follows ?? 0, nextRoute, getElements())
+        !cache.canReuseStaticRoute(nextRoute, getElements()) &&
+        !canPaintInstantOverlay(
+          cache,
+          options.follows ?? 0,
+          nextRoute,
+          getElements(),
+        )
       ) {
         const schedule = options.pendingTransition;
         // React's startTransition runs fn now, so cancel still happens in this turn.
@@ -264,7 +268,10 @@ export const useNavigation = (
         );
       };
       // commit before any await so it stays in the caller's startTransition
-      if (canReuseStaticRoute(nextRoute, getElements()) || !shouldRefetch) {
+      if (
+        cache.canReuseStaticRoute(nextRoute, getElements()) ||
+        !shouldRefetch
+      ) {
         commitRoute(
           nextRoute,
           makeStateForAttempt(initialAttempt, options.history),
@@ -281,7 +288,7 @@ export const useNavigation = (
             controller.signal,
           )
         : undefined;
-      const outcome = await load(nextRoute, {
+      const outcome = await load(cache, nextRoute, {
         signal: controller.signal,
         refetch: shouldRefetch,
         has404,
@@ -365,7 +372,7 @@ export const useNavigation = (
         throw error;
       }
       if (outcome.adopted) {
-        learnStaticFromElements(outcome.elements);
+        cache.learnStaticFromElements(outcome.elements);
         pendingNavigationRef.current = null;
         return;
       }
@@ -403,6 +410,7 @@ export const useNavigation = (
       );
     },
     [
+      cache,
       routeFallback,
       startInstantPaint,
       mergeElements,
@@ -413,9 +421,10 @@ export const useNavigation = (
     ],
   );
 
-  useEffect(() => {
-    const listener = (nextElements: Record<string, unknown>) => {
-      learnStaticFromElements(nextElements);
+  // an action a descendant starts in a passive effect must find this enhancer
+  useLayoutEffect(() => {
+    const handleActionElements = (nextElements: Record<string, unknown>) => {
+      cache.learnStaticFromElements(nextElements);
       const { [ROUTE_ID]: routeData, [IS_STATIC_ID]: isStatic } = nextElements;
       if (!routeData) {
         return;
@@ -442,8 +451,25 @@ export const useNavigation = (
         }
       });
     };
-    return registerCallServerElementsListener(listener);
-  }, [changeRoute, getSettledRoute, registerCallServerElementsListener]);
+    return registerRscEnhancer(
+      (next) =>
+        async (...args) => {
+          const result = await next(...args);
+          if (
+            args[2].type === 'call' &&
+            Reflect.ownKeys(result.elements).length
+          ) {
+            // TODO: this commits the route while the chain is still unwinding, so
+            // an enhancer above this order that delays the result paints the
+            // route before its slot is merged. Return the route keys in
+            // result.elements instead, so Minimal applies both in one merge.
+            handleActionElements(result.elements);
+          }
+          return result;
+        },
+      ACTION_ENHANCER_ORDER,
+    );
+  }, [cache, changeRoute, getSettledRoute, registerRscEnhancer]);
 
   useEffect(() => {
     const callback = () => {

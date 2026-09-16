@@ -13,21 +13,16 @@ import {
   test,
   vi,
 } from 'vitest';
+import type { FetchRsc } from '../src/minimal/client-utils/root-store.js';
 import * as minimalClient from '../src/minimal/client.js';
 import { INTERNAL_ServerRoot } from '../src/minimal/client.js';
-import * as caches from '../src/router/client-core-utils/caches.js';
-import { clearCaches } from '../src/router/client-core-utils/caches.js';
+import { getRouterCache } from '../src/router/client-core-utils/caches.js';
+import type { RouterCache } from '../src/router/client-core-utils/caches.js';
 import { useHmrRefetch } from '../src/router/client-core-utils/hmr.js';
 import {
   useInitialRoute,
   useInitialRscParams,
 } from '../src/router/client-core-utils/initial-route.js';
-import * as slice from '../src/router/client-core-utils/slice.js';
-import {
-  clearRegisteredLazySlices,
-  forEachRegisteredLazySlice,
-  registerLazySlice,
-} from '../src/router/client-core-utils/slice.js';
 import {
   ROUTE_ID,
   encodeRoutePath,
@@ -158,27 +153,29 @@ describe('useHmrRefetch', () => {
     });
   };
 
+  let cache: RouterCache;
+
   beforeEach(() => {
-    clearCaches();
-    clearRegisteredLazySlices();
+    // a fresh fetch stands for a freshly mounted Root, and so a fresh cache
+    const fetchRsc = vi.fn<FetchRsc>();
+    vi.spyOn(minimalClient, 'useFetchRsc_UNSTABLE').mockReturnValue(fetchRsc);
+    cache = getRouterCache(fetchRsc);
     stubHot();
   });
 
   afterEach(() => {
     Reflect.deleteProperty(import.meta, 'hot');
     vi.restoreAllMocks();
-    clearCaches();
-    clearRegisteredLazySlices();
     (
       globalThis as { __WAKU_RSC_RELOAD_LISTENERS__?: (() => void)[] }
     ).__WAKU_RSC_RELOAD_LISTENERS__ = [];
   });
 
   test('cache clearing preserves lazy-slice registrations', () => {
-    registerLazySlice('slice-a');
-    clearCaches();
+    cache.slices.registerLazySlice('slice-a');
+    cache.clearCaches();
     const ids: string[] = [];
-    forEachRegisteredLazySlice((id) => ids.push(id));
+    cache.slices.forEachRegisteredLazySlice((id) => ids.push(id));
     expect(ids).toEqual(['slice-a']);
   });
 
@@ -187,20 +184,20 @@ describe('useHmrRefetch', () => {
     const onBeforeRefetch = vi.fn(() => {
       order.push('before');
     });
-    vi.spyOn(caches, 'clearCaches').mockImplementation(() => {
+    vi.spyOn(cache, 'clearCaches').mockImplementation(() => {
       order.push('clear');
     });
-    vi.spyOn(minimalClient, 'unstable_fetchRsc').mockImplementation(
-      async () => {
-        order.push('refetch');
-        return {};
-      },
-    );
-    const fetchSlice = vi.spyOn(slice, 'fetchSlice').mockImplementation(() => {
-      order.push('slice');
+    const refetch = vi.spyOn(cache, 'fetchRsc').mockImplementation(async () => {
+      order.push('refetch');
+      return {};
     });
-    registerLazySlice('slice-a');
-    registerLazySlice('slice-b');
+    const fetchSlice = vi
+      .spyOn(cache.slices, 'fetchSlice')
+      .mockImplementation(() => {
+        order.push('slice');
+      });
+    cache.slices.registerLazySlice('slice-a');
+    cache.slices.registerLazySlice('slice-b');
 
     const register = vi
       .spyOn(minimalClient, 'useRegisterRscReloadListener_UNSTABLE')
@@ -234,9 +231,9 @@ describe('useHmrRefetch', () => {
     expect(order).toContain('refetch');
     expect(order).toContain('slice');
     expect(order.indexOf('clear')).toBeLessThan(order.indexOf('refetch'));
-    const refetchCall = vi
-      .mocked(minimalClient.unstable_fetchRsc)
-      .mock.calls.find(([rscPath]) => rscPath === encodeRoutePath('/hot'));
+    const refetchCall = refetch.mock.calls.find(
+      ([rscPath]) => rscPath === encodeRoutePath('/hot'),
+    );
     expect(refetchCall).toBeDefined();
     expect(refetchCall?.[1]).toBeInstanceOf(URLSearchParams);
     expect((refetchCall?.[1] as URLSearchParams).get('query')).toBe('q=1');

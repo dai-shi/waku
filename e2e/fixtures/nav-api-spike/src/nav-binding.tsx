@@ -35,12 +35,11 @@ import {
   unstable_getRouteUrl as getRouteUrl,
   unstable_has404FromElements as has404FromElements,
   unstable_isFollowable as isFollowable,
-  unstable_learnStaticFromElements as learnStaticFromElements,
   unstable_load as load,
   unstable_parseRoute as parseRoute,
-  unstable_prefetchRoute as prefetchRoute,
   useInitialRoute_UNSTABLE as useInitialRoute,
   useInitialRscParams_UNSTABLE as useInitialRscParams,
+  useRouterCache_UNSTABLE as useRouterCache,
 } from 'waku/router/client-core';
 import { settleNavigateFinished } from './settle-navigate-finished.js';
 
@@ -190,6 +189,7 @@ const NavBinding = ({ fallbackRoute }: { fallbackRoute: RouteProps }) => {
     use(FollowHostContext)!;
   const elements = use(useElementsPromise());
   const mergeElements = useMergeElements();
+  const cache = useRouterCache();
   const routeFallback = useInitialRoute(fallbackRoute);
   const resolvedRef = useRef(elements);
   useLayoutEffect(() => {
@@ -219,7 +219,7 @@ const NavBinding = ({ fallbackRoute }: { fallbackRoute: RouteProps }) => {
   const runImpl: FollowRun = async (next, signal, followCount) => {
     const base = resolvedRef.current;
     const settled = getRouteFromElements(base) ?? routeFallback;
-    const outcome = await load(next, {
+    const outcome = await load(cache, next, {
       signal,
       has404,
       settled,
@@ -263,7 +263,7 @@ const NavBinding = ({ fallbackRoute }: { fallbackRoute: RouteProps }) => {
       { settled },
     );
     await mergeElements(patch);
-    learnStaticFromElements(outcome.elements);
+    cache.learnStaticFromElements(outcome.elements);
   };
 
   useLayoutEffect(() => {
@@ -315,9 +315,9 @@ const NavBinding = ({ fallbackRoute }: { fallbackRoute: RouteProps }) => {
       });
     };
     navigation.addEventListener('navigate', onNavigate);
-    prefetchRoute({ path: '/hello/spike', query: '', hash: '' });
+    cache.prefetchRoute({ path: '/hello/spike', query: '', hash: '' });
     return () => navigation.removeEventListener('navigate', onNavigate);
-  }, [lastFollowRef, ownsNavigation, setFollows]);
+  }, [cache, lastFollowRef, ownsNavigation, setFollows]);
 
   const navigate = useCallback<RouterHost['navigate']>((href, opts) => {
     const result = window.navigation.navigate(href, {

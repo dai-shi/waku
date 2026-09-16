@@ -9,6 +9,7 @@ import {
   unstable_removeBase as removeBase,
   useElementsPromise_UNSTABLE as useElementsPromise,
 } from '../minimal/client.js';
+import { useRouterCache } from './client-core-utils/caches.js';
 import type { PrefetchOptions } from './client-core-utils/caches.js';
 import { RouterHostContext } from './client-core-utils/host.js';
 import type { RouterHost } from './client-core-utils/host.js';
@@ -133,6 +134,7 @@ export function useRouter() {
   const router = useRouterOrThrow();
   const { route, changeRoute, getElements } = router;
   const resolveCodec = useResolveSearchCodec();
+  const cache = useRouterCache();
   const navigate = useCallback(
     (
       history: 'push' | 'replace',
@@ -192,9 +194,9 @@ export function useRouter() {
       );
       const next = parseRoute(url);
       preloadRouteModules(next.path);
-      prefetchRouteUnlessReusable(next, options, getElements);
+      prefetchRouteUnlessReusable(cache, next, options, getElements);
     },
-    [resolveCodec, getElements],
+    [cache, resolveCodec, getElements],
   ) as Prefetch;
   return {
     ...route,
@@ -358,7 +360,7 @@ export const unstable_removeBase = removeBase;
 export const unstable_RouterContext = RouterContext;
 /** @deprecated History-binding private; not on `waku/router/client-core`. */
 export type Unstable_ChangeRoute = ChangeRoute;
-/** @deprecated Import `unstable_prefetchRoute` from `waku/router/client-core`. */
+/** @deprecated Use `useRouterCache_UNSTABLE` from `waku/router/client-core`. */
 export type Unstable_PrefetchRoute = PrefetchRoute;
 /** @deprecated Import `Unstable_PrefetchOptions` from `waku/router/client-core`. */
 export type Unstable_PrefetchOptions = PrefetchOptions;

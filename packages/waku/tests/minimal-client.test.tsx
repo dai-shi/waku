@@ -16,28 +16,24 @@ import {
 import { getErrorInfo } from '../src/lib/utils/custom-errors.js';
 import { ETAGS_ID, IMMUTABLE_ETAG } from '../src/lib/utils/etags.js';
 import { adoptElements } from '../src/minimal/client-utils/element-etags.js';
-import { fetchRscStore } from '../src/minimal/client-utils/fetch-store.js';
 import {
   clearInitialRscEntries,
   getInitialRscEntry,
 } from '../src/minimal/client-utils/initial-rsc-store.js';
+import { fetchRscInputTransformers } from '../src/minimal/client-utils/input-transformers.js';
 import {
   clearRootCachedEtags,
   getDefaultRootStore,
   registerRootStore,
 } from '../src/minimal/client-utils/root-store.js';
-import type { CallServerElementsListener } from '../src/minimal/client-utils/root-store.js';
 import {
   Root_UNSTABLE as Root,
   Slot_UNSTABLE as Slot,
   unstable_callServerRsc,
   unstable_fetchRsc,
-  unstable_registerCallServerElementsListener,
-  unstable_registerFetchEnhancer,
   unstable_registerFetchRscInputTransformer,
   useElementsPromise_UNSTABLE,
   useMergeElements_UNSTABLE,
-  useRegisterCallServerElementsListener_UNSTABLE,
 } from '../src/minimal/client.js';
 
 type CallServer = (funcId: string, args: unknown[]) => Promise<unknown>;
@@ -90,15 +86,8 @@ const useRefetch = () => {
 
 type Refetch = ReturnType<typeof useRefetch>;
 
-// The client store is a module singleton; reset it between tests.
-const clientStore = fetchRscStore as unknown as Record<string, unknown>;
-
-const track = <T,>(unregister: T): T => unregister;
-
 const stubFetch = () =>
-  unstable_registerFetchEnhancer(
-    () => async () => new Response('{}', { status: 200 }),
-  );
+  vi.stubGlobal('fetch', async () => new Response('{}', { status: 200 }));
 
 beforeAll(() => {
   (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;
@@ -119,9 +108,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  for (const key of Object.keys(clientStore)) {
-    delete clientStore[key];
-  }
+  fetchRscInputTransformers.clear();
   clearInitialRscEntries();
   delete (globalThis as any).__WAKU_PREFETCHED__;
   vi.unstubAllGlobals();
@@ -135,7 +122,7 @@ describe('minimal/client fetch', () => {
     const fetchMock = vi.fn<typeof fetch>(
       async () => new Response('prefetched'),
     );
-    track(unstable_registerFetchEnhancer(() => fetchMock));
+    vi.stubGlobal('fetch', fetchMock);
     const rscParams = new URLSearchParams({ query: 'x=1' });
 
     const elements = await unstable_fetchRsc('R/next.txt', rscParams);
@@ -147,7 +134,7 @@ describe('minimal/client fetch', () => {
 
   test('each fetch issues a new request for the same input', async () => {
     const fetchMock = vi.fn<typeof fetch>(async () => new Response('x'));
-    track(unstable_registerFetchEnhancer(() => fetchMock));
+    vi.stubGlobal('fetch', fetchMock);
     const rscParams = new URLSearchParams({ query: 'x=1' });
 
     await unstable_fetchRsc('R/next.txt', rscParams);
@@ -224,13 +211,10 @@ describe('minimal/client fetch', () => {
     const actionFetch = vi.fn<typeof fetch>(async () => new Response('n'));
 
     // Fetch elements with one fetch...
-    const unregisterPrefetch = unstable_registerFetchEnhancer(
-      () => prefetchFetch,
-    );
+    vi.stubGlobal('fetch', prefetchFetch);
     await unstable_fetchRsc('R/page.txt');
-    unregisterPrefetch();
     // ...then the app registers a different fetch.
-    track(unstable_registerFetchEnhancer(() => actionFetch));
+    vi.stubGlobal('fetch', actionFetch);
 
     // A server action must use the currently registered fetch: the callServer
     // closure does not pin the fetch the prefetch was decoded with.
@@ -252,11 +236,8 @@ describe('minimal/client transport failures', () => {
     }) as unknown as Response;
 
   test('a redirect within the rsc endpoint is decoded as the payload', async () => {
-    track(
-      unstable_registerFetchEnhancer(
-        () => async () =>
-          redirectedResponse(`${window.location.origin}/RSC/R/exists.txt`),
-      ),
+    vi.stubGlobal('fetch', async () =>
+      redirectedResponse(`${window.location.origin}/RSC/R/exists.txt`),
     );
 
     // decoded from the response the redirect landed on
@@ -266,19 +247,18 @@ describe('minimal/client transport failures', () => {
   });
 
   test('a redirect the fetch did not follow is reported as a status', async () => {
-    track(
-      unstable_registerFetchEnhancer(
-        () => async () =>
-          ({
-            redirected: false,
-            url: `${window.location.origin}/RSC/R/next.txt`,
-            ok: false,
-            status: 307,
-            statusText: 'Temporary Redirect',
-            headers: new Headers({ location: '/login' }),
-            text: async () => '',
-          }) as unknown as Response,
-      ),
+    vi.stubGlobal(
+      'fetch',
+      async () =>
+        ({
+          redirected: false,
+          url: `${window.location.origin}/RSC/R/next.txt`,
+          ok: false,
+          status: 307,
+          statusText: 'Temporary Redirect',
+          headers: new Headers({ location: '/login' }),
+          text: async () => '',
+        }) as unknown as Response,
     );
 
     const error = await unstable_fetchRsc('R/next.txt').catch(
@@ -293,9 +273,7 @@ describe('minimal/client transport failures', () => {
   test('a redirected response is decoded like any other', async () => {
     // where the response came from does not matter, only what it carries
     const url = 'https://login.example/anywhere';
-    track(
-      unstable_registerFetchEnhancer(() => async () => redirectedResponse(url)),
-    );
+    vi.stubGlobal('fetch', async () => redirectedResponse(url));
     mocks.createFromFetch.mockResolvedValueOnce({ App: 'ok' });
 
     await expect(unstable_fetchRsc('R/next.txt')).resolves.toEqual({
@@ -304,10 +282,8 @@ describe('minimal/client transport failures', () => {
   });
 
   test('a network error is marked as such', async () => {
-    track(
-      unstable_registerFetchEnhancer(() => () => {
-        return Promise.reject(new TypeError('Failed to fetch'));
-      }),
+    vi.stubGlobal('fetch', () =>
+      Promise.reject(new TypeError('Failed to fetch')),
     );
 
     const error = await unstable_fetchRsc('R/next.txt').catch(
@@ -319,13 +295,12 @@ describe('minimal/client transport failures', () => {
   });
 
   test('any other failure passes through untouched', async () => {
-    const unregisterAbort = unstable_registerFetchEnhancer(() => () => {
-      return Promise.reject(new DOMException('Aborted', 'AbortError'));
-    });
+    vi.stubGlobal('fetch', () =>
+      Promise.reject(new DOMException('Aborted', 'AbortError')),
+    );
     const aborted = await unstable_fetchRsc('R/next.txt').catch(
       (e: unknown) => e,
     );
-    unregisterAbort();
 
     expect((aborted as Error).name).toBe('AbortError');
     expect(getErrorInfo(aborted)).toBeNull();
@@ -333,11 +308,7 @@ describe('minimal/client transport failures', () => {
     // an app's own failure (a fetch enhancer, an unserializable argument)
     // reaches the caller as it is
     const appError = new Error('could not serialize');
-    track(
-      unstable_registerFetchEnhancer(() => () => {
-        return Promise.reject(appError);
-      }),
-    );
+    vi.stubGlobal('fetch', () => Promise.reject(appError));
     const thrown = await unstable_fetchRsc('R/other.txt').catch(
       (e: unknown) => e,
     );
@@ -347,24 +318,15 @@ describe('minimal/client transport failures', () => {
 });
 
 describe('minimal/client server actions', () => {
-  test('returned elements re-render the tree and notify listeners', async () => {
+  test('returned elements re-render the tree', async () => {
     mocks.createFromFetch.mockReturnValueOnce(resolvedThenable({ App: 'A' }));
     stubFetch();
-    const listener = vi.fn();
-    const rootListener = vi.fn();
-    track(unstable_registerCallServerElementsListener(listener));
-    const Listener = () => {
-      const register = useRegisterCallServerElementsListener_UNSTABLE();
-      useEffect(() => register(rootListener), [register]);
-      return null;
-    };
 
     const container = document.createElement('div');
     const root = createRoot(container);
     await act(async () => {
       root.render(
         <Root initialRscPath="R/app.txt">
-          <Listener />
           <Suspense fallback={null}>
             <Slot id="App" />
           </Suspense>
@@ -388,8 +350,6 @@ describe('minimal/client server actions', () => {
     expect(value).toBe('result');
     expect(container.textContent).toBe('B');
     expect(getDefaultRootStore()?.etags).toEqual({ App: 'v' });
-    expect(listener).toHaveBeenCalledWith({ App: 'B' });
-    expect(rootListener).toHaveBeenCalledWith({ App: 'B' });
 
     act(() => root.unmount());
   });
@@ -432,7 +392,7 @@ describe('minimal/client server actions', () => {
     await expect(unstable_callServerRsc('actions#do', [])).resolves.toBe('v');
   });
 
-  test('an action response and listeners target its request-time Root', async () => {
+  test('an action response targets its request-time Root', async () => {
     let resolveAction: (value: Record<string, unknown>) => void = () => {};
     mocks.createFromFetch.mockReturnValueOnce(
       new Promise((resolve) => {
@@ -442,19 +402,19 @@ describe('minimal/client server actions', () => {
     stubFetch();
     const firstSetElements = vi.fn();
     const secondSetElements = vi.fn();
-    const firstListener = vi.fn();
-    const secondListener = vi.fn();
     const unregisterFirst = registerRootStore({
       setElements: firstSetElements,
       etags: { App: 'first' },
-      listeners: new Set([firstListener]),
+      enhancers: [],
+      fetchRsc: vi.fn(),
     });
 
     const action = unstable_callServerRsc('actions#do', []);
     const unregisterSecond = registerRootStore({
       setElements: secondSetElements,
       etags: { App: 'second' },
-      listeners: new Set([secondListener]),
+      enhancers: [],
+      fetchRsc: vi.fn(),
     });
     resolveAction({ _value: 'result', App: 'updated' });
 
@@ -462,8 +422,6 @@ describe('minimal/client server actions', () => {
       await expect(action).resolves.toBe('result');
       expect(firstSetElements).toHaveBeenCalledOnce();
       expect(secondSetElements).not.toHaveBeenCalled();
-      expect(firstListener).toHaveBeenCalledOnce();
-      expect(secondListener).not.toHaveBeenCalled();
     } finally {
       unregisterSecond();
       unregisterFirst();
@@ -483,7 +441,8 @@ describe('minimal/client server actions', () => {
     const unregisterFirst = registerRootStore({
       setElements: firstSetElements,
       etags: { App: 'first' },
-      listeners: new Set(),
+      enhancers: [],
+      fetchRsc: vi.fn(),
     });
 
     const action = unstable_callServerRsc('actions#do', []);
@@ -491,7 +450,8 @@ describe('minimal/client server actions', () => {
     const unregisterSecond = registerRootStore({
       setElements: secondSetElements,
       etags: { App: 'second' },
-      listeners: new Set(),
+      enhancers: [],
+      fetchRsc: vi.fn(),
     });
     resolveAction({ _value: 'result', App: 'updated' });
 
@@ -508,12 +468,14 @@ describe('minimal/client server actions', () => {
     const first = {
       setElements: vi.fn(),
       etags: { App: 'first' },
-      listeners: new Set<CallServerElementsListener>(),
+      enhancers: [],
+      fetchRsc: vi.fn(),
     };
     const second = {
       setElements: vi.fn(),
       etags: { App: 'second' },
-      listeners: new Set<CallServerElementsListener>(),
+      enhancers: [],
+      fetchRsc: vi.fn(),
     };
     const unregisterFirst = registerRootStore(first);
     const unregisterSecond = registerRootStore(second);
@@ -594,12 +556,12 @@ describe('minimal/client input transformer', () => {
   // Consumed by waku-jotai to inject atom values into rscParams.
   test('a registered transformer rewrites the fetch input', async () => {
     const fetchMock = vi.fn<typeof fetch>(async () => new Response('{}'));
-    track(unstable_registerFetchEnhancer(() => fetchMock));
+    vi.stubGlobal('fetch', fetchMock);
     const transform = vi.fn(
       (_rscPath: string, _rscParams: unknown) =>
         ['R/rewritten.txt', { x: 1 }] as const,
     );
-    track(unstable_registerFetchRscInputTransformer(transform));
+    unstable_registerFetchRscInputTransformer(transform);
 
     await unstable_fetchRsc('R/original.txt', undefined);
 
@@ -1768,7 +1730,7 @@ describe('minimal/client refetch scenarios', () => {
   test('a decoded payload comes back chainable, not as react gave it', async () => {
     const { thenable, settle } = pendingThenable({ _value: null, page: 'P2' });
     mocks.createFromFetch.mockReturnValue(thenable);
-    track(stubFetch());
+    stubFetch();
 
     // a thenable would return undefined from then, so this would throw
     const chained = unstable_fetchRsc('R/next.txt')

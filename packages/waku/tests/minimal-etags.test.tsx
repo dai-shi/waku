@@ -16,10 +16,6 @@ import {
   adoptElements,
   collectEtags,
 } from '../src/minimal/client-utils/element-etags.js';
-import {
-  FETCH_ENHANCERS,
-  fetchRscStore,
-} from '../src/minimal/client-utils/fetch-store.js';
 import { clearInitialRscEntries } from '../src/minimal/client-utils/initial-rsc-store.js';
 import { getDefaultRootStore } from '../src/minimal/client-utils/root-store.js';
 import {
@@ -93,7 +89,6 @@ beforeEach(() => {
     new Response(null, { status: 200 }),
   );
   clearInitialRscEntries();
-  delete fetchRscStore[FETCH_ENHANCERS];
 });
 
 afterEach(() => {

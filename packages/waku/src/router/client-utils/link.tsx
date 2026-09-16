@@ -20,8 +20,8 @@ import { preloadModule } from 'react-dom';
 import { unstable_addBase as addBase } from '../../minimal/client.js';
 import {
   type PrefetchOptions,
-  canReuseStaticRoute,
-  prefetchRoute as prefetchCachedRoute,
+  type RouterCache,
+  useRouterCache,
 } from '../client-core-utils/caches.js';
 import { useResolveSearchCodec } from '../client-core-utils/route-hooks.js';
 import { isSameRscRoute, parseRoute } from '../client-core-utils/route-url.js';
@@ -51,19 +51,20 @@ export const preloadRouteModules = (path: string) => {
 };
 
 export const prefetchRouteUnlessReusable = (
+  cache: RouterCache,
   route: RouteProps,
   options: PrefetchOptions | undefined,
   getElements: (() => Record<string, unknown>) | undefined,
 ) => {
   const elements = getElements?.();
-  // a shared staticPathSet is not enough; skip only when this root has the slot
-  if (elements && canReuseStaticRoute(route, elements)) {
+  if (elements && cache.canReuseStaticRoute(route, elements)) {
     return;
   }
-  prefetchCachedRoute(route, options);
+  cache.prefetchRoute(route, options);
 };
 
 const prefetchIfNotCurrent = (
+  cache: RouterCache,
   current: RouteProps | undefined,
   resolvedTo: string,
   options: PrefetchOptions | undefined,
@@ -75,7 +76,7 @@ const prefetchIfNotCurrent = (
   const route = parseRoute(new URL(resolvedTo, window.location.href));
   if (!isSameRscRoute(route, current)) {
     preloadRouteModules(route.path);
-    prefetchRouteUnlessReusable(route, options, getElements);
+    prefetchRouteUnlessReusable(cache, route, options, getElements);
   }
 };
 
@@ -120,6 +121,7 @@ function useSharedRef<T>(
 }
 
 const usePrefetchOnView = (
+  cache: RouterCache,
   ref: RefObject<HTMLAnchorElement | null>,
   current: RouteProps | undefined,
   resolvedTo: string,
@@ -138,6 +140,7 @@ const usePrefetchOnView = (
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             prefetchIfNotCurrent(
+              cache,
               current,
               resolvedTo,
               {
@@ -155,7 +158,7 @@ const usePrefetchOnView = (
     return () => {
       observer.disconnect();
     };
-  }, [enabled, mode, ttl, current, resolvedTo, ref, getElements]);
+  }, [cache, enabled, mode, ttl, current, resolvedTo, ref, getElements]);
 };
 
 const isAltClick = (event: MouseEvent<HTMLAnchorElement>) =>
@@ -230,8 +233,10 @@ export function Link<Path extends RoutePath>({
       };
   const [isPending, startTransition] = useTransition();
   const [ref, setRef] = useSharedRef<HTMLAnchorElement>(refProp);
+  const cache = useRouterCache();
 
   usePrefetchOnView(
+    cache,
     ref,
     router?.route,
     resolvedTo,
@@ -283,6 +288,7 @@ export function Link<Path extends RoutePath>({
   const onMouseEnter = unstable_prefetchOnEnter
     ? (event: MouseEvent<HTMLAnchorElement>) => {
         prefetchIfNotCurrent(
+          cache,
           router?.route,
           resolvedTo,
           unstable_prefetchOnEnter,

@@ -1,15 +1,13 @@
 import { useCallback } from 'react';
 import {
-  unstable_fetchRsc as fetchRsc,
   unstable_isImmutableElement as isImmutableElement,
   useMergeElements_UNSTABLE as useMergeElements,
 } from '../../minimal/client.js';
 import {
   createRscParams,
-  getPrefetch,
-  getPrefetchedElements,
-  hasCachedShell,
+  useRouterCache,
 } from '../client-core-utils/caches.js';
+import type { RouterCache } from '../client-core-utils/caches.js';
 import {
   isMetaKey,
   isStaticFromElements,
@@ -33,10 +31,11 @@ type InstantAttempt = {
 };
 
 export const canPaintInstantOverlay = (
+  cache: RouterCache,
   follows: number,
   route: RouteProps,
   resolvedElements: Record<string, unknown>,
-) => !follows && hasCachedShell(route, resolvedElements);
+) => !follows && cache.hasCachedShell(route, resolvedElements);
 
 // symbol keys are client owned; they are carried, never fetched
 export const pinForSwr =
@@ -50,15 +49,21 @@ export const useStartInstantPaint = (
   reloadWithUrl: (url: URL) => void,
 ) => {
   const mergeElements = useMergeElements();
+  const cache = useRouterCache();
   return useCallback(
     (attempt: InstantAttempt, state: RouterState, signal: AbortSignal) => {
       if (
-        !canPaintInstantOverlay(attempt.follows, attempt.route, getElements())
+        !canPaintInstantOverlay(
+          cache,
+          attempt.follows,
+          attempt.route,
+          getElements(),
+        )
       ) {
         return;
       }
-      const cached = getPrefetch(attempt.route);
-      const prefetchedElements = getPrefetchedElements(attempt.route);
+      const cached = cache.getPrefetch(attempt.route);
+      const prefetchedElements = cache.getPrefetchedElements(attempt.route);
       const overlay = {
         [ROUTER_STATE_ID]: state,
         [ROUTE_ID]: [attempt.route.path, attempt.route.query],
@@ -70,7 +75,7 @@ export const useStartInstantPaint = (
       };
       const response = cached
         ? abortable(cached.promise, signal)
-        : fetchRsc(
+        : cache.fetchRsc(
             encodeRoutePath(attempt.route.path),
             createRscParams(attempt.route.query),
             {
@@ -87,6 +92,6 @@ export const useStartInstantPaint = (
         unstable_swr: swr,
       });
     },
-    [getElements, mergeElements, reloadWithUrl],
+    [cache, getElements, mergeElements, reloadWithUrl],
   );
 };

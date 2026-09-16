@@ -1,7 +1,7 @@
-import { unstable_fetchRsc as fetchRsc } from '../../minimal/client.js';
 import { encodeRoutePath } from '../isomorphic-utils/route-path.js';
 import type { RouteProps } from '../isomorphic-utils/route-path.js';
-import { canReuseStaticRoute, createRscParams, getPrefetch } from './caches.js';
+import { createRscParams } from './caches.js';
+import type { RouterCache } from './caches.js';
 import { MAX_FOLLOWS_PER_NAVIGATION, decideFollow } from './error-route.js';
 import { getRouteUrl, isSameRscRoute } from './route-url.js';
 
@@ -71,6 +71,7 @@ export const abortable = <T>(
 };
 
 export const load = async (
+  cache: RouterCache,
   requested: RouteProps,
   opts: LoadOptions,
 ): Promise<LoadOutcome> => {
@@ -88,7 +89,7 @@ export const load = async (
     const isFirstAttempt = attempt.follows === initialFollows;
     // changeRoute pre-checks this; unreachable from there, used by follows and adopt
     if (
-      canReuseStaticRoute(attempt.route, opts.base) ||
+      cache.canReuseStaticRoute(attempt.route, opts.base) ||
       (isFirstAttempt && opts.refetch === false)
     ) {
       return {
@@ -98,7 +99,7 @@ export const load = async (
         follows: attempt.follows,
       };
     }
-    const cached = getPrefetch(attempt.route);
+    const cached = cache.getPrefetch(attempt.route);
     const unsubscribeInvalidate = cached?.onInvalidate(() => {
       if (!opts.signal.aborted) {
         opts.onInvalidate?.(attempt.url);
@@ -117,16 +118,20 @@ export const load = async (
         const rscPath = encodeRoutePath(attempt.route.path);
         elements = cached
           ? await abortable(cached.promise, opts.signal)
-          : await fetchRsc(rscPath, createRscParams(attempt.route.query), {
-              signal: opts.signal,
-              // a defined wrapper disables minimal's reload default
-              ...(onBuildIdMismatch
-                ? {
-                    onBuildIdMismatch: () => onBuildIdMismatch(attempt.url),
-                  }
-                : {}),
-              unstable_base: opts.base,
-            });
+          : await cache.fetchRsc(
+              rscPath,
+              createRscParams(attempt.route.query),
+              {
+                signal: opts.signal,
+                // a defined wrapper disables minimal's reload default
+                ...(onBuildIdMismatch
+                  ? {
+                      onBuildIdMismatch: () => onBuildIdMismatch(attempt.url),
+                    }
+                  : {}),
+                unstable_base: opts.base,
+              },
+            );
       }
       if (opts.signal.aborted) {
         return { type: 'aborted' };

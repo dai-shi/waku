@@ -108,6 +108,75 @@ test.describe(`rsc-basic`, () => {
     await expect(page.getByTestId('second-root')).toContainText('second');
   });
 
+  test("a fetch runs its own Root's enhancers, a bare action the last mounted Root's", async ({
+    page,
+  }) => {
+    await page.goto(`http://localhost:${port}/?multiple-roots&enhancers`);
+    const first = page.getByTestId('first-root');
+    const second = page.getByTestId('second-root');
+    await expect(second).toContainText('second');
+    await first
+      .getByRole('button', { name: 'Enhanced fetch', exact: true })
+      .click();
+    await expect(first.getByTestId('enhanced-by')).toHaveText('first:rsc');
+    await expect(first.getByTestId('enhancer-input')).toHaveText(
+      JSON.stringify([
+        'first',
+        'first',
+        { input: { count: 1 }, name: 'first' },
+      ]),
+    );
+    await expect(second.getByTestId('enhanced-by')).toBeEmpty();
+    await first
+      .getByRole('button', { name: 'Enhanced action', exact: true })
+      .click();
+    await expect(first.getByTestId('action-value')).toHaveText('pong');
+    await expect(second.getByTestId('enhanced-by')).toHaveText('second:call');
+    await expect(second.getByTestId('enhancer-input')).toHaveText('second');
+    await expect(first.getByTestId('enhanced-by')).toHaveText('first:rsc');
+  });
+
+  test(
+    'Root HMR refreshes use mounted enhancers',
+    { tag: '@dev' },
+    async ({ page }) => {
+      await page.goto(`http://localhost:${port}/?multiple-roots&enhancers`);
+      await expect(page.getByTestId('second-root')).toContainText('second');
+      await page.evaluate(() => {
+        globalThis.__WAKU_RSC_RELOAD_LISTENERS__?.forEach((listener) =>
+          listener(),
+        );
+      });
+      for (const name of ['first', 'second']) {
+        const root = page.getByTestId(`${name}-root`);
+        await expect(root.getByTestId('enhanced-by')).toHaveText(`${name}:rsc`);
+        await expect(root.getByTestId('enhancer-input')).toHaveText(
+          JSON.stringify([name, name, { name }]),
+        );
+        await expect(root.getByTestId('enhanced-version')).toHaveText('1');
+        await expect(root.getByTestId('retained-symbol')).toHaveText(
+          'retained',
+        );
+        await expect(root.getByTestId('cleared-symbol')).toHaveText('clear me');
+      }
+      await page.evaluate(() => {
+        globalThis.__WAKU_RSC_RELOAD_LISTENERS__?.forEach((listener) =>
+          listener(),
+        );
+      });
+      for (const name of ['first', 'second']) {
+        const root = page.getByTestId(`${name}-root`);
+        await expect(root.getByTestId('enhanced-version')).toHaveText('2');
+        await expect(root.getByTestId('retained-symbol')).toHaveText(
+          'retained',
+        );
+        await expect(root.getByTestId('cleared-symbol')).toHaveText(
+          'undefined',
+        );
+      }
+    },
+  );
+
   test(
     'unmounting the default Root restores the previous HMR target',
     { tag: '@dev' },

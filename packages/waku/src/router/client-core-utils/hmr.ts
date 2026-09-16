@@ -1,17 +1,11 @@
 import { startTransition, useEffect } from 'react';
 import {
-  unstable_fetchRsc as fetchRsc,
   useMergeElements_UNSTABLE as useMergeElements,
   useRegisterRscReloadListener_UNSTABLE as useRegisterRscReloadListener,
 } from '../../minimal/client.js';
 import { encodeRoutePath } from '../isomorphic-utils/route-path.js';
 import type { RouteProps } from '../isomorphic-utils/route-path.js';
-import {
-  clearCaches,
-  createRscParams,
-  learnStaticFromElements,
-} from './caches.js';
-import { fetchSlice, forEachRegisteredLazySlice } from './slice.js';
+import { createRscParams, useRouterCache } from './caches.js';
 
 export const useHmrRefetch = ({
   getSettledRoute,
@@ -22,28 +16,30 @@ export const useHmrRefetch = ({
 }): void => {
   const mergeElements = useMergeElements();
   const registerRscReloadListener = useRegisterRscReloadListener();
+  const cache = useRouterCache();
   useEffect(() => {
     if (import.meta.hot) {
       const refetchRouteOnHmr = () => {
         onBeforeRefetch?.();
-        clearCaches();
+        cache.clearCaches();
         const settledRoute = getSettledRoute();
         startTransition(() => {
           // the reload clears the set, so the response has to teach it again
           void mergeElements(
-            fetchRsc(
+            cache.fetchRsc(
               encodeRoutePath(settledRoute.path),
               createRscParams(settledRoute.query),
             ),
-          ).then(learnStaticFromElements, () => {});
-          forEachRegisteredLazySlice((id) => {
-            fetchSlice(id, mergeElements, true);
+          ).then(cache.learnStaticFromElements, () => {});
+          cache.slices.forEachRegisteredLazySlice((id) => {
+            cache.slices.fetchSlice(id, mergeElements, true);
           });
         });
       };
       return registerRscReloadListener(refetchRouteOnHmr);
     }
   }, [
+    cache,
     getSettledRoute,
     mergeElements,
     onBeforeRefetch,

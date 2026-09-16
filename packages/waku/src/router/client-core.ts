@@ -1,14 +1,8 @@
 'use client';
 
 export {
-  canReuseStaticRoute as unstable_canReuseStaticRoute,
-  clearCaches as unstable_clearCaches,
   createRscParams as unstable_createRscParams,
-  getPrefetch as unstable_getPrefetch,
-  getPrefetchedElements as unstable_getPrefetchedElements,
-  hasCachedShell as unstable_hasCachedShell,
-  learnStaticFromElements as unstable_learnStaticFromElements,
-  prefetchRoute as unstable_prefetchRoute,
+  useRouterCache as useRouterCache_UNSTABLE,
 } from './client-core-utils/caches.js';
 export type {
   PrefetchHandle as Unstable_PrefetchHandle,

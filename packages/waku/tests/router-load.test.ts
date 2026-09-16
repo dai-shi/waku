@@ -1,12 +1,8 @@
 /** @vitest-environment happy-dom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createCustomError } from '../src/lib/utils/custom-errors.js';
-import { unstable_fetchRsc as fetchRsc } from '../src/minimal/client.js';
-import {
-  clearCaches,
-  learnStaticFromElements,
-  prefetchRoute,
-} from '../src/router/client-core-utils/caches.js';
+import type { FetchRsc } from '../src/minimal/client-utils/root-store.js';
+import { getRouterCache } from '../src/router/client-core-utils/caches.js';
 import { load } from '../src/router/client-core-utils/load.js';
 import type { LoadOptions } from '../src/router/client-core-utils/load.js';
 import {
@@ -16,16 +12,10 @@ import {
   getRouteSlotId,
 } from '../src/router/isomorphic-utils/route-path.js';
 
-vi.mock('../src/minimal/client.js', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('../src/minimal/client.js')>();
-  return {
-    ...actual,
-    unstable_fetchRsc: vi.fn(),
-  };
-});
-
 type Elements = Record<string, unknown>;
+
+const fetchRsc = vi.fn<FetchRsc>();
+const cache = getRouterCache(fetchRsc);
 
 const route = (path: string, query = '', hash = '') => ({ path, query, hash });
 
@@ -49,19 +39,19 @@ describe('load', () => {
   });
 
   afterEach(() => {
-    clearCaches();
-    vi.mocked(fetchRsc).mockReset();
+    cache.clearCaches();
+    fetchRsc.mockReset();
     vi.unstubAllEnvs();
   });
 
   it('does not reuse a static path when base lacks the route slot', async () => {
-    learnStaticFromElements({
+    cache.learnStaticFromElements({
       [ROUTE_ID]: ['/next', ''],
       [IS_STATIC_ID]: true,
     });
     const elements = { [ROUTE_ID]: ['/next', ''] };
-    vi.mocked(fetchRsc).mockResolvedValue(elements);
-    const outcome = await load(route('/next'), baseOpts());
+    fetchRsc.mockResolvedValue(elements);
+    const outcome = await load(cache, route('/next'), baseOpts());
     expect(outcome).toEqual({
       type: 'loaded',
       route: route('/next'),
@@ -74,11 +64,12 @@ describe('load', () => {
   });
 
   it('reuses a static path when base already holds the route slot', async () => {
-    learnStaticFromElements({
+    cache.learnStaticFromElements({
       [ROUTE_ID]: ['/next', ''],
       [IS_STATIC_ID]: true,
     });
     const outcome = await load(
+      cache,
       route('/next'),
       baseOpts({
         base: { [getRouteSlotId('/next')]: 'page' },
@@ -94,15 +85,19 @@ describe('load', () => {
   });
 
   it('reuses when refetch is false', async () => {
-    const outcome = await load(route('/next'), baseOpts({ refetch: false }));
+    const outcome = await load(
+      cache,
+      route('/next'),
+      baseOpts({ refetch: false }),
+    );
     expect(outcome.type).toBe('reused');
     expect(fetchRsc).not.toHaveBeenCalled();
   });
 
   it('fetches by encoded rscPath and returns loaded with adopted false', async () => {
     const elements = { [ROUTE_ID]: ['/next', ''] };
-    vi.mocked(fetchRsc).mockResolvedValue(elements);
-    const outcome = await load(route('/next'), baseOpts());
+    fetchRsc.mockResolvedValue(elements);
+    const outcome = await load(cache, route('/next'), baseOpts());
     expect(fetchRsc).toHaveBeenCalledWith(
       encodeRoutePath('/next'),
       expect.any(URLSearchParams),
@@ -122,17 +117,17 @@ describe('load', () => {
   });
 
   it('omits onBuildIdMismatch so fetchRsc keeps the reload default', async () => {
-    vi.mocked(fetchRsc).mockResolvedValue({ [ROUTE_ID]: ['/next', ''] });
-    await load(route('/next'), baseOpts());
-    const options = vi.mocked(fetchRsc).mock.calls[0]?.[2];
+    fetchRsc.mockResolvedValue({ [ROUTE_ID]: ['/next', ''] });
+    await load(cache, route('/next'), baseOpts());
+    const options = fetchRsc.mock.calls[0]?.[2];
     expect(options && 'onBuildIdMismatch' in options).toBe(false);
   });
 
   it('forwards onBuildIdMismatch when the caller supplied one', async () => {
     const onBuildIdMismatch = vi.fn();
-    vi.mocked(fetchRsc).mockResolvedValue({ [ROUTE_ID]: ['/next', ''] });
-    await load(route('/next'), baseOpts({ onBuildIdMismatch }));
-    const options = vi.mocked(fetchRsc).mock.calls[0]?.[2];
+    fetchRsc.mockResolvedValue({ [ROUTE_ID]: ['/next', ''] });
+    await load(cache, route('/next'), baseOpts({ onBuildIdMismatch }));
+    const options = fetchRsc.mock.calls[0]?.[2];
     expect(options).toEqual(
       expect.objectContaining({
         onBuildIdMismatch: expect.any(Function),
@@ -147,15 +142,15 @@ describe('load', () => {
   it('uses an in-flight prefetch instead of fetching again', async () => {
     const elements = { [ROUTE_ID]: ['/next', ''] };
     let resolveFetch!: (value: Elements) => void;
-    vi.mocked(fetchRsc).mockImplementationOnce(
+    fetchRsc.mockImplementationOnce(
       () =>
         new Promise((resolve) => {
           resolveFetch = resolve;
         }),
     );
-    prefetchRoute(route('/next'));
+    cache.prefetchRoute(route('/next'));
     expect(fetchRsc).toHaveBeenCalledTimes(1);
-    const pending = load(route('/next'), baseOpts());
+    const pending = load(cache, route('/next'), baseOpts());
     expect(fetchRsc).toHaveBeenCalledTimes(1);
     resolveFetch(elements);
     await expect(pending).resolves.toMatchObject({
@@ -169,15 +164,16 @@ describe('load', () => {
     const onInvalidate = vi.fn();
     const controller = new AbortController();
     let invalidate!: () => void;
-    vi.mocked(fetchRsc).mockImplementationOnce((_path, _params, options) => {
+    fetchRsc.mockImplementationOnce((_path, _params, options) => {
       invalidate = () =>
         (
           options as { onBuildIdMismatch?: () => void } | undefined
         )?.onBuildIdMismatch?.();
       return new Promise(() => {});
     });
-    prefetchRoute(route('/next'));
+    cache.prefetchRoute(route('/next'));
     const pending = load(
+      cache,
       route('/next'),
       baseOpts({ onInvalidate, signal: controller.signal }),
     );
@@ -193,19 +189,21 @@ describe('load', () => {
     const controllerA = new AbortController();
     const controllerB = new AbortController();
     let invalidate!: () => void;
-    vi.mocked(fetchRsc).mockImplementationOnce((_path, _params, options) => {
+    fetchRsc.mockImplementationOnce((_path, _params, options) => {
       invalidate = () =>
         (
           options as { onBuildIdMismatch?: () => void } | undefined
         )?.onBuildIdMismatch?.();
       return new Promise(() => {});
     });
-    prefetchRoute(route('/next'));
+    cache.prefetchRoute(route('/next'));
     const pendingA = load(
+      cache,
       route('/next'),
       baseOpts({ onInvalidate: onInvalidateA, signal: controllerA.signal }),
     );
     const pendingB = load(
+      cache,
       route('/next'),
       baseOpts({ onInvalidate: onInvalidateB, signal: controllerB.signal }),
     );
@@ -224,6 +222,7 @@ describe('load', () => {
     const controller = new AbortController();
     controller.abort();
     const outcome = await load(
+      cache,
       route('/next'),
       baseOpts({ signal: controller.signal }),
     );
@@ -233,7 +232,7 @@ describe('load', () => {
 
   it('returns aborted when the fetch is cancelled', async () => {
     const controller = new AbortController();
-    vi.mocked(fetchRsc).mockImplementation(
+    fetchRsc.mockImplementation(
       (_path, _params, options) =>
         new Promise((_, reject) => {
           options?.signal?.addEventListener('abort', () =>
@@ -242,6 +241,7 @@ describe('load', () => {
         }),
     );
     const pending = load(
+      cache,
       route('/next'),
       baseOpts({ signal: controller.signal }),
     );
@@ -250,10 +250,11 @@ describe('load', () => {
   });
 
   it('follows a 404 to /404 when has404 is set', async () => {
-    vi.mocked(fetchRsc)
+    fetchRsc
       .mockRejectedValueOnce(createCustomError('nf', { status: 404 }))
       .mockResolvedValueOnce({ [ROUTE_ID]: ['/404', ''] });
     const outcome = await load(
+      cache,
       route('/missing'),
       baseOpts({
         has404: true,
@@ -275,7 +276,7 @@ describe('load', () => {
   });
 
   it('follows an in-app redirect and loads the target', async () => {
-    vi.mocked(fetchRsc)
+    fetchRsc
       .mockRejectedValueOnce(
         createCustomError('moved', {
           status: 307,
@@ -284,6 +285,7 @@ describe('load', () => {
       )
       .mockResolvedValueOnce({ [ROUTE_ID]: ['/final', ''] });
     const outcome = await load(
+      cache,
       route('/next'),
       baseOpts({ url: new URL('/next', window.location.href) }),
     );
@@ -300,8 +302,8 @@ describe('load', () => {
       location: 'https://other.example/next',
       unstable_leave: true,
     });
-    vi.mocked(fetchRsc).mockRejectedValue(error);
-    const outcome = await load(route('/next'), baseOpts());
+    fetchRsc.mockRejectedValue(error);
+    const outcome = await load(cache, route('/next'), baseOpts());
     expect(outcome).toMatchObject({
       type: 'external',
       error,
@@ -316,8 +318,8 @@ describe('load', () => {
 
   it('fails on a non-followable error', async () => {
     const error = new Error('boom');
-    vi.mocked(fetchRsc).mockRejectedValue(error);
-    const outcome = await load(route('/next'), baseOpts());
+    fetchRsc.mockRejectedValue(error);
+    const outcome = await load(cache, route('/next'), baseOpts());
     expect(outcome).toEqual({
       type: 'failed',
       route: route('/next'),
@@ -330,6 +332,7 @@ describe('load', () => {
   it('adopts the given promise on the first attempt and does not fetch', async () => {
     const elements = { [ROUTE_ID]: ['/next', ''] };
     const outcome = await load(
+      cache,
       route('/next'),
       baseOpts({ adopt: Promise.resolve(elements) }),
     );
@@ -345,8 +348,9 @@ describe('load', () => {
   });
 
   it('follow attempts after an adopted rejection fetch and are not adopted', async () => {
-    vi.mocked(fetchRsc).mockResolvedValue({ [ROUTE_ID]: ['/404', ''] });
+    fetchRsc.mockResolvedValue({ [ROUTE_ID]: ['/404', ''] });
     const outcome = await load(
+      cache,
       route('/missing'),
       baseOpts({
         has404: true,
@@ -372,6 +376,7 @@ describe('load', () => {
     const controller = new AbortController();
     const adopt = new Promise<Elements>(() => {});
     const pending = load(
+      cache,
       route('/next'),
       baseOpts({ adopt, signal: controller.signal }),
     );
@@ -381,8 +386,8 @@ describe('load', () => {
   });
 
   it('loaded.route is the requested attempt, not the response ROUTE_ID', async () => {
-    vi.mocked(fetchRsc).mockResolvedValue({ [ROUTE_ID]: ['/other', ''] });
-    const outcome = await load(route('/next'), baseOpts());
+    fetchRsc.mockResolvedValue({ [ROUTE_ID]: ['/other', ''] });
+    const outcome = await load(cache, route('/next'), baseOpts());
     expect(outcome).toMatchObject({
       type: 'loaded',
       route: route('/next'),

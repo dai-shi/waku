@@ -29,17 +29,18 @@ Exports marked `unstable_*` or `*_UNSTABLE` in this document may still change.
 
 The minimal API is small, but it exposes both server-side handlers and client-side rendering primitives:
 
-| Entry point           | Surface                      | Use when                                                              |
-| --------------------- | ---------------------------- | --------------------------------------------------------------------- |
-| `waku/minimal/server` | `unstable_defineHandlers`    | Defining `handleRequest` and `handleBuild`.                           |
-| `waku/minimal/server` | `unstable_defineServerEntry` | Writing server entries directly, usually for adapters.                |
-| `waku/minimal/client` | `Root_UNSTABLE`              | Installing the minimal client runtime.                                |
-| `waku/minimal/client` | `Slot_UNSTABLE`              | Rendering a server element by RSC ID.                                 |
-| `waku/minimal/client` | `Children_UNSTABLE`          | Placing client-side `Slot` children inside a server-rendered element. |
-| `waku/minimal/client` | `unstable_fetchRsc`          | Fetching and decoding an RSC payload.                                 |
-| `waku/minimal/client` | `useMergeElements_UNSTABLE`  | Merging an RSC payload into the current element map.                  |
-| `waku/minimal/client` | `unstable_combineElements`   | Combining element maps without losing their etags.                    |
-| `waku/minimal/client` | `unstable_*` helpers         | Building router-like abstractions.                                    |
+| Entry point           | Surface                           | Use when                                                              |
+| --------------------- | --------------------------------- | --------------------------------------------------------------------- |
+| `waku/minimal/server` | `unstable_defineHandlers`         | Defining `handleRequest` and `handleBuild`.                           |
+| `waku/minimal/server` | `unstable_defineServerEntry`      | Writing server entries directly, usually for adapters.                |
+| `waku/minimal/client` | `Root_UNSTABLE`                   | Installing the minimal client runtime.                                |
+| `waku/minimal/client` | `Slot_UNSTABLE`                   | Rendering a server element by RSC ID.                                 |
+| `waku/minimal/client` | `Children_UNSTABLE`               | Placing client-side `Slot` children inside a server-rendered element. |
+| `waku/minimal/client` | `useFetchRsc_UNSTABLE`            | Fetching and decoding an RSC payload.                                 |
+| `waku/minimal/client` | `useMergeElements_UNSTABLE`       | Merging an RSC payload into the current element map.                  |
+| `waku/minimal/client` | `useRegisterRscEnhancer_UNSTABLE` | Extending the RSC requests a `Root` makes.                            |
+| `waku/minimal/client` | `unstable_combineElements`        | Combining element maps without losing their etags.                    |
+| `waku/minimal/client` | `unstable_*` helpers              | Building router-like abstractions.                                    |
 
 Examples below often import these as shorter names.
 This guide does not document every exported helper from `waku/minimal/client`;
@@ -517,12 +518,13 @@ The Minimal API exposes fetching and merging separately. Define a hook for the b
 ```tsx
 import { useCallback, useTransition } from 'react';
 import {
-  unstable_fetchRsc as fetchRsc,
+  useFetchRsc_UNSTABLE as useFetchRsc,
   useMergeElements_UNSTABLE as useMergeElements,
   useRegisterRscReloadListener_UNSTABLE as useRegisterRscReloadListener,
 } from 'waku/minimal/client';
 
 const useRefetch = () => {
+  const fetchRsc = useFetchRsc();
   const mergeElements = useMergeElements();
   const registerRscReloadListener = useRegisterRscReloadListener();
   return useCallback(
@@ -536,7 +538,7 @@ const useRefetch = () => {
       );
       return refetch();
     },
-    [mergeElements, registerRscReloadListener],
+    [fetchRsc, mergeElements, registerRscReloadListener],
   );
 };
 
@@ -566,6 +568,45 @@ Important behavior:
 - The reload registration keeps development HMR on the refetched RSC path and has no effect in production.
 - If you return only `InnerApp`, previously rendered elements such as `App` stay mounted.
 - If the refetch fails, the existing element map stays in place.
+
+#### Request enhancers
+
+`useRegisterRscEnhancer_UNSTABLE` extends the RSC requests of the enclosing `Root`. An enhancer wraps the request function, so it can rewrite the inputs, wrap the transport, or transform the result:
+
+```tsx
+import { useEffect } from 'react';
+import { useRegisterRscEnhancer_UNSTABLE as useRegisterRscEnhancer } from 'waku/minimal/client';
+
+const Locale = ({ locale }: { locale: string }) => {
+  const registerRscEnhancer = useRegisterRscEnhancer();
+  useEffect(
+    () =>
+      registerRscEnhancer(
+        (requestRsc) => (rscPath, rscParams, options) =>
+          requestRsc(rscPath, rscParams, {
+            ...options,
+            fetch: (input, init) => {
+              const headers = new Headers(init?.headers);
+              headers.set('accept-language', locale);
+              return options.fetch(input, { ...init, headers });
+            },
+          }),
+      ),
+    [locale, registerRscEnhancer],
+  );
+  return null;
+};
+```
+
+Important behavior:
+
+- `options.type` is `rsc` for a payload fetch and `call` for a server function call.
+- The result is `{ elements, value }`, where `value` is a server function's return value. The elements never carry Minimal's reserved keys.
+- Build a changed element map with `unstable_combineElements`. Each slot's etag stays with the map Minimal made it in, so a result rebuilt with a spread arrives without them and the server stops skipping the slots the Root already holds.
+- Enhancers run for the Root's fetches, the server actions it receives, and its development reloads, but not for its initial payload. A bare server action goes to the Root mounted last, which is not necessarily the one that rendered the component calling it.
+- A higher `order`, the optional second argument that defaults to `0`, wraps a lower one, so it runs earlier on the request and later on the result. At the same order a later registration wraps an earlier one. The Waku router registers its own enhancer at order 100. An enhancer above that order must not delay the result it returns. The router applies an action's route change while the chain is still unwinding, and the elements arrive only once the whole chain resolves, so a delay above it can paint a route whose slot has not been merged.
+- A request keeps the enhancers it started with, so unregistering does not change a response already on its way.
+- The initial payload is a known limitation. A `Root` requests it before any descendant can register, so an application that has to reach that one request wraps `globalThis.fetch` itself.
 
 ### Common Patterns
 

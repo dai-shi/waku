@@ -6,6 +6,7 @@ import {
   Slot_UNSTABLE as Slot,
   unstable_registerRscReloadListener as registerRscReloadListener,
 } from 'waku/minimal/client';
+import { RscEnhancements } from './components/RscEnhancements.js';
 
 registerRscReloadListener(() => {
   (
@@ -51,6 +52,9 @@ if (multipleRoots) {
       reactRoot.render(
         <StrictMode>
           <Root initialRscPath={name} initialRscParams={initialRscParams}>
+            {new URLSearchParams(window.location.search).has('enhancers') && (
+              <RscEnhancements name={name} />
+            )}
             <Slot id="Content" />
           </Root>
         </StrictMode>,
