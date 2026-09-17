@@ -97,3 +97,7 @@ export function decodeSliceId(rscPath: string): string | null {
 export const ROUTE_ID = 'ROUTE';
 export const IS_STATIC_ID = 'IS_STATIC';
 export const HAS404_ID = 'HAS404';
+
+export const IS_ORIGIN_ID = 'IS_ORIGIN';
+
+export const ACTION_LOCATION_HEADER = 'X-Waku-Action-Location';

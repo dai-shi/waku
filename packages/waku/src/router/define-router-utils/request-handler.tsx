@@ -6,6 +6,8 @@ import type { unstable_defineHandlers as defineHandlers } from '../../minimal/se
 import { INTERNAL_ServerRouter } from '../client.js';
 import { getPathMapping } from '../isomorphic-utils/path-spec.js';
 import {
+  ACTION_LOCATION_HEADER,
+  IS_ORIGIN_ID,
   decodeSliceId,
   encodeRoutePath,
   pathnameToRoutePath,
@@ -23,7 +25,7 @@ import type { RouteEntries, createRouteEntries } from './route-entries.js';
 type HandleRequest = Parameters<typeof defineHandlers>[0]['handleRequest'];
 type HandlerInput = Parameters<HandleRequest>[0];
 
-const resolveInternalRoute = (location: string, base: string) => {
+const parseInternalRoute = (location: string, base: string) => {
   if (!location.startsWith('/') || location.includes('#')) {
     return undefined;
   }
@@ -35,6 +37,24 @@ const resolveInternalRoute = (location: string, base: string) => {
     path: pathnameToRoutePath(url.pathname),
     query: url.searchParams.toString(),
   };
+};
+
+const parseActionOrigin = (req: Request) => {
+  const location = req.headers.get(ACTION_LOCATION_HEADER);
+  if (!location) {
+    return undefined;
+  }
+  try {
+    const route = parseInternalRoute(location, req.url);
+    return route
+      ? ([
+          encodeRoutePath(route.path),
+          new URLSearchParams({ query: route.query }),
+        ] as const)
+      : undefined;
+  } catch {
+    return undefined;
+  }
 };
 
 export const createRequestHandler = ({
@@ -81,15 +101,30 @@ export const createRequestHandler = ({
 
       // html has to carry every slot, so a client etag must not omit one
       const clientEtags = (input.type !== 'http' && input.etags) || {};
-      const withRerender = async <T,>(fn: () => Promise<T>) => {
+      const withRerender = async <T,>(
+        fn: () => Promise<T>,
+        getOrigin: () =>
+          readonly [rscPath: string, rscParams: unknown] | undefined,
+      ) => {
         let entriesPromise: Promise<RouteEntries> = Promise.resolve({
           elements: {},
           etags: {},
         });
         let rendered = false;
-        const rerender = (rscPath: string, rscParams?: unknown) => {
+        let isOrigin = false;
+        const rerender = (rscPath?: string, rscParams?: unknown) => {
           if (rendered) {
             throw new Error('already rendered');
+          }
+          if (rscPath === undefined) {
+            const origin = getOrigin();
+            if (!origin) {
+              throw new Error('The route this action came from is unknown');
+            }
+            [rscPath, rscParams] = origin;
+            isOrigin = true;
+          } else {
+            isOrigin = false;
           }
           entriesPromise = Promise.all([
             entriesPromise,
@@ -113,14 +148,14 @@ export const createRequestHandler = ({
         setRerender(rerender);
         try {
           const value = await fn();
-          return { value, entries: await entriesPromise };
+          return { value, entries: await entriesPromise, isOrigin };
         } finally {
           rendered = true;
         }
       };
 
       const getEntriesForRedirect = async (location: string) => {
-        const redirectRoute = resolveInternalRoute(location, input.req.url);
+        const redirectRoute = parseInternalRoute(location, input.req.url);
         if (!redirectRoute) {
           return null;
         }
@@ -208,8 +243,16 @@ export const createRequestHandler = ({
         args,
       }: Extract<HandlerInput, { type: 'call' }>) => {
         try {
-          const { value, entries } = await withRerender(() => fn(...args));
-          return renderRsc(entries.elements, { value, etags: entries.etags });
+          const { value, entries, isOrigin } = await withRerender(
+            () => fn(...args),
+            () => parseActionOrigin(input.req),
+          );
+          return renderRsc(
+            isOrigin
+              ? { ...entries.elements, [IS_ORIGIN_ID]: true }
+              : entries.elements,
+            { value, etags: entries.etags },
+          );
         } catch (e) {
           const location = getErrorInfo(e)?.location;
           if (!location) {
@@ -259,8 +302,10 @@ export const createRequestHandler = ({
           const html = <INTERNAL_ServerRouter route={route} />;
           let formState: unknown;
           if (tryAction) {
-            const { value, entries: rerendered } =
-              await withRerender(tryAction);
+            const { value, entries: rerendered } = await withRerender(
+              tryAction,
+              () => [rscPath, rscParams] as const,
+            );
             formState = value.action ? value.formState : undefined;
             entries = {
               elements: { ...entries.elements, ...rerendered.elements },

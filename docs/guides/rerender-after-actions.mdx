@@ -1,0 +1,110 @@
+---
+slug: rerender-after-actions
+title: Rerendering After Server Actions
+description: Show a server action's changes without leaving the page, so useOptimistic does not snap back.
+category: Routing and Navigation
+order: 35
+---
+
+## An Action Renders Nothing by Default
+
+When a server action settles, Waku returns its value and leaves the page as it was last rendered. After a mutation, that means the page shows stale data. It also undoes `useOptimistic`: React drops the optimistic value when the action settles, expecting the page to show the change by then, so the update appears and then disappears.
+
+The API in this guide currently uses an `unstable_` name and may change.
+
+## Rerender the Page the Action Came From
+
+Call `unstable_rerenderRoute` with no arguments. Waku renders the route the action was called from into the action's response, so the page and the optimistic value settle on the same data.
+
+```tsx
+// src/pages/cart.tsx
+import { unstable_rerenderRoute as rerenderRoute } from 'waku/router/server';
+import { AddToCart } from '../components/add-to-cart';
+import { addItem, getCart } from '../lib/cart';
+
+export default async function CartPage() {
+  const cart = await getCart();
+
+  return (
+    <AddToCart
+      count={cart.items.length}
+      addItem={async (formData: FormData) => {
+        'use server';
+
+        await addItem(String(formData.get('id')));
+        rerenderRoute();
+      }}
+    />
+  );
+}
+
+export const getConfig = async () => {
+  return {
+    render: 'dynamic',
+  } as const;
+};
+```
+
+```tsx
+// src/components/add-to-cart.tsx
+'use client';
+
+import { useOptimistic } from 'react';
+
+export const AddToCart = ({
+  count,
+  addItem,
+}: {
+  count: number;
+  addItem: (formData: FormData) => Promise<void>;
+}) => {
+  const [optimisticCount, setOptimisticCount] = useOptimistic(count);
+
+  return (
+    <form
+      action={async (formData) => {
+        setOptimisticCount(optimisticCount + 1);
+        await addItem(formData);
+      }}
+    >
+      <p>{optimisticCount} items</p>
+      <input type="hidden" name="id" value="42" />
+      <button>Add to cart</button>
+    </form>
+  );
+};
+```
+
+The page has to render dynamically for the rerender to read the new data.
+
+If the user moves to another page while the action runs, Waku drops the rerender instead of taking them back to the page they left. The action still returns its value.
+
+## Render a Specific Route
+
+Pass a path, and optionally a query, to render that route instead:
+
+```tsx
+rerenderRoute('/cart', 'tab=saved');
+```
+
+If that is not the route on screen, the router moves to it. To send the user to another page after a mutation, a redirect is usually the better fit; see [Redirects and Not Found](/guides/redirects-and-not-found).
+
+## Forms Without JavaScript
+
+Without JavaScript, the form posts to the page and Waku renders that page after the action runs, so the document already includes the change. Calling `unstable_rerenderRoute()` there still works; it renders the same page.
+
+## Avoid Rerendering From an Effect
+
+Do not call `unstable_rerenderRoute()` in an action that a client component calls from an effect with the action in its dependencies:
+
+```tsx
+useEffect(() => {
+  void track();
+}, [track]);
+```
+
+Every rerender gives the client a new `track` function, which runs the effect again and calls the action again, in a loop. This is also why Waku does not rerender after every action by default.
+
+## Router Requirement
+
+The no-argument form needs Waku's router on the client, which tells the server which route the action came from. In an action that did not come through it, such as one called from a custom router, `unstable_rerenderRoute()` throws.

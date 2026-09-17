@@ -8,6 +8,7 @@ import {
   useState,
 } from 'react';
 import {
+  unstable_combineElements as combineElements,
   useMergeElements_UNSTABLE as useMergeElements,
   useRegisterRscEnhancer_UNSTABLE as useRegisterRscEnhancer,
   useRegisterRscReloadListener_UNSTABLE as useRegisterRscReloadListener,
@@ -26,7 +27,12 @@ import {
   parseRoute,
 } from '../client-core-utils/route-url.js';
 import type { RouteProps } from '../isomorphic-utils/route-path.js';
-import { IS_STATIC_ID, ROUTE_ID } from '../isomorphic-utils/route-path.js';
+import {
+  ACTION_LOCATION_HEADER,
+  IS_ORIGIN_ID,
+  IS_STATIC_ID,
+  ROUTE_ID,
+} from '../isomorphic-utils/route-path.js';
 import {
   canPaintInstantOverlay,
   useStartInstantPaint,
@@ -122,6 +128,7 @@ export const useNavigation = (
   const route = destination ? destination.route : routeFallback;
   const pendingNavigationRef = useRef<{
     controller: AbortController;
+    route: Pick<RouteProps, 'path' | 'query'>;
     queuedState?: RouterState;
   } | null>(null);
   const appliedRef = useRef<RouterState>(undefined);
@@ -232,7 +239,7 @@ export const useNavigation = (
           follows: attempt.follows,
         });
       const controller = new AbortController();
-      pendingNavigationRef.current = { controller };
+      pendingNavigationRef.current = { controller, route: nextRoute };
       const commit = (
         state: RouterState,
         update: () => void,
@@ -242,7 +249,11 @@ export const useNavigation = (
           if (controller.signal.aborted) {
             return;
           }
-          pendingNavigationRef.current = { controller, queuedState: state };
+          pendingNavigationRef.current = {
+            controller,
+            route: { path: state.requested[0], query: state.requested[1] },
+            queuedState: state,
+          };
           update();
         };
         if (transition) {
@@ -452,21 +463,49 @@ export const useNavigation = (
       });
     };
     return registerRscEnhancer(
-      (next) =>
-        async (...args) => {
-          const result = await next(...args);
-          if (
-            args[2].type === 'call' &&
-            Reflect.ownKeys(result.elements).length
-          ) {
-            // TODO: this commits the route while the chain is still unwinding, so
-            // an enhancer above this order that delays the result paints the
+      (next) => async (rscPath, rscParams, options) => {
+        if (options.type !== 'call') {
+          return next(rscPath, rscParams, options);
+        }
+        const origin = getSettledRoute();
+        const result = await next(rscPath, rscParams, {
+          ...options,
+          fetch: (input, init) => {
+            const headers = new Headers(
+              init?.headers ??
+                (input instanceof Request ? input.headers : undefined),
+            );
+            headers.set(
+              ACTION_LOCATION_HEADER,
+              origin.query ? origin.path + '?' + origin.query : origin.path,
+            );
+            return options.fetch(input, { ...init, headers });
+          },
+        });
+        if (!(IS_ORIGIN_ID in result.elements)) {
+          if (Reflect.ownKeys(result.elements).length) {
+            // TODO: this commits the route while the chain is still unwinding,
+            // so an enhancer above this order that delays the result paints the
             // route before its slot is merged. Return the route keys in
             // result.elements instead, so Minimal applies both in one merge.
             handleActionElements(result.elements);
           }
           return result;
-        },
+        }
+        const pending = pendingNavigationRef.current;
+        // React holds a navigation back until a pending action settles
+        if (
+          (pending && !isSameRscRoute(pending.route, origin)) ||
+          !isSameRscRoute(getSettledRoute(), origin)
+        ) {
+          return { ...result, elements: {} };
+        }
+        const elements = combineElements({}, result.elements, {
+          unstable_filter: (key) => key !== IS_ORIGIN_ID,
+        });
+        handleActionElements(elements);
+        return { ...result, elements };
+      },
       ACTION_ENHANCER_ORDER,
     );
   }, [cache, changeRoute, getSettledRoute, registerRscEnhancer]);

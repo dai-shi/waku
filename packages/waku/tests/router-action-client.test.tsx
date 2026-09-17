@@ -1,8 +1,16 @@
 // @vitest-environment happy-dom
 
-import { StrictMode, Suspense, act, use, useEffect } from 'react';
+import {
+  StrictMode,
+  Suspense,
+  act,
+  startTransition,
+  use,
+  useEffect,
+} from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
+import { ETAGS_HEADER, ETAGS_ID } from '../src/lib/utils/etags.js';
 import { clearInitialRscEntries } from '../src/minimal/client-utils/initial-rsc-store.js';
 import { fetchRscInputTransformers } from '../src/minimal/client-utils/input-transformers.js';
 import {
@@ -12,6 +20,8 @@ import {
 } from '../src/minimal/client.js';
 import { Link, Router, useRouter } from '../src/router/client.js';
 import {
+  ACTION_LOCATION_HEADER,
+  IS_ORIGIN_ID,
   IS_STATIC_ID,
   ROUTE_ID,
   getRouteSlotId,
@@ -471,4 +481,177 @@ test('a Link renders outside a Root', async () => {
 
   expect(container.querySelector('a')?.getAttribute('href')).toBe('/somewhere');
   expect(errors).not.toHaveBeenCalled();
+});
+
+test('an action reports the route it was called from and applies its rerender', async () => {
+  window.history.replaceState({}, '', '/start?q=1');
+  const view = await mount();
+  const request = vi.fn<typeof fetch>(async () => new Response('{}'));
+  vi.stubGlobal('fetch', request);
+  decode.mockReturnValueOnce({
+    [getRouteSlotId('/start')]: 'refreshed start',
+    [ROUTE_ID]: ['/start', 'q=1'],
+    [IS_STATIC_ID]: false,
+    [IS_ORIGIN_ID]: true,
+    [ETAGS_ID]: { [getRouteSlotId('/start')]: 'v1' },
+    _value: 'done',
+  });
+
+  await act(async () => {
+    expect(await callServerRsc('action#test', [])).toBe('done');
+  });
+
+  expect(
+    new Headers(request.mock.lastCall![1]?.headers).get(ACTION_LOCATION_HEADER),
+  ).toBe('/start?q=1');
+  expect(view.container.textContent).toBe('refreshed start');
+  expect(window.location.pathname).toBe('/start');
+
+  decode.mockReturnValueOnce({ _value: 'again' });
+  await act(async () => {
+    await callServerRsc('action#test', []);
+  });
+  expect(
+    new Headers(request.mock.lastCall![1]?.headers).get(ETAGS_HEADER),
+  ).toBe(JSON.stringify({ [getRouteSlotId('/start')]: 'v1' }));
+  expect(view.errors).not.toHaveBeenCalled();
+});
+
+test('a rerender of the route an action came from is dropped once the user left it', async () => {
+  const view = await mount();
+  const delayed = deferred(undefined);
+  view.register((next) => async (path, params, options) => {
+    const result = await next(path, params, options);
+    if (options.type === 'call') {
+      await delayed.promise;
+    }
+    return result;
+  });
+  decode.mockReturnValueOnce({
+    [getRouteSlotId('/start')]: 'refreshed start',
+    [ROUTE_ID]: ['/start', ''],
+    [IS_STATIC_ID]: false,
+    [IS_ORIGIN_ID]: true,
+    _value: 'done',
+  });
+  let action!: Promise<unknown>;
+  await act(async () => {
+    action = callServerRsc('action#test', []);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+  decode.mockReturnValueOnce({
+    [getRouteSlotId('/next')]: 'next',
+    [ROUTE_ID]: ['/next', ''],
+    [IS_STATIC_ID]: false,
+  });
+  await act(async () => {
+    await view.getRouter().push('/next');
+  });
+  expect(view.container.textContent).toBe('next');
+
+  await act(async () => {
+    delayed.resolve(undefined);
+    expect(await action).toBe('done');
+  });
+
+  expect(view.container.textContent).toBe('next');
+  expect(window.location.pathname).toBe('/next');
+  expect(view.errors).not.toHaveBeenCalled();
+});
+
+test('a rerender of the route an action came from is dropped over a navigation it holds back', async () => {
+  const view = await mount();
+  const response = deferred<Record<string, unknown>>({});
+  decode.mockReturnValueOnce(response.promise);
+  let action!: Promise<unknown>;
+  await act(async () => {
+    startTransition(async () => {
+      action = callServerRsc('action#test', []);
+      await action;
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+  decode.mockReturnValueOnce({
+    [getRouteSlotId('/middle')]: 'middle',
+    [ROUTE_ID]: ['/middle', ''],
+    [IS_STATIC_ID]: false,
+  });
+  await act(async () => {
+    await view.getRouter().push('/middle');
+  });
+  expect(view.container.textContent).toBe('start');
+  await act(async () => {
+    response.resolve({
+      [getRouteSlotId('/start')]: 'refreshed start',
+      [ROUTE_ID]: ['/start', ''],
+      [IS_STATIC_ID]: false,
+      [IS_ORIGIN_ID]: true,
+      _value: 'returned',
+    });
+    expect(await action).toBe('returned');
+  });
+  expect(view.container.textContent).toBe('middle');
+  expect(window.location.pathname).toBe('/middle');
+  expect(view.errors).not.toHaveBeenCalled();
+});
+
+test('an action keeps the headers of a request an inner enhancer builds', async () => {
+  const view = await mount();
+  let sent: Headers | undefined;
+  vi.stubGlobal(
+    'fetch',
+    async (input: RequestInfo | URL, init?: RequestInit) => {
+      sent = new Request(input, init).headers;
+      return new Response('{}');
+    },
+  );
+  view.register(
+    (next) => (path, params, options) =>
+      next(path, params, {
+        ...options,
+        fetch: (input, init) =>
+          options.fetch(
+            new Request(new URL(String(input), window.location.href), init),
+          ),
+      }),
+  );
+  decode.mockReturnValueOnce({ _value: 'done' });
+
+  await act(async () => {
+    await callServerRsc('action#test', []);
+  });
+
+  expect(sent?.get(ACTION_LOCATION_HEADER)).toBe('/start');
+  expect(sent?.has(ETAGS_HEADER)).toBe(true);
+});
+
+test('a rerender of the route an action came from survives a navigation within that route', async () => {
+  const view = await mount();
+  const response = deferred<Record<string, unknown>>({});
+  decode.mockReturnValueOnce(response.promise);
+  let action!: Promise<unknown>;
+  await act(async () => {
+    startTransition(async () => {
+      action = callServerRsc('action#test', []);
+      await action;
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+  await act(async () => {
+    await view.getRouter().push('/start#details');
+  });
+
+  await act(async () => {
+    response.resolve({
+      [getRouteSlotId('/start')]: 'refreshed start',
+      [ROUTE_ID]: ['/start', ''],
+      [IS_STATIC_ID]: false,
+      [IS_ORIGIN_ID]: true,
+      _value: 'returned',
+    });
+    expect(await action).toBe('returned');
+  });
+
+  expect(view.container.textContent).toBe('refreshed start');
+  expect(view.errors).not.toHaveBeenCalled();
 });

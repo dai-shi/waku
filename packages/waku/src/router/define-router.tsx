@@ -41,7 +41,21 @@ export {
 };
 export type { ApiHandler, HandlerInterceptor };
 
-export function unstable_rerenderRoute(pathname: string, query?: string) {
+/**
+ * Renders the route the current server action was called from into its
+ * response. The client drops it if the user has left that route by then.
+ */
+export function unstable_rerenderRoute(): void;
+/**
+ * Renders a route into the response of the current server action. `query` is
+ * the search string without `?`.
+ */
+export function unstable_rerenderRoute(pathname: string, query?: string): void;
+export function unstable_rerenderRoute(pathname?: string, query?: string) {
+  if (pathname === undefined) {
+    getRerender()();
+    return;
+  }
   const routePath = pathnameToRoutePath(pathname);
   const rscPath = encodeRoutePath(routePath);
   getRerender()(rscPath, query && new URLSearchParams({ query }));

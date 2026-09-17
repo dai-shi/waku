@@ -213,6 +213,51 @@ describe('define-router action requests', () => {
     );
   });
 
+  it('lets a no-JS form action rerender its own route with no arguments', async () => {
+    let message = 'before';
+    const renderPage = vi.fn(() => `page:${message}`);
+    const { handleRequest } = unstable_defineRouter({
+      getConfigs: async () => [
+        {
+          type: 'route' as const,
+          path: [{ type: 'literal' as const, name: 'form' }],
+          isStatic: false,
+          rootElement: { isStatic: false, renderer: () => 'root' },
+          routeElement: { isStatic: false, renderer: () => 'route' },
+          elements: {
+            'page:/form': { isStatic: false, renderer: renderPage },
+          },
+        },
+      ],
+    });
+
+    const renderRsc = vi.fn().mockResolvedValue(makeStream());
+
+    await handleRequest(
+      {
+        type: 'http',
+        tryAction: async () => {
+          message = 'after';
+          unstable_rerenderRoute();
+          return { action: true as const, formState: 'form-state' };
+        },
+        pathname: '/form',
+        req: new Request('http://localhost/form', { method: 'POST' }),
+      },
+      {
+        renderRsc,
+        renderHtml: vi.fn().mockResolvedValue(new Response('ok')),
+        loadBuildMetadata: vi.fn(),
+      },
+    );
+
+    expect(renderPage).toHaveBeenCalledTimes(2);
+    expect(renderRsc).toHaveBeenCalledWith(
+      expect.objectContaining({ 'page:/form': 'page:after' }),
+      { etags: {} },
+    );
+  });
+
   it('does not let catch-all api routes intercept no-JS form actions', async () => {
     let message = 'before';
     const apiHandler = vi.fn().mockResolvedValue(new Response('api'));

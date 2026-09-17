@@ -22,6 +22,7 @@ import NestedBazPage from './components/NestedBazPage.js';
 import NestedLayout from './components/NestedLayout.js';
 import NoSsr from './components/NoSsr.js';
 import NoSsrDynamic from './components/NoSsrDynamic.js';
+import { OptimisticActionPage } from './components/OptimisticActionPage.js';
 import RedirectToSearchPage from './components/RedirectToSearchPage.js';
 import { RerenderActionPage } from './components/RerenderActionPage.js';
 import {
@@ -420,6 +421,12 @@ const pages: ReturnType<typeof createPages> = createPages(
       render: 'dynamic',
       path: '/rerender-action',
       component: RerenderActionPage,
+    }),
+
+    createPage({
+      render: 'dynamic',
+      path: '/optimistic-action',
+      component: OptimisticActionPage,
     }),
 
     // wakujs/waku#2288: the layout slot streams before the page slot

@@ -290,6 +290,60 @@ test.describe(`create-pages`, () => {
     expect(errors).toEqual([]);
   });
 
+  test('an action rerenders the route it was called from', async ({ page }) => {
+    const submittedName = `Optimistic ${Date.now()}`;
+    await page.goto(`http://localhost:${port}/optimistic-action`);
+    await waitForHydration(page);
+    let releaseAction!: () => void;
+    const actionHeld = new Promise<void>((resolve) => {
+      releaseAction = resolve;
+    });
+    await page.route('**/RSC/F/**', async (route) => {
+      await actionHeld;
+      await route.continue();
+    });
+    const message = page.getByTestId('optimistic-action-message');
+
+    await page.getByLabel('Name').fill(submittedName);
+    await page.getByRole('button', { name: 'Submit Optimistic' }).click();
+    await expect(message).toHaveText(`Submitted: ${submittedName} (pending)`);
+    releaseAction();
+    await expect(message).toHaveText(`Submitted: ${submittedName}`);
+  });
+
+  test('an action that settles after the user left does not refresh them back', async ({
+    page,
+  }) => {
+    await page.goto(`http://localhost:${port}/optimistic-action`);
+    await waitForHydration(page);
+    let releaseAction!: () => void;
+    const actionHeld = new Promise<void>((resolve) => {
+      releaseAction = resolve;
+    });
+    await page.route('**/RSC/F/**', async (route) => {
+      await actionHeld;
+      await route.continue();
+    });
+    await page.getByLabel('Name').fill(`Left ${Date.now()}`);
+    await page.getByRole('button', { name: 'Submit Optimistic' }).click();
+    await expect(page.getByTestId('optimistic-action-message')).toContainText(
+      '(pending)',
+    );
+    const fooResponse = page.waitForResponse((response) =>
+      response.url().includes('/RSC/R/foo.txt'),
+    );
+    await page.locator("a[href='/foo']").click();
+    await fooResponse;
+    releaseAction();
+    await expect(
+      page.getByRole('heading', { name: 'Foo', exact: true }),
+    ).toBeVisible();
+    await expect(page).toHaveURL(`http://localhost:${port}/foo`);
+    await expect(
+      page.getByRole('heading', { name: 'Optimistic Action' }),
+    ).toBeHidden();
+  });
+
   test('server action rerenders route with js', async ({ page }) => {
     const submittedName = `With JS ${Date.now()}`;
     await page.goto(`http://localhost:${port}/rerender-action`);

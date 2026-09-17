@@ -6,6 +6,8 @@ import {
 } from '../src/minimal/server.js';
 import { unstable_defineRouter } from '../src/router/define-router.js';
 import {
+  ACTION_LOCATION_HEADER,
+  IS_ORIGIN_ID,
   ROUTE_ID,
   encodeRoutePath,
   encodeSliceId,
@@ -48,12 +50,17 @@ const rscInput = (rscPath: string, rscParams?: unknown) => ({
   req: new Request('http://localhost/RSC/' + rscPath),
 });
 
-const callInput = (fn: () => Promise<unknown>) => ({
+const callInput = (fn: () => Promise<unknown>, actionLocation?: string) => ({
   type: 'call' as const,
   pathname: '/RSC/F/x.txt',
   fn,
   args: [],
-  req: new Request('http://localhost/RSC/F/x.txt', { method: 'POST' }),
+  req: new Request('http://localhost/RSC/F/x.txt', {
+    method: 'POST',
+    ...(actionLocation
+      ? { headers: { [ACTION_LOCATION_HEADER]: actionLocation } }
+      : {}),
+  }),
 });
 
 const dynamicRoute = (name: string) => ({
@@ -112,6 +119,168 @@ describe('request dispatch', () => {
       expect.objectContaining({ [ROUTE_ID]: ['/', ''] }),
       { value: 'fn-value', etags: {} },
     );
+  });
+
+  it('rerenders the route an action came from when asked with no arguments', async () => {
+    const { handleRequest } = unstable_defineRouter({
+      getConfigs: async () => [dynamicRoute('/dest')],
+    });
+    const utils = makeUtils();
+    await handleRequest(
+      callInput(async () => {
+        unstable_rerenderRoute();
+        return 'fn-value';
+      }, '/dest?a=1'),
+      utils,
+    );
+    expect(utils.renderRsc).toHaveBeenCalledWith(
+      expect.objectContaining({
+        [ROUTE_ID]: ['/dest', 'a=1'],
+        [IS_ORIGIN_ID]: true,
+      }),
+      { value: 'fn-value', etags: {} },
+    );
+  });
+
+  it('renders a named route, not the one an action came from', async () => {
+    const { handleRequest } = unstable_defineRouter({
+      getConfigs: async () => [dynamicRoute('/'), dynamicRoute('/dest')],
+    });
+    const utils = makeUtils();
+    await handleRequest(
+      callInput(async () => {
+        unstable_rerenderRoute('/');
+        return 'fn-value';
+      }, '/dest'),
+      utils,
+    );
+    expect(utils.renderRsc).toHaveBeenCalledWith(
+      expect.objectContaining({ [ROUTE_ID]: ['/', ''] }),
+      { value: 'fn-value', etags: {} },
+    );
+    expect(utils.renderRsc.mock.calls[0]![0]).not.toHaveProperty(IS_ORIGIN_ID);
+  });
+
+  it('renders nothing for an action that does not ask, so an effect calling it cannot loop', async () => {
+    const { handleRequest } = unstable_defineRouter({
+      getConfigs: async () => [dynamicRoute('/dest')],
+    });
+    const utils = makeUtils();
+    await handleRequest(
+      callInput(async () => 'fn-value', '/dest'),
+      utils,
+    );
+    expect(utils.renderRsc).toHaveBeenCalledWith(
+      {},
+      { value: 'fn-value', etags: {} },
+    );
+  });
+
+  it('rejects a no-argument rerender when the route an action came from is unknown', async () => {
+    const { handleRequest } = unstable_defineRouter({
+      getConfigs: async () => [dynamicRoute('/dest')],
+    });
+    await expect(
+      handleRequest(
+        callInput(async () => {
+          unstable_rerenderRoute();
+        }),
+        makeUtils(),
+      ),
+    ).rejects.toThrow('The route this action came from is unknown');
+  });
+
+  it('ignores a malformed action location unless the action asks for it', async () => {
+    const { handleRequest } = unstable_defineRouter({
+      getConfigs: async () => [dynamicRoute('/dest')],
+    });
+    const utils = makeUtils();
+    await handleRequest(
+      callInput(async () => 'fn-value', '//['),
+      utils,
+    );
+    expect(utils.renderRsc).toHaveBeenCalledWith(
+      {},
+      { value: 'fn-value', etags: {} },
+    );
+  });
+
+  it('types a no-argument rerender apart from a named one', () => {
+    const assertTypes = (next: string | undefined) => {
+      unstable_rerenderRoute();
+      unstable_rerenderRoute('/dest', 'a=1');
+      // @ts-expect-error an undefined path would mean the origin
+      unstable_rerenderRoute(next, 'a=1');
+    };
+    expect(assertTypes).toBeTypeOf('function');
+  });
+
+  it('does not mark a response whose last rerender names a route', async () => {
+    const { handleRequest } = unstable_defineRouter({
+      getConfigs: async () => [dynamicRoute('/'), dynamicRoute('/dest')],
+    });
+    const utils = makeUtils();
+    await handleRequest(
+      callInput(async () => {
+        unstable_rerenderRoute();
+        unstable_rerenderRoute('/dest');
+        return 'fn-value';
+      }, '/'),
+      utils,
+    );
+    const [elements] = utils.renderRsc.mock.calls[0]!;
+    expect(elements[ROUTE_ID]).toEqual(['/dest', '']);
+    expect(elements).not.toHaveProperty(IS_ORIGIN_ID);
+  });
+
+  it('marks a response whose last rerender is the route an action came from', async () => {
+    const { handleRequest } = unstable_defineRouter({
+      getConfigs: async () => [dynamicRoute('/'), dynamicRoute('/dest')],
+    });
+    const utils = makeUtils();
+    await handleRequest(
+      callInput(async () => {
+        unstable_rerenderRoute('/dest');
+        unstable_rerenderRoute();
+        return 'fn-value';
+      }, '/'),
+      utils,
+    );
+    const [elements] = utils.renderRsc.mock.calls[0]!;
+    expect(elements[ROUTE_ID]).toEqual(['/', '']);
+    expect(elements[IS_ORIGIN_ID]).toBe(true);
+  });
+
+  it('rejects a no-argument rerender whose action location is malformed', async () => {
+    const { handleRequest } = unstable_defineRouter({
+      getConfigs: async () => [dynamicRoute('/dest')],
+    });
+    await expect(
+      handleRequest(
+        callInput(async () => {
+          unstable_rerenderRoute();
+        }, '//['),
+        makeUtils(),
+      ),
+    ).rejects.toThrow('The route this action came from is unknown');
+  });
+
+  it('does not mark a response after a no-argument rerender that failed', async () => {
+    const { handleRequest } = unstable_defineRouter({
+      getConfigs: async () => [dynamicRoute('/dest')],
+    });
+    const utils = makeUtils();
+    await handleRequest(
+      callInput(async () => {
+        unstable_rerenderRoute('/dest');
+        expect(() => unstable_rerenderRoute()).toThrow();
+        return 'fn-value';
+      }),
+      utils,
+    );
+    const [elements] = utils.renderRsc.mock.calls[0]!;
+    expect(elements[ROUTE_ID]).toEqual(['/dest', '']);
+    expect(elements).not.toHaveProperty(IS_ORIGIN_ID);
   });
 
   it('keeps the query of a server-function redirect', async () => {
