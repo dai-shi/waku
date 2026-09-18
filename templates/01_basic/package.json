@@ -17,7 +17,7 @@
     "waku": "1.0.0-rc.1"
   },
   "devDependencies": {
-    "@rolldown/plugin-babel": "^0.2.3",
+    "@rolldown/plugin-babel": "^0.2.4",
     "@tailwindcss/vite": "4.3.3",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
