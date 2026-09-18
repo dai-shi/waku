@@ -15,9 +15,9 @@
     "framer-motion": "^13.1.1",
     "jotai": "^2.20.3",
     "next-mdx-remote": "^6.0.0",
-    "react": "~19.2.8",
-    "react-dom": "~19.2.8",
-    "react-server-dom-webpack": "~19.2.8",
+    "react": "~19.3.0",
+    "react-dom": "~19.3.0",
+    "react-server-dom-webpack": "~19.3.0",
     "remark-gfm": "^4.0.1",
     "smartquotes": "^2.3.2",
     "waku": "workspace:*"
@@ -25,8 +25,8 @@
   "devDependencies": {
     "@fontsource/inter": "^5.3.0",
     "@tailwindcss/vite": "4.3.3",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "@vercel/og": "^1.0.1",
     "prettier": "^3.9.6",
     "prettier-plugin-tailwindcss": "^0.8.1",

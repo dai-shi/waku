@@ -1,13 +1,16 @@
 import { RouteState } from '../components/route-state.js';
 import { ViewTargetMarker } from '../components/view-target-marker.js';
+import { ViewTransitionProbe } from '../components/view-transition-probe.js';
 
 export default function ViewTargetPage() {
   return (
-    <div>
-      <h1>View Target</h1>
-      <RouteState />
-      <ViewTargetMarker />
-    </div>
+    <ViewTransitionProbe>
+      <div>
+        <h1>View Target</h1>
+        <RouteState />
+        <ViewTargetMarker />
+      </div>
+    </ViewTransitionProbe>
   );
 }
 

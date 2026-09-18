@@ -494,7 +494,7 @@ test.describe('router-client', () => {
     await expect(page.getByTestId('route-query')).toHaveText('x=1');
   });
 
-  test('Link unstable_startTransition wraps navigation', async ({ page }) => {
+  test('a ViewTransition animates a navigation', async ({ page }) => {
     await page.goto(`http://localhost:${port}/start`);
     await waitForHydration(page);
     await page.getByTestId('transition-link').click();
@@ -502,11 +502,15 @@ test.describe('router-client', () => {
       page.getByRole('heading', { name: 'View Target' }),
     ).toBeVisible();
     await expect(page.getByTestId('route-query')).toHaveText('from=transition');
+    // React runs the transition only because the router commits inside one.
+    // A browser without the View Transitions API skips it and still commits.
     await expect
       .poll(() =>
         page.evaluate(
           () =>
-            (window as unknown as Record<string, unknown>).__transitionStarted,
+            (window as unknown as Record<string, unknown>)
+              .__viewTransitionEntered === true ||
+            typeof document.startViewTransition !== 'function',
         ),
       )
       .toBe(true);

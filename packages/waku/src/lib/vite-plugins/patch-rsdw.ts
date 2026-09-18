@@ -1,24 +1,5 @@
 import type { Plugin } from 'vite';
 
-// In React 19.2.x, debug info that moveDebugInfoFromChunkToInnerValue has
-// moved from a chunk onto its resolved value is not read back by
-// flushComponentPerformance, so those chunks are missing from the Server
-// Components performance track. This transform reads it back from the
-// resolved value. React main includes an equivalent recovery.
-//
-// TODO: delete this transform once the recovery is in Waku's minimum React
-// version. Investigation: https://github.com/facebook/react/issues/37116
-const SEARCH = 'debugInfo = root._debugInfo;';
-const REPLACE = `
-${SEARCH}
-if (debugInfo && 0 === debugInfo.length && "fulfilled" === root.status) {
-  var _resolved = typeof resolveLazy === "function" ? resolveLazy(root.value) : root.value;
-  if ("object" === typeof _resolved && null !== _resolved && isArrayImpl(_resolved._debugInfo)) {
-    debugInfo = _resolved._debugInfo;
-  }
-}
-`;
-
 const RSDW_CLIENT_ID = 'react-server-dom-webpack/client';
 const RSDW_CLIENT_EDGE_ID = 'react-server-dom-webpack/client.edge';
 const RSDW_SERVER_EDGE_ID = 'react-server-dom-webpack/server.edge';
@@ -75,22 +56,6 @@ export function patchRsdwPlugin(): Plugin {
         }
         return `export {}`;
       }
-    },
-    transform(code, id) {
-      const [file] = id.split('?');
-      if (
-        ![
-          '/react-server-dom-webpack-client.browser.development.js',
-          '/react-server-dom-webpack_client__browser.js',
-        ].some((suffix) => file!.endsWith(suffix))
-      ) {
-        return;
-      }
-      const patched = code.replace(SEARCH, REPLACE);
-      if (patched === code) {
-        return;
-      }
-      return patched;
     },
   };
 }

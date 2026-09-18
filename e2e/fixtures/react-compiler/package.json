@@ -9,16 +9,16 @@
     "start": "waku start"
   },
   "dependencies": {
-    "react": "~19.2.8",
-    "react-dom": "~19.2.8",
-    "react-server-dom-webpack": "~19.2.8",
+    "react": "~19.3.0",
+    "react-dom": "~19.3.0",
+    "react-server-dom-webpack": "~19.3.0",
     "react-wrap-balancer": "^1.1.1",
     "waku": "latest"
   },
   "devDependencies": {
     "@rolldown/plugin-babel": "^0.2.3",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.0.1",
     "babel-plugin-react-compiler": "^1.0.0",
     "typescript": "^6.0.3"

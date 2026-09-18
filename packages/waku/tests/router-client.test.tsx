@@ -3955,17 +3955,12 @@ describe('Router integration', () => {
     },
   });
 
-  test('instant Link bypasses a custom transition for a known static route', async () => {
-    const customTransition = vi.fn<(fn: () => void) => void>();
+  test('instant Link commits a known static route without refetching', async () => {
     const view = await renderRouter(
       { initialRoute: { path: '/start', query: '', hash: '' } },
       {
         [unstable_getRouteSlotId('/start')]: (
-          <Link
-            to="/start?updated=1"
-            unstable_instant
-            unstable_startTransition={customTransition}
-          >
+          <Link to="/start?updated=1" unstable_instant>
             update query
           </Link>
         ),
@@ -3980,7 +3975,6 @@ describe('Router integration', () => {
         await flush();
       });
 
-      expect(customTransition).not.toHaveBeenCalled();
       expect(window.location.search).toBe('?updated=1');
       expect(getRefetchMock()).not.toHaveBeenCalled();
     } finally {
@@ -8978,14 +8972,13 @@ describe('Router integration', () => {
     }
   });
 
-  test('a delayed failure commit cannot replace a newer navigation', async () => {
-    const customCommits: Array<() => void> = [];
-    const customTransition = vi.fn((fn: () => void) => {
-      customCommits.push(fn);
-    });
+  test('a delayed failure cannot replace a newer navigation', async () => {
+    // The failure lands after a newer navigation already committed, so its
+    // controller is aborted and the error must not reach the boundary.
+    const broken = createDeferred<Record<string, unknown>>();
     const refetch = vi
       .fn<RefetchInner>()
-      .mockRejectedValueOnce(new Error('offline'))
+      .mockReturnValueOnce(broken.promise)
       .mockResolvedValueOnce({
         [ROUTE_ID]: ['/other', ''],
         [IS_STATIC_ID]: false,
@@ -9002,11 +8995,7 @@ describe('Router integration', () => {
           </ErrorBoundary>
         </>
       ),
-      [unstable_getRouteSlotId('/start')]: (
-        <Link to="/broken" unstable_startTransition={customTransition}>
-          broken
-        </Link>
-      ),
+      [unstable_getRouteSlotId('/start')]: <Link to="/broken">broken</Link>,
       [unstable_getRouteSlotId('/other')]: <div>other page</div>,
       [ROUTE_ID]: ['/start', ''],
       [IS_STATIC_ID]: false,
@@ -9022,14 +9011,14 @@ describe('Router integration', () => {
         view.container.querySelector('a')?.click();
         await flush();
       });
-      expect(customTransition).toHaveBeenCalledTimes(1);
+      expect(refetch).toHaveBeenCalledTimes(1);
 
       await act(async () => {
         await capture.router!.push('/other');
         await flush();
       });
       await act(async () => {
-        customCommits[0]?.();
+        broken.reject(new Error('offline'));
         await flush();
       });
 
@@ -9039,135 +9028,6 @@ describe('Router integration', () => {
       );
     } finally {
       consoleErrorSpy.mockRestore();
-      view.unmount();
-    }
-  });
-
-  test('useNavigationStatus stays idle when the Link uses unstable_startTransition', async () => {
-    // A custom unstable_startTransition replaces React's useTransition, so
-    // isPending never flips and the hook reports { pending: false } for that
-    // link even mid-navigation. This locks the documented limitation.
-    const navigation = createDeferred<Record<string, unknown>>();
-    const refetch = vi.fn<RefetchInner>(() => navigation.promise);
-    installRefetch(refetch);
-    window.history.replaceState({}, '', '/one');
-    let inCustomTransition = false;
-    let mergeInsideTransition: boolean | undefined;
-    const customCommits: Array<() => void> = [];
-    const customTransition = vi.fn((fn: () => void) => {
-      customCommits.push(() => {
-        inCustomTransition = true;
-        try {
-          fn();
-        } finally {
-          inCustomTransition = false;
-        }
-      });
-    });
-
-    const PendingProbe = () => {
-      const { pending } = useNavigationStatus();
-      return pending ? (
-        <div data-testid="pending">Pending</div>
-      ) : (
-        <div data-testid="not-pending">Idle</div>
-      );
-    };
-
-    const view = await renderRouter(
-      { initialRoute: { path: '/one', query: '', hash: '' } },
-      {
-        [unstable_getRouteSlotId('/one')]: (
-          <>
-            <h1>Page 1</h1>
-            <Link
-              to="/two"
-              unstable_instant
-              unstable_startTransition={customTransition}
-            >
-              Go to two
-              <PendingProbe />
-            </Link>
-          </>
-        ),
-        [ROUTE_ID]: ['/one', ''],
-        [IS_STATIC_ID]: false,
-      },
-    );
-
-    try {
-      testHoisted.onMerge = () => {
-        mergeInsideTransition = inCustomTransition;
-      };
-      const has = (testid: string) =>
-        view.container.querySelector(`[data-testid="${testid}"]`) !== null;
-
-      expect(has('not-pending')).toBe(true);
-
-      const link = Array.from(view.container.querySelectorAll('a')).find(
-        (anchor) => anchor.textContent?.includes('Go to two'),
-      ) as HTMLAnchorElement | undefined;
-      if (!link) {
-        throw new Error('expected link');
-      }
-      await act(async () => {
-        link.dispatchEvent(
-          new MouseEvent('click', {
-            bubbles: true,
-            cancelable: true,
-            button: 0,
-          }),
-        );
-      });
-      await flush();
-
-      // Navigation is in flight (refetch not resolved), but the custom
-      // transition bypassed useTransition, so pending never flipped.
-      expect(refetch).toHaveBeenCalledTimes(1);
-      expect(has('pending')).toBe(false);
-      expect(has('not-pending')).toBe(true);
-      expect(view.container.textContent).toContain('Page 1');
-      expect(customTransition).not.toHaveBeenCalled();
-
-      await act(async () => {
-        navigation.resolve({
-          [unstable_getRouteSlotId('/two')]: <h1>Page 2</h1>,
-          [ROUTE_ID]: ['/two', ''],
-          [IS_STATIC_ID]: true,
-        });
-        await flush();
-      });
-
-      expect(customTransition).toHaveBeenCalledTimes(1);
-      expect(view.container.textContent).toContain('Page 1');
-      await act(async () => {
-        link.dispatchEvent(
-          new MouseEvent('click', {
-            bubbles: true,
-            cancelable: true,
-            button: 0,
-          }),
-        );
-        await flush();
-      });
-
-      // The first response is static, but its delayed commit has not run. A
-      // newer navigation must fetch it again instead of trusting missing data.
-      expect(refetch).toHaveBeenCalledTimes(2);
-      expect(customTransition).toHaveBeenCalledTimes(2);
-      await act(async () => {
-        customCommits[0]?.();
-        await flush();
-      });
-      expect(view.container.textContent).toContain('Page 1');
-      await act(async () => {
-        customCommits[1]?.();
-        await flush();
-      });
-
-      expect(view.container.textContent).toContain('Page 2');
-      expect(mergeInsideTransition).toBe(true);
-    } finally {
       view.unmount();
     }
   });

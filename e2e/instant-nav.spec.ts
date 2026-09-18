@@ -485,24 +485,41 @@ test.describe('instant-nav hmr', { tag: '@dev' }, () => {
     await expect(page.getByTestId('hmr-marker')).toBeVisible();
     await expect(page.getByTestId('post-body')).toHaveText('Post 1');
 
-    const delayedResponsePromise = page.waitForResponse((response) =>
-      response.url().includes('R/post/2'),
+    // an HMR update retires a navigation whose response has not landed yet:
+    // the stale response must not commit once it finally arrives
+    const post2Requested = Promise.withResolvers<void>();
+    const releasePost2 = Promise.withResolvers<void>();
+    const post2Delivered = Promise.withResolvers<void>();
+    await page.route(
+      '**/RSC/R/post/2**',
+      async (route) => {
+        const response = await route.fetch();
+        post2Requested.resolve();
+        await releasePost2.promise;
+        await route.fulfill({ response });
+        post2Delivered.resolve();
+      },
+      { times: 1 },
     );
-    await page.getByTestId('link-delayed-post-2').click();
-    await (await delayedResponsePromise).finished();
+    await page.getByTestId('link-plain-post-2').click();
+    await post2Requested.promise;
 
     const delayedPostHmrResponsePromise = page.waitForResponse((response) =>
       response.url().includes('R/post/1'),
     );
     writeFileSync(postFile, originalPost.replace('Post {id}', 'HMR Post {id}'));
     await (await delayedPostHmrResponsePromise).finished();
-    await page.evaluate(() => {
-      const global = globalThis as typeof globalThis & {
-        __WAKU_TEST_COMMIT_NAVIGATION__?: () => void;
-      };
-      global.__WAKU_TEST_COMMIT_NAVIGATION__?.();
-      delete global.__WAKU_TEST_COMMIT_NAVIGATION__;
-    });
+
+    // the retired response reaches the client, which has to discard it
+    releasePost2.resolve();
+    await post2Delivered.promise;
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) => {
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+        }),
+    );
+
     await expect(page).toHaveURL(`http://localhost:${port}/post/1`);
     await expect(page.getByTestId('post-body')).toHaveText('HMR Post 1');
   });

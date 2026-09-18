@@ -9,7 +9,6 @@ export type ChangeRouteOptions = {
   url?: URL | undefined;
   instant?: boolean | undefined;
   follows?: number | undefined;
-  startTransition?: ((fn: TransitionFunction) => void) | undefined;
   pendingTransition?: ((fn: TransitionFunction) => void) | undefined;
 };
 
@@ -30,15 +29,12 @@ export const dispatchChangeRoute = (
   options: ChangeRouteOptions,
   startTransitionFn: (fn: TransitionFunction) => void = startTransition,
 ): Promise<void> => {
-  if (options.instant && !options.startTransition) {
+  if (options.instant) {
     // skip the outer wrap until changeRoute knows it will actually paint
     return changeRoute(route, {
       ...options,
       pendingTransition: startTransitionFn,
     });
-  }
-  if (options.startTransition) {
-    return changeRoute(route, options);
   }
   // a transition keeps the current tree up while the destination loads
   return new Promise<void>((resolve, reject) => {

@@ -3,7 +3,6 @@ import { ResolveClientSuspenseButton } from '../components/client-suspense.js';
 import { MultipleRouters } from '../components/multiple-routers.js';
 import { NavIndicator } from '../components/nav-indicator.js';
 import { PushMissingButton, RouteState } from '../components/route-state.js';
-import { TransitionLink } from '../components/transition-link.js';
 
 export default function StartPage() {
   return (
@@ -57,7 +56,9 @@ export default function StartPage() {
         </Link>
       </p>
       <p>
-        <TransitionLink />
+        <Link to="/view-target?from=transition" data-testid="transition-link">
+          Go with view transition
+        </Link>
       </p>
       <p>
         <ResolveClientSuspenseButton />

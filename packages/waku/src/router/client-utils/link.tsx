@@ -14,7 +14,6 @@ import type {
   ReactNode,
   Ref,
   RefObject,
-  TransitionFunction,
 } from 'react';
 import { preloadModule } from 'react-dom';
 import { unstable_addBase as addBase } from '../../minimal/client.js';
@@ -195,14 +194,6 @@ export type LinkProps<Path extends RoutePath> = {
   unstable_instant?: boolean;
   unstable_prefetchOnEnter?: PrefetchOptions;
   unstable_prefetchOnView?: PrefetchOptions;
-  /**
-   * Overrides how the destination is committed, e.g. to integrate the browser
-   * View Transitions API. It runs after required route data is ready. When
-   * `unstable_instant` can commit immediately from cache, this is ignored. When
-   * provided, React's `useTransition` is bypassed, so
-   * `useNavigationStatus_UNSTABLE()` stays `{ pending: false }` for this link.
-   */
-  unstable_startTransition?: ((fn: TransitionFunction) => void) | undefined;
   ref?: Ref<HTMLAnchorElement> | undefined;
 } & Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'>;
 
@@ -219,7 +210,6 @@ export function Link<Path extends RoutePath>({
   unstable_instant,
   unstable_prefetchOnEnter,
   unstable_prefetchOnView,
-  unstable_startTransition,
   ref: refProp,
   ...props
 }: LinkProps<Path>): ReactElement {
@@ -256,7 +246,6 @@ export function Link<Path extends RoutePath>({
           history: 'push',
           url,
           instant: unstable_instant,
-          startTransition: unstable_startTransition,
         },
         startTransition,
         // a click has no caller to reject to; the boundary shows the failure

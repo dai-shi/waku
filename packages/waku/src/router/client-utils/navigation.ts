@@ -243,7 +243,7 @@ export const useNavigation = (
       const commit = (
         state: RouterState,
         update: () => void,
-        transition: ChangeRouteOptions['startTransition'],
+        transition: ((fn: () => void) => void) | undefined,
       ) => {
         const callback = () => {
           if (controller.signal.aborted) {
@@ -265,7 +265,7 @@ export const useNavigation = (
       const commitRoute = (
         next: RouteProps,
         state: RouterState,
-        transition: ChangeRouteOptions['startTransition'],
+        transition: ((fn: () => void) => void) | undefined,
       ) => {
         commit(
           state,
@@ -286,7 +286,7 @@ export const useNavigation = (
         commitRoute(
           nextRoute,
           makeStateForAttempt(initialAttempt, options.history),
-          options.instant ? undefined : options.startTransition,
+          undefined,
         );
         return;
       }
@@ -336,7 +336,7 @@ export const useNavigation = (
             },
             historyIntent,
           ),
-          options.startTransition || startTransition,
+          startTransition,
         );
         return;
       }
@@ -375,11 +375,7 @@ export const useNavigation = (
           pendingNavigationRef.current = null;
           setNavigationError({ error });
         };
-        if (options.startTransition) {
-          options.startTransition(showError);
-        } else {
-          showError();
-        }
+        showError();
         throw error;
       }
       if (outcome.adopted) {
@@ -417,7 +413,7 @@ export const useNavigation = (
             unstable_overlay: { [ROUTER_STATE_ID]: finalState },
           });
         },
-        options.startTransition || startTransition,
+        startTransition,
       );
     },
     [

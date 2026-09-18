@@ -9,15 +9,15 @@
     "start": "waku start"
   },
   "dependencies": {
-    "react": "~19.2.8",
-    "react-dom": "~19.2.8",
-    "react-server-dom-webpack": "~19.2.8",
+    "react": "~19.3.0",
+    "react-dom": "~19.3.0",
+    "react-server-dom-webpack": "~19.3.0",
     "react-textarea-autosize": "^8.5.9",
     "waku": "latest"
   },
   "devDependencies": {
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "typescript": "^6.0.3"
   }
 }

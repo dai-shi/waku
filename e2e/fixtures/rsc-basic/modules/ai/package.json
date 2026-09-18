@@ -12,7 +12,7 @@
   },
   "devDependencies": {
     "react-dom": "^18",
-    "react-server-dom-webpack": "~19.2.4"
+    "react-server-dom-webpack": "~19.3.0"
   },
   "peerDependencies": {
     "react": "^18 || ^19"

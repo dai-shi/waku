@@ -177,7 +177,7 @@ The `<Suspense>` boundary decides how localized the loading state is. Wrapping t
 
 Because an instant navigation commits before the server responds, it reconciles afterward: a server redirect updates the URL to the redirect target, while a not-found (404) response keeps the requested URL, so the 404 page shows at the address the user tried.
 
-An instant navigation that can commit from cache, or that needs no fetch, commits urgently rather than inside a React transition, since a transition would suppress the immediate skeleton. A custom `unstable_startTransition` therefore does not run for that commit. When the shell is not cached, navigation waits for the response and uses the custom transition to commit the destination; `useNavigationStatus_UNSTABLE()` reports `pending` for that wait. When the cache commit is available, the shell itself is the pending state.
+An instant navigation that can commit from cache, or that needs no fetch, commits urgently rather than inside a React transition, since a transition would suppress the immediate skeleton. A `<ViewTransition>` therefore does not animate that commit. When the shell is not cached, navigation waits for the response and commits the destination in a transition; `useNavigationStatus_UNSTABLE()` reports `pending` for that wait. When the cache commit is available, the shell itself is the pending state.
 
 ## Pending UI
 
@@ -249,31 +249,21 @@ The effect runs for the initial route and whenever the current route fields chan
 
 Catch the promises returned by programmatic `push`, `replace`, and `reload` calls to handle fetch errors. There is no global failure callback for `<Link>` or browser back and forward; failed navigations surface through `ErrorBoundary` from `waku/router/client` (or your own boundary around the router). Do not treat promise resolution as a committed-route signal: a newer navigation can supersede the request, and a render-time redirect or 404 can start another navigation after it settles. Observe the route fields above when you need the destination that was committed.
 
-## Custom Transitions
+## View Transitions
 
-For advanced navigation effects, pass `unstable_startTransition` to control how Waku commits the destination. Waku waits for required route data before starting the custom transition. One common use case is integrating the browser View Transitions API:
+Waku commits a navigation inside a React transition, so animating one needs nothing from the router: wrap the part of the tree you want animated in React's `<ViewTransition>` and React drives the browser View Transitions API for you.
 
 ```tsx
 'use client';
 
-import { Link as WakuLink } from 'waku';
-import type {
-  LinkProps,
-  Unstable_RoutePath as RoutePath,
-} from 'waku/router/client';
+import { ViewTransition } from 'react';
+import type { ReactNode } from 'react';
 
-const startViewTransition =
-  typeof document !== 'undefined' && document.startViewTransition
-    ? (fn: () => void) => {
-        document.startViewTransition(fn);
-      }
-    : undefined;
-
-export const ViewTransitionLink = <Path extends RoutePath>(
-  props: LinkProps<Path>,
-) => <WakuLink {...props} unstable_startTransition={startViewTransition} />;
+export const AnimatedPage = ({ children }: { children: ReactNode }) => (
+  <ViewTransition>{children}</ViewTransition>
+);
 ```
 
-Because `unstable_startTransition` replaces React's transition, `useNavigationStatus_UNSTABLE()` stays `{ pending: false }` for links that use it.
+Call `addTransitionType` alongside a `router.push()` to vary the animation per navigation. A browser without the View Transitions API just applies the update without animating it.
 
-The prefetch, instant-navigation, and transition props in this guide are experimental and may change.
+The prefetch and instant-navigation props in this guide are experimental and may change.
