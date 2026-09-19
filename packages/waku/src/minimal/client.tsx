@@ -29,8 +29,6 @@ import {
   getInitialRscEntry,
   releaseInitialRscEntry,
 } from './client-utils/initial-rsc-store.js';
-import { fetchRscInputTransformers } from './client-utils/input-transformers.js';
-import type { FetchRscInputTransformer } from './client-utils/input-transformers.js';
 import {
   getDefaultRootStore,
   registerRootStore,
@@ -43,7 +41,6 @@ import type {
   RootStore,
 } from './client-utils/root-store.js';
 import {
-  registerDefaultRscReloadListener,
   registerRootReload,
   registerRootRscReloadListener,
 } from './client-utils/rsc-reload.js';
@@ -304,16 +301,6 @@ const reloadOnBuildIdMismatch = (
   );
 };
 
-const applyInputTransformers = (
-  rscPath: string,
-  rscParams: unknown,
-): readonly [rscPath: string, rscParams: unknown] => {
-  for (const transformFetchRscInput of fetchRscInputTransformers) {
-    [rscPath, rscParams] = transformFetchRscInput(rscPath, rscParams);
-  }
-  return [rscPath, rscParams];
-};
-
 const fetchRscElements = (
   rscPath: string,
   rscParams: unknown,
@@ -325,7 +312,6 @@ const fetchRscElements = (
     params,
     { type, fetch: transport, signal },
   ) => {
-    [path, params] = applyInputTransformers(path, params);
     const initial = options.initial;
     const debug = import.meta.hot
       ? setupDebugChannel(transport, !!initial, initial?.debugId)
@@ -405,29 +391,6 @@ type Unregister = () => void;
 
 const noop = () => {};
 
-/**
- * Registers a transformer that rewrites the RSC path and params before each
- * request. Returns a function that unregisters the transformer.
- *
- * @deprecated Use `useRegisterRscEnhancer_UNSTABLE`. This runs after every
- * enhancer, last before the request is sent.
- */
-export function unstable_registerFetchRscInputTransformer(
-  transformFetchRscInput: FetchRscInputTransformer,
-): Unregister {
-  fetchRscInputTransformers.add(transformFetchRscInput);
-  return () => {
-    fetchRscInputTransformers.delete(transformFetchRscInput);
-  };
-}
-
-/**
- * @deprecated Use `useRegisterRscReloadListener_UNSTABLE` so the listener is
- * bound to the enclosing Root.
- */
-export const unstable_registerRscReloadListener =
-  registerDefaultRscReloadListener;
-
 const fetchRootRsc = (
   rscPath: string,
   rscParams: unknown,
@@ -467,16 +430,6 @@ const fetchRsc = (
   }
   return elements.then((response) => combineElements(base, response));
 };
-
-/**
- * Fetch and decode elements for an RSC path. Each call starts a new request;
- * consumers own prefetching and response reuse.
- *
- * @deprecated Use `useFetchRsc_UNSTABLE`. This runs the enhancers of whichever
- * Root mounted last.
- */
-export const unstable_fetchRsc: FetchRsc = (rscPath, rscParams, options) =>
-  fetchRsc(rscPath, rscParams, options, getDefaultRootStore());
 
 const getInitialRsc = (
   rscPath: string,
@@ -541,8 +494,8 @@ const ElementsContext = createContext<Promise<Elements> | null>(null);
 
 /**
  * Returns a function that merges an element record, or a promise of one such
- * as `unstable_fetchRsc` returns, into the current `Root_UNSTABLE`. A rejected
- * payload leaves the current elements unchanged.
+ * as the fetch from `useFetchRsc_UNSTABLE` returns, into the current
+ * `Root_UNSTABLE`. A rejected payload leaves the current elements unchanged.
  */
 export const useMergeElements_UNSTABLE = () => {
   const store = useRootStore();

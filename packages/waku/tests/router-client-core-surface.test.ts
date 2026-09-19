@@ -122,22 +122,6 @@ describe('waku/router/client surface', () => {
       'Router',
       'SearchCodecsProvider_UNSTABLE',
       'Slice',
-      'Unstable_SearchCodecsProvider',
-      'unstable_HAS404_ID',
-      'unstable_IS_STATIC_ID',
-      'unstable_ROUTE_ID',
-      'unstable_RouterContext',
-      'unstable_addBase',
-      'unstable_buildRouteHref',
-      'unstable_encodeRoutePath',
-      'unstable_encodeSliceId',
-      'unstable_getErrorInfo',
-      'unstable_getRouteSlotId',
-      'unstable_getSliceSlotId',
-      'unstable_matchRouteParams',
-      'unstable_parseRoute',
-      'unstable_removeBase',
-      'unstable_useResolveSearchCodec',
       'useNavigationStatus_UNSTABLE',
       'useParams_UNSTABLE',
       'useRouter',
@@ -152,14 +136,6 @@ describe('waku/router/client surface', () => {
     expect(clientCore.useParams_UNSTABLE).toBe(client.useParams_UNSTABLE);
     expect(clientCore.SearchCodecsProvider_UNSTABLE).toBe(
       client.SearchCodecsProvider_UNSTABLE,
-    );
-    expect(client.Unstable_SearchCodecsProvider).toBe(
-      client.SearchCodecsProvider_UNSTABLE,
-    );
-    expect(clientCore.unstable_parseRoute).toBe(client.unstable_parseRoute);
-    expect(clientCore.unstable_HAS404_ID).toBe(client.unstable_HAS404_ID);
-    expect(clientCore.unstable_encodeRoutePath).toBe(
-      client.unstable_encodeRoutePath,
     );
   });
 });

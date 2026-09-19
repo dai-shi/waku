@@ -4,9 +4,6 @@ import { use, useCallback, useContext, useMemo } from 'react';
 import {
   Root_UNSTABLE as Root,
   Slot_UNSTABLE as Slot,
-  unstable_addBase as addBase,
-  unstable_getErrorInfo as getErrorInfo,
-  unstable_removeBase as removeBase,
   useElementsPromise_UNSTABLE as useElementsPromise,
 } from '../minimal/client.js';
 import { useRouterCache } from './client-core-utils/caches.js';
@@ -14,12 +11,8 @@ import type { PrefetchOptions } from './client-core-utils/caches.js';
 import { RouterHostContext } from './client-core-utils/host.js';
 import type { RouterHost } from './client-core-utils/host.js';
 import { useInitialRscParams } from './client-core-utils/initial-route.js';
-import {
-  SearchCodecsProvider_UNSTABLE,
-  useResolveSearchCodec,
-} from './client-core-utils/route-hooks.js';
+import { useResolveSearchCodec } from './client-core-utils/route-hooks.js';
 import { parseRoute } from './client-core-utils/route-url.js';
-import type { SliceId } from './client-core-utils/slice.js';
 import {
   prefetchRouteUnlessReusable,
   preloadRouteModules,
@@ -31,27 +24,15 @@ import {
   RouterContext,
   dispatchChangeRoute,
 } from './client-utils/router-context.js';
-import type { ChangeRoute } from './client-utils/router-context.js';
 import { shouldScrollByDefault } from './client-utils/scroll.js';
-import type {
-  RouteParams,
-  RouteSearch,
-} from './create-pages-utils/inferred-path-types.js';
-import { buildRouteHref } from './isomorphic-utils/build-route-href.js';
 import type {
   BuildRouteHrefTarget,
   RouteHref,
   RoutePath,
 } from './isomorphic-utils/build-route-href.js';
-import { matchRouteParams } from './isomorphic-utils/match-route-params.js';
 import {
-  HAS404_ID,
-  IS_STATIC_ID,
-  ROUTE_ID,
   encodeRoutePath,
-  encodeSliceId,
   getRouteSlotId,
-  getSliceSlotId,
 } from './isomorphic-utils/route-path.js';
 import type { RouteProps } from './isomorphic-utils/route-path.js';
 
@@ -110,8 +91,6 @@ type Prefetch = {
     options?: PrefetchOptions,
   ): void;
 };
-
-type PrefetchRoute = (route: RouteProps, options?: PrefetchOptions) => void;
 
 const useRouterOrThrow = () => {
   const router = useContext(RouterContext);
@@ -331,57 +310,3 @@ export function INTERNAL_ServerRouter({ route }: { route: RouteProps }) {
     </RouterContext>
   );
 }
-
-/** @deprecated Use `SearchCodecsProvider_UNSTABLE`. */
-export const Unstable_SearchCodecsProvider = SearchCodecsProvider_UNSTABLE;
-/** @deprecated Import `Unstable_RouteProps` from `waku/router/client-core`. */
-export type Unstable_RouteProps = RouteProps;
-/** @deprecated Import `unstable_HAS404_ID` from `waku/router/client-core`. */
-export const unstable_HAS404_ID = HAS404_ID;
-/** @deprecated Import `unstable_IS_STATIC_ID` from `waku/router/client-core`. */
-export const unstable_IS_STATIC_ID = IS_STATIC_ID;
-/** @deprecated Import `unstable_ROUTE_ID` from `waku/router/client-core`. */
-export const unstable_ROUTE_ID = ROUTE_ID;
-/** @deprecated Import `unstable_encodeRoutePath` from `waku/router/client-core`. */
-export const unstable_encodeRoutePath = encodeRoutePath;
-/** @deprecated Import `unstable_encodeSliceId` from `waku/router/client-core`. */
-export const unstable_encodeSliceId = encodeSliceId;
-/** @deprecated Import `unstable_getRouteSlotId` from `waku/router/client-core`. */
-export const unstable_getRouteSlotId = getRouteSlotId;
-/** @deprecated Import `unstable_getSliceSlotId` from `waku/router/client-core`. */
-export const unstable_getSliceSlotId = getSliceSlotId;
-/** @deprecated Import `unstable_getErrorInfo` from `waku/minimal/client`. */
-export const unstable_getErrorInfo = getErrorInfo;
-/** @deprecated Import `unstable_addBase` from `waku/minimal/client`. */
-export const unstable_addBase = addBase;
-/** @deprecated Import `unstable_removeBase` from `waku/minimal/client`. */
-export const unstable_removeBase = removeBase;
-/** @deprecated History-binding private; not on `waku/router/client-core`. */
-export const unstable_RouterContext = RouterContext;
-/** @deprecated History-binding private; not on `waku/router/client-core`. */
-export type Unstable_ChangeRoute = ChangeRoute;
-/** @deprecated Use `useRouterCache_UNSTABLE` from `waku/router/client-core`. */
-export type Unstable_PrefetchRoute = PrefetchRoute;
-/** @deprecated Import `Unstable_PrefetchOptions` from `waku/router/client-core`. */
-export type Unstable_PrefetchOptions = PrefetchOptions;
-/** @deprecated Import `Unstable_SliceId` from `waku/router/client-core`. */
-export type Unstable_SliceId = SliceId;
-/** @deprecated Import `Unstable_RouteHref` from `waku/router/client-core`. */
-export type Unstable_RouteHref = RouteHref;
-/** @deprecated Import `Unstable_RoutePath` from `waku/router/client-core`. */
-export type Unstable_RoutePath = RoutePath;
-/** @deprecated Import `Unstable_BuildRouteHrefTarget` from `waku/router/client-core`. */
-export type Unstable_BuildRouteHrefTarget<Path extends RoutePath> =
-  BuildRouteHrefTarget<Path>;
-/** @deprecated Import `Unstable_RouteParams` from `waku/router/client-core`. */
-export type Unstable_RouteParams<Path extends RoutePath> = RouteParams<Path>;
-/** @deprecated Import `Unstable_RouteSearch` from `waku/router/client-core`. */
-export type Unstable_RouteSearch<Path extends RoutePath> = RouteSearch<Path>;
-/** @deprecated Import `unstable_buildRouteHref` from `waku/router/client-core`. */
-export const unstable_buildRouteHref = buildRouteHref;
-/** @deprecated Import `unstable_matchRouteParams` from `waku/router/client-core`. */
-export const unstable_matchRouteParams = matchRouteParams;
-/** @deprecated Import `useResolveSearchCodec_UNSTABLE` from `waku/router/client-core`. */
-export const unstable_useResolveSearchCodec = useResolveSearchCodec;
-/** @deprecated Import `unstable_parseRoute` from `waku/router/client-core`. */
-export const unstable_parseRoute = parseRoute;

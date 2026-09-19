@@ -12,7 +12,6 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { ETAGS_HEADER, ETAGS_ID } from '../src/lib/utils/etags.js';
 import { clearInitialRscEntries } from '../src/minimal/client-utils/initial-rsc-store.js';
-import { fetchRscInputTransformers } from '../src/minimal/client-utils/input-transformers.js';
 import {
   Children_UNSTABLE as Children,
   unstable_callServerRsc as callServerRsc,
@@ -65,7 +64,6 @@ afterEach(async () => {
   await act(async () => pending.splice(0).forEach((resolve) => resolve()));
   document.body.replaceChildren();
   clearInitialRscEntries();
-  fetchRscInputTransformers.clear();
   vi.unstubAllGlobals();
   vi.unstubAllEnvs();
   vi.restoreAllMocks();

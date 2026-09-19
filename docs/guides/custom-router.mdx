@@ -290,4 +290,4 @@ export default adapter(
 - router client metadata
 - static build metadata
 
-Avoid importing constants or helpers from `waku/router/client` just to reproduce Waku's internal route IDs or RSC path format. Exports such as `unstable_ROUTE_ID`, `unstable_getRouteSlotId`, and `unstable_encodeRoutePath` are highly experimental implementation details. Prefer plain slot IDs that you own, and let `unstable_defineRouter` handle Waku's reserved entries.
+Avoid importing constants or helpers from `waku/router/client-core` just to reproduce Waku's internal route IDs or RSC path format. Exports such as `unstable_ROUTE_ID`, `unstable_getRouteSlotId`, and `unstable_encodeRoutePath` are highly experimental implementation details. Prefer plain slot IDs that you own, and let `unstable_defineRouter` handle Waku's reserved entries.

@@ -3,17 +3,18 @@
 import { useCallback, useState, useTransition } from 'react';
 import { unstable_allowServer as allowServer } from 'waku/client';
 import {
-  unstable_fetchRsc,
+  useFetchRsc_UNSTABLE,
   useMergeElements_UNSTABLE,
 } from 'waku/minimal/client';
 import { ClientBox } from './Box.js';
 
 const useRefetch = () => {
+  const fetchRsc = useFetchRsc_UNSTABLE();
   const mergeElements = useMergeElements_UNSTABLE();
   return useCallback(
     (rscPath: string, rscParams?: unknown) =>
-      mergeElements(unstable_fetchRsc(rscPath, rscParams)),
-    [mergeElements],
+      mergeElements(fetchRsc(rscPath, rscParams)),
+    [fetchRsc, mergeElements],
   );
 };
 

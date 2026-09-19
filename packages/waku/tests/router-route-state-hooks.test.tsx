@@ -199,11 +199,13 @@ describe('useHmrRefetch', () => {
     cache.slices.registerLazySlice('slice-a');
     cache.slices.registerLazySlice('slice-b');
 
+    let reload: (() => void) | undefined;
     const register = vi
       .spyOn(minimalClient, 'useRegisterRscReloadListener_UNSTABLE')
-      .mockImplementation(
-        () => minimalClient.unstable_registerRscReloadListener,
-      );
+      .mockImplementation(() => (listener) => {
+        reload = listener;
+        return () => {};
+      });
     const Probe = () => {
       useHmrRefetch({
         getSettledRoute: () => ({ path: '/hot', query: 'q=1', hash: '' }),
@@ -219,9 +221,6 @@ describe('useHmrRefetch', () => {
     );
 
     expect(register).toHaveBeenCalled();
-    const reload = (
-      globalThis as { __WAKU_RSC_RELOAD_LISTENERS__?: (() => void)[] }
-    ).__WAKU_RSC_RELOAD_LISTENERS__?.at(-1);
     expect(reload).toBeTypeOf('function');
     await act(async () => {
       reload!();

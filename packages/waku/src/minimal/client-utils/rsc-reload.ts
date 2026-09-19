@@ -16,7 +16,6 @@ type RootReload = {
 };
 
 const rootReloads = new WeakMap<RootStore, RootReload>();
-let rootlessReplacement: (() => void) | undefined;
 
 const replaceRscReloadListener = (
   previous: (() => void) | undefined,
@@ -37,11 +36,7 @@ const replaceRscReloadListener = (
 
 const activateDefaultRscReloadListener = (): void => {
   const store = getDefaultRootStore();
-  if (!store) {
-    globalThis.__WAKU_REFETCH_RSC__ = rootlessReplacement;
-    return;
-  }
-  const reload = rootReloads.get(store);
+  const reload = store && rootReloads.get(store);
   globalThis.__WAKU_REFETCH_RSC__ = reload?.replacement ?? reload?.fallback;
 };
 
@@ -106,10 +101,6 @@ export const registerRootReload = (
   rootReload.fallback = registered;
   rootReload.mounted = true;
   rootReloads.set(store, rootReload);
-  if (rootlessReplacement) {
-    replaceRscReloadListener(rootlessReplacement, undefined);
-    rootlessReplacement = undefined;
-  }
   const current = rootReload.replacement ?? registered;
   const listeners = (globalThis.__WAKU_RSC_RELOAD_LISTENERS__ ||= []);
   if (!listeners.includes(current)) {
@@ -126,31 +117,4 @@ export const registerRootReload = (
     }
     activateDefaultRscReloadListener();
   };
-};
-
-export const registerDefaultRscReloadListener: RegisterRscReloadListener = (
-  listener,
-  options,
-) => {
-  if (!import.meta.hot) {
-    return () => {};
-  }
-  if (!options?.replace) {
-    return addRscReloadListener(listener);
-  }
-  const store = getDefaultRootStore();
-  if (!store) {
-    const registered = createRscReloadListener(listener);
-    replaceRscReloadListener(rootlessReplacement, registered);
-    rootlessReplacement = registered;
-    globalThis.__WAKU_REFETCH_RSC__ = registered;
-    return () => {
-      if (rootlessReplacement === registered) {
-        replaceRscReloadListener(registered, undefined);
-        rootlessReplacement = undefined;
-        activateDefaultRscReloadListener();
-      }
-    };
-  }
-  return registerRootRscReloadListener(store, listener, options);
 };

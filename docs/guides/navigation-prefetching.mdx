@@ -205,10 +205,8 @@ export const PendingIndicator = () => {
 'use client';
 
 import { Link as WakuLink } from 'waku';
-import type {
-  LinkProps,
-  Unstable_RoutePath as RoutePath,
-} from 'waku/router/client';
+import type { LinkProps } from 'waku/router/client';
+import type { Unstable_RoutePath as RoutePath } from 'waku/router/client-core';
 import { PendingIndicator } from './pending-indicator';
 
 export const PendingLink = <Path extends RoutePath>({

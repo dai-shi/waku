@@ -1,5 +1,5 @@
 import { useRouter } from 'waku';
-import type { Unstable_RouteHref } from 'waku/router/client';
+import type { Unstable_RouteHref } from 'waku/router/client-core';
 
 type Router = ReturnType<typeof useRouter>;
 

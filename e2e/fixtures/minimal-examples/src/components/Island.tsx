@@ -5,24 +5,25 @@ import type { ReactNode } from 'react';
 import {
   Slot_UNSTABLE as Slot,
   unstable_combineElements as combineElements,
-  unstable_fetchRsc,
   useElementsPromise_UNSTABLE as useElementsPromise,
+  useFetchRsc_UNSTABLE as useFetchRsc,
   useMergeElements_UNSTABLE,
 } from 'waku/minimal/client';
 import { Counter } from './Counter';
 
 const useRefetch = () => {
+  const fetchRsc = useFetchRsc();
   const mergeElements = useMergeElements_UNSTABLE();
   return useCallback(
     (rscPath: string, slotId: string) => {
       const isSlot = (key: string | symbol) => key === slotId;
       return mergeElements(
-        unstable_fetchRsc(rscPath).then((next) =>
+        fetchRsc(rscPath).then((next) =>
           combineElements({}, next, { unstable_filter: isSlot }),
         ),
       );
     },
-    [mergeElements],
+    [fetchRsc, mergeElements],
   );
 };
 

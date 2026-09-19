@@ -36,9 +36,9 @@ import {
   INTERNAL_ServerRoot,
   Root_UNSTABLE as Root,
   Slot_UNSTABLE as Slot,
-  unstable_fetchRsc as fetchRsc,
   unstable_isImmutableElement as isImmutableElement,
   useElementsPromise_UNSTABLE as useElementsPromise,
+  useFetchRsc_UNSTABLE as useFetchRsc,
   useMergeElements_UNSTABLE as useMergeElements,
 } from '../src/minimal/client.js';
 import { getRouterCache } from '../src/router/client-core-utils/caches.js';
@@ -48,18 +48,20 @@ import {
 } from '../src/router/client-core-utils/host.js';
 import { PREFETCH_LIMIT } from '../src/router/client-core-utils/prefetch-cache.js';
 import {
-  ErrorBoundary,
-  INTERNAL_ServerRouter,
-  Link,
-  Router,
-  unstable_RouterContext as RouterContext,
-  SearchCodecsProvider_UNSTABLE,
-  Slice,
   unstable_encodeRoutePath,
   unstable_encodeSliceId,
   unstable_getRouteSlotId,
   unstable_getSliceSlotId,
   unstable_parseRoute,
+} from '../src/router/client-core.js';
+import { RouterContext } from '../src/router/client-utils/router-context.js';
+import {
+  ErrorBoundary,
+  INTERNAL_ServerRouter,
+  Link,
+  Router,
+  SearchCodecsProvider_UNSTABLE,
+  Slice,
   useNavigationStatus_UNSTABLE as useNavigationStatus,
   useParams_UNSTABLE as useParams,
   useRouter,
@@ -543,7 +545,6 @@ vi.mock('../src/minimal/client.js', async () => {
     ),
     useMergeElements_UNSTABLE: () =>
       useMockMergeElements() ?? noopMergeElements,
-    unstable_fetchRsc: vi.fn(fetchRscImpl),
     useFetchRsc_UNSTABLE: () =>
       testHoisted.fetchRsc as unknown as ReturnType<
         typeof actual.useFetchRsc_UNSTABLE
@@ -2790,6 +2791,7 @@ describe('Router integration', () => {
     const refetch = vi.fn<RefetchInner>(async () => ({}));
     installRefetch(refetch);
     const MergeButton = () => {
+      const fetchRsc = useFetchRsc();
       const mergeElements = useMergeElements();
       return (
         <button
@@ -7556,6 +7558,7 @@ describe('Router integration', () => {
     const refetch = vi.fn<RefetchInner>(async () => ({}));
     installRefetch(refetch);
     const MergeButton = () => {
+      const fetchRsc = useFetchRsc();
       const mergeElements = useMergeElements();
       return (
         <button

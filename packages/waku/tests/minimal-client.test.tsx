@@ -20,7 +20,6 @@ import {
   clearInitialRscEntries,
   getInitialRscEntry,
 } from '../src/minimal/client-utils/initial-rsc-store.js';
-import { fetchRscInputTransformers } from '../src/minimal/client-utils/input-transformers.js';
 import {
   clearRootCachedEtags,
   getDefaultRootStore,
@@ -30,9 +29,8 @@ import {
   Root_UNSTABLE as Root,
   Slot_UNSTABLE as Slot,
   unstable_callServerRsc,
-  unstable_fetchRsc,
-  unstable_registerFetchRscInputTransformer,
   useElementsPromise_UNSTABLE,
+  useFetchRsc_UNSTABLE,
   useMergeElements_UNSTABLE,
 } from '../src/minimal/client.js';
 
@@ -68,6 +66,7 @@ const resolvedThenable = <T,>(value: T): Promise<T> =>
   });
 
 const useRefetch = () => {
+  const fetchRsc = useFetchRsc_UNSTABLE();
   const mergeElements = useMergeElements_UNSTABLE();
   return (
     rscPath: string,
@@ -75,7 +74,7 @@ const useRefetch = () => {
     options?: Parameters<typeof mergeElements>[1],
   ) =>
     mergeElements(
-      unstable_fetchRsc(rscPath, rscParams, {
+      fetchRsc(rscPath, rscParams, {
         ...(options?.unstable_swr?.base
           ? { unstable_base: options.unstable_swr.base }
           : {}),
@@ -89,8 +88,22 @@ type Refetch = ReturnType<typeof useRefetch>;
 const stubFetch = () =>
   vi.stubGlobal('fetch', async () => new Response('{}', { status: 200 }));
 
-beforeAll(() => {
+let fetchRsc: ReturnType<typeof useFetchRsc_UNSTABLE>;
+
+beforeAll(async () => {
   (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;
+  const Probe = () => {
+    const rootlessFetch = useFetchRsc_UNSTABLE();
+    useEffect(() => {
+      fetchRsc = rootlessFetch;
+    });
+    return null;
+  };
+  const root = createRoot(document.createElement('div'));
+  await act(async () => {
+    root.render(<Probe />);
+  });
+  act(() => root.unmount());
 });
 
 afterAll(() => {
@@ -108,7 +121,6 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  fetchRscInputTransformers.clear();
   clearInitialRscEntries();
   delete (globalThis as any).__WAKU_PREFETCHED__;
   vi.unstubAllGlobals();
@@ -117,7 +129,7 @@ afterEach(() => {
 });
 
 describe('minimal/client fetch', () => {
-  test('unstable_fetchRsc returns fetched elements', async () => {
+  test('a fetch returns the decoded elements', async () => {
     // Minimal only fetches + decodes and hands the promise back to the caller.
     const fetchMock = vi.fn<typeof fetch>(
       async () => new Response('prefetched'),
@@ -125,7 +137,7 @@ describe('minimal/client fetch', () => {
     vi.stubGlobal('fetch', fetchMock);
     const rscParams = new URLSearchParams({ query: 'x=1' });
 
-    const elements = await unstable_fetchRsc('R/next.txt', rscParams);
+    const elements = await fetchRsc('R/next.txt', rscParams);
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(mocks.createFromFetch).toHaveBeenCalledTimes(1);
@@ -137,8 +149,8 @@ describe('minimal/client fetch', () => {
     vi.stubGlobal('fetch', fetchMock);
     const rscParams = new URLSearchParams({ query: 'x=1' });
 
-    await unstable_fetchRsc('R/next.txt', rscParams);
-    await unstable_fetchRsc('R/next.txt', rscParams);
+    await fetchRsc('R/next.txt', rscParams);
+    await fetchRsc('R/next.txt', rscParams);
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(mocks.createFromFetch).toHaveBeenCalledTimes(2);
@@ -212,7 +224,7 @@ describe('minimal/client fetch', () => {
 
     // Fetch elements with one fetch...
     vi.stubGlobal('fetch', prefetchFetch);
-    await unstable_fetchRsc('R/page.txt');
+    await fetchRsc('R/page.txt');
     // ...then the app registers a different fetch.
     vi.stubGlobal('fetch', actionFetch);
 
@@ -241,7 +253,7 @@ describe('minimal/client transport failures', () => {
     );
 
     // decoded from the response the redirect landed on
-    await expect(unstable_fetchRsc('R/redirect.txt')).resolves.toMatchObject({
+    await expect(fetchRsc('R/redirect.txt')).resolves.toMatchObject({
       text: 'the payload',
     });
   });
@@ -261,9 +273,7 @@ describe('minimal/client transport failures', () => {
         }) as unknown as Response,
     );
 
-    const error = await unstable_fetchRsc('R/next.txt').catch(
-      (e: unknown) => e,
-    );
+    const error = await fetchRsc('R/next.txt').catch((e: unknown) => e);
 
     // waku never reads Location, so a fetch enhancer using redirect: 'manual'
     // is not supported. Decided 2026-07-30; revisit with a real use case.
@@ -276,7 +286,7 @@ describe('minimal/client transport failures', () => {
     vi.stubGlobal('fetch', async () => redirectedResponse(url));
     mocks.createFromFetch.mockResolvedValueOnce({ App: 'ok' });
 
-    await expect(unstable_fetchRsc('R/next.txt')).resolves.toEqual({
+    await expect(fetchRsc('R/next.txt')).resolves.toEqual({
       App: 'ok',
     });
   });
@@ -286,9 +296,7 @@ describe('minimal/client transport failures', () => {
       Promise.reject(new TypeError('Failed to fetch')),
     );
 
-    const error = await unstable_fetchRsc('R/next.txt').catch(
-      (e: unknown) => e,
-    );
+    const error = await fetchRsc('R/next.txt').catch((e: unknown) => e);
 
     expect(getErrorInfo(error)).toEqual({ unstable_networkError: true });
     expect((error as Error).message).toBe('Failed to fetch');
@@ -298,9 +306,7 @@ describe('minimal/client transport failures', () => {
     vi.stubGlobal('fetch', () =>
       Promise.reject(new DOMException('Aborted', 'AbortError')),
     );
-    const aborted = await unstable_fetchRsc('R/next.txt').catch(
-      (e: unknown) => e,
-    );
+    const aborted = await fetchRsc('R/next.txt').catch((e: unknown) => e);
 
     expect((aborted as Error).name).toBe('AbortError');
     expect(getErrorInfo(aborted)).toBeNull();
@@ -309,9 +315,7 @@ describe('minimal/client transport failures', () => {
     // reaches the caller as it is
     const appError = new Error('could not serialize');
     vi.stubGlobal('fetch', () => Promise.reject(appError));
-    const thrown = await unstable_fetchRsc('R/other.txt').catch(
-      (e: unknown) => e,
-    );
+    const thrown = await fetchRsc('R/other.txt').catch((e: unknown) => e);
 
     expect(thrown).toBe(appError);
   });
@@ -361,9 +365,7 @@ describe('minimal/client server actions', () => {
     });
     stubFetch();
 
-    const error = await unstable_fetchRsc('R/next.txt').catch(
-      (e: unknown) => e,
-    );
+    const error = await fetchRsc('R/next.txt').catch((e: unknown) => e);
 
     expect(getErrorInfo(error)).toEqual({
       location: 'https://other.example/next',
@@ -530,7 +532,7 @@ describe('minimal/client build id mismatch', () => {
     stubFetch();
     const onBuildIdMismatch = vi.fn();
 
-    await unstable_fetchRsc('R/x.txt', undefined, { onBuildIdMismatch });
+    await fetchRsc('R/x.txt', undefined, { onBuildIdMismatch });
     await wait();
 
     expect(onBuildIdMismatch).toHaveBeenCalledTimes(1);
@@ -545,32 +547,10 @@ describe('minimal/client build id mismatch', () => {
     stubFetch();
     const onBuildIdMismatch = vi.fn();
 
-    await unstable_fetchRsc('R/y.txt', undefined, { onBuildIdMismatch });
+    await fetchRsc('R/y.txt', undefined, { onBuildIdMismatch });
     await wait();
 
     expect(onBuildIdMismatch).not.toHaveBeenCalled();
-  });
-});
-
-describe('minimal/client input transformer', () => {
-  // Consumed by waku-jotai to inject atom values into rscParams.
-  test('a registered transformer rewrites the fetch input', async () => {
-    const fetchMock = vi.fn<typeof fetch>(async () => new Response('{}'));
-    vi.stubGlobal('fetch', fetchMock);
-    const transform = vi.fn(
-      (_rscPath: string, _rscParams: unknown) =>
-        ['R/rewritten.txt', { x: 1 }] as const,
-    );
-    unstable_registerFetchRscInputTransformer(transform);
-
-    await unstable_fetchRsc('R/original.txt', undefined);
-
-    expect(transform).toHaveBeenCalledOnce();
-    expect(transform.mock.calls[0]?.slice(0, 2)).toEqual([
-      'R/original.txt',
-      undefined,
-    ]);
-    expect(String(fetchMock.mock.calls[0]?.[0])).toContain('rewritten');
   });
 });
 
@@ -1733,7 +1713,7 @@ describe('minimal/client refetch scenarios', () => {
     stubFetch();
 
     // a thenable would return undefined from then, so this would throw
-    const chained = unstable_fetchRsc('R/next.txt')
+    const chained = fetchRsc('R/next.txt')
       .then((elements) => elements)
       .finally(() => {});
     await wait();

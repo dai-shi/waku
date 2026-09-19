@@ -1,4 +1,4 @@
-import type { Unstable_RouteHref } from 'waku/router/client';
+import type { Unstable_RouteHref } from 'waku/router/client-core';
 import { unstable_redirect as redirect } from 'waku/router/server';
 
 // Type-level assertions only; never called (arrows avoid the `never` return

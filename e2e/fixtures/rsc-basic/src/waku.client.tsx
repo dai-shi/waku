@@ -4,24 +4,8 @@ import { unstable_defaultRootOptions as defaultRootOptions } from 'waku/client';
 import {
   Root_UNSTABLE as Root,
   Slot_UNSTABLE as Slot,
-  unstable_registerRscReloadListener as registerRscReloadListener,
 } from 'waku/minimal/client';
 import { RscEnhancements } from './components/RscEnhancements.js';
-
-registerRscReloadListener(() => {
-  (
-    globalThis as typeof globalThis & {
-      __WAKU_ROOTLESS_HMR_LISTENER__?: boolean;
-    }
-  ).__WAKU_ROOTLESS_HMR_LISTENER__ = true;
-});
-
-registerRscReloadListener(() => {}, { replace: true });
-(
-  globalThis as typeof globalThis & {
-    __WAKU_ROOTLESS_HMR_REPLACEMENT_REGISTERED__?: boolean;
-  }
-).__WAKU_ROOTLESS_HMR_REPLACEMENT_REGISTERED__ = true;
 
 const multipleRoots = new URLSearchParams(window.location.search).has(
   'multiple-roots',

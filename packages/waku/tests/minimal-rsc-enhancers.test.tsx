@@ -6,7 +6,6 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { ETAGS_HEADER, ETAGS_ID } from '../src/lib/utils/etags.js';
 import { adoptElements } from '../src/minimal/client-utils/element-etags.js';
 import { clearInitialRscEntries } from '../src/minimal/client-utils/initial-rsc-store.js';
-import { fetchRscInputTransformers } from '../src/minimal/client-utils/input-transformers.js';
 import type {
   RequestRsc,
   RequestRscEnhancer,
@@ -15,8 +14,6 @@ import {
   Root_UNSTABLE as Root,
   Slot_UNSTABLE as Slot,
   unstable_callServerRsc as callServerRsc,
-  unstable_fetchRsc as fetchRsc,
-  unstable_registerFetchRscInputTransformer as registerInputTransformer,
   useElementsPromise_UNSTABLE as useElementsPromise,
   useFetchRsc_UNSTABLE as useFetchRsc,
   useMergeElements_UNSTABLE as useMergeElements,
@@ -46,7 +43,6 @@ afterEach(async () => {
   await act(async () => roots.splice(0).forEach((root) => root.unmount()));
   document.body.replaceChildren();
   clearInitialRscEntries();
-  fetchRscInputTransformers.clear();
   Reflect.deleteProperty(import.meta, 'hot');
   vi.unstubAllGlobals();
   vi.unstubAllEnvs();
@@ -112,10 +108,9 @@ test('a whole cached response applies to the request-time Root', async () => {
   expect(second.container.textContent).toBe('cached');
 });
 
-test('composes logical inputs, transport, and decoded elements with a legacy transformer', async () => {
+test('composes logical inputs, transport, and decoded elements', async () => {
   const root = await mount('initial');
   const order: string[] = [];
-  registerInputTransformer((path, params) => [path + '-legacy', params]);
   root.register((next) => async (path, params, options) => {
     order.push('first');
     expect(options.type).toBe('rsc');
@@ -153,7 +148,7 @@ test('composes logical inputs, transport, and decoded elements with a legacy tra
   expect(data.content).toBe('raw-decoded');
   expect(order).toEqual(['second', 'first', 'first result', 'second result']);
   const [url, init] = request.mock.lastCall!;
-  expect(url).toContain('/next-first-legacy');
+  expect(url).toContain('/next-first');
   expect(JSON.parse(init!.body as string)).toEqual({ input: { count: 1 } });
   expect(init?.signal).toBe(controller.signal);
   expect(request.mock.contexts.at(-1)).toBe(globalThis);
@@ -190,10 +185,7 @@ test('Root-bound requests stay isolated and actions keep their request-time enha
   );
   await first.fetch('scoped');
   expect(request.mock.lastCall![0]).toContain('scoped-first');
-  // the standalone fetch runs the Root mounted last
-  await fetchRsc('standalone');
-  expect(request.mock.lastCall![0]).toContain('/standalone-second.txt');
-  expect(actionTypes).toEqual(['rsc']);
+  expect(actionTypes).toEqual([]);
   let respond!: (response: Response) => void;
   request.mockImplementationOnce(
     () =>
@@ -208,7 +200,7 @@ test('Root-bound requests stay isolated and actions keep their request-time enha
     respond(Response.json({ _value: 42, content: 'action' }));
     expect(await action).toBe(42);
   });
-  expect(actionTypes).toEqual(['rsc', 'call']);
+  expect(actionTypes).toEqual(['call']);
   expect(first.container.textContent).toBe('initial');
   expect(firstEnhancer).toHaveBeenCalledTimes(1);
 });

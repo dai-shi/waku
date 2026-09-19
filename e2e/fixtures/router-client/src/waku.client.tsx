@@ -1,10 +1,8 @@
 import { StrictMode } from 'react';
 import { createRoot, hydrateRoot } from 'react-dom/client';
 import { unstable_defaultRootOptions as defaultRootOptions } from 'waku/client';
-import {
-  type Unstable_RouteProps as RouteProps,
-  Router,
-} from 'waku/router/client';
+import { Router } from 'waku/router/client';
+import type { Unstable_RouteProps as RouteProps } from 'waku/router/client-core';
 
 const routeInterceptor = (route: RouteProps) => {
   const interceptor = new URL(window.location.href).searchParams.get(

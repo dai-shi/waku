@@ -5,7 +5,15 @@
 import { Suspense, act, useEffect } from 'react';
 import type { ReactElement } from 'react';
 import { createRoot } from 'react-dom/client';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 import {
   ETAGS_HEADER,
   ETAGS_ID,
@@ -22,8 +30,8 @@ import {
   Root_UNSTABLE as Root,
   Slot_UNSTABLE as Slot,
   unstable_combineElements as combineElements,
-  unstable_fetchRsc as fetchRsc,
   unstable_isImmutableElement as isImmutableElement,
+  useFetchRsc_UNSTABLE,
   useMergeElements_UNSTABLE,
 } from '../src/minimal/client.js';
 import { unstable_buildElements as buildElements } from '../src/minimal/server.js';
@@ -50,6 +58,7 @@ const flush = async () => {
 };
 
 const useRefetch = () => {
+  const fetchRsc = useFetchRsc_UNSTABLE();
   const mergeElements = useMergeElements_UNSTABLE();
   return (
     rscPath: string,
@@ -82,6 +91,24 @@ const renderApp = async (element: ReactElement) => {
     },
   };
 };
+
+let fetchRsc: ReturnType<typeof useFetchRsc_UNSTABLE>;
+
+beforeAll(async () => {
+  (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;
+  const Probe = () => {
+    const rootlessFetch = useFetchRsc_UNSTABLE();
+    useEffect(() => {
+      fetchRsc = rootlessFetch;
+    });
+    return null;
+  };
+  const root = createRoot(document.createElement('div'));
+  await act(async () => {
+    root.render(<Probe />);
+  });
+  act(() => root.unmount());
+});
 
 beforeEach(() => {
   (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;

@@ -428,7 +428,9 @@ Props:
 Important behavior:
 
 - `initialRscPath` defaults to `''`.
-- `Root` is required for `Slot`, `Children`, and `useMergeElements`.
+- `Root` is required for `Slot`, `Children`, `useMergeElements`,
+  `useRegisterRscEnhancer`, and `useRegisterRscReloadListener`. Outside a
+  `Root`, `useFetchRsc` still works but runs no enhancers.
 - Each `Root` owns its client store. Bare server action calls use the `Root`
   that was most recently mounted when the request starts.
 - `Root` injects default head tags for charset, viewport, and generator.
