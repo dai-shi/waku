@@ -122,7 +122,7 @@ export const useNavigation = (
     route: Pick<RouteProps, 'path' | 'query'>;
     queuedState?: RouterState;
   } | null>(null);
-  const appliedRef = useRef<RouterState>(undefined);
+  const appliedRef = useRef<{ state: RouterState; href: string }>(undefined);
   const destinationHref = destination?.url.href;
   const currentHash = route.hash;
   useLayoutEffect(() => {
@@ -134,12 +134,14 @@ export const useNavigation = (
     if (!routerState || !destinationHref) {
       return;
     }
-    const applied = appliedRef.current === routerState;
-    commitHistory(
-      new URL(destinationHref),
-      applied ? 'replace' : routerState.history,
-    );
-    appliedRef.current = routerState;
+    const applied = appliedRef.current?.state === routerState;
+    if (!applied || appliedRef.current?.href !== destinationHref) {
+      commitHistory(
+        new URL(destinationHref),
+        applied ? 'replace' : routerState.history,
+      );
+    }
+    appliedRef.current = { state: routerState, href: destinationHref };
     if (applied || !routerState.scroll) {
       return;
     }

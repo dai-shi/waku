@@ -653,3 +653,46 @@ test('a rerender of the route an action came from survives a navigation within t
   expect(view.container.textContent).toBe('refreshed start');
   expect(view.errors).not.toHaveBeenCalled();
 });
+
+test('an action result keeps a search string written with the History API', async () => {
+  const view = await mount();
+  decode.mockReturnValueOnce({
+    [getRouteSlotId('/start')]: 'filtered start',
+    [ROUTE_ID]: ['/start', 'filter=1'],
+    [IS_STATIC_ID]: false,
+  });
+  await act(async () => {
+    await view.getRouter().replace('/start?filter=1');
+  });
+  expect(view.container.textContent).toBe('filtered start');
+  window.history.replaceState(
+    window.history.state,
+    '',
+    '/start?filter=1&tab=b',
+  );
+
+  decode.mockReturnValueOnce({
+    [getRouteSlotId('/start')]: 'refreshed start',
+    [ROUTE_ID]: ['/start', 'filter=1'],
+    [IS_STATIC_ID]: false,
+    [IS_ORIGIN_ID]: true,
+    _value: 'done',
+  });
+  await act(async () => {
+    expect(await callServerRsc('action#test', [])).toBe('done');
+  });
+  expect(view.container.textContent).toBe('refreshed start');
+  expect.soft(window.location.search).toBe('?filter=1&tab=b');
+
+  window.history.replaceState(
+    window.history.state,
+    '',
+    '/start?filter=1&tab=c',
+  );
+  decode.mockReturnValueOnce({ unrelated: 'x', _value: 'again' });
+  await act(async () => {
+    expect(await callServerRsc('action#test', [])).toBe('again');
+  });
+  expect(window.location.search).toBe('?filter=1&tab=c');
+  expect(view.errors).not.toHaveBeenCalled();
+});
