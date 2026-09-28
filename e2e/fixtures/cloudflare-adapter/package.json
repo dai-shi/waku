@@ -14,10 +14,10 @@
     "react-dom": "~19.3.0",
     "react-server-dom-webpack": "~19.3.0",
     "waku": "latest",
-    "wrangler": "^4.133.0"
+    "wrangler": "^4.141.0"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "^1.54.11",
+    "@cloudflare/vite-plugin": "^1.60.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "typescript": "^6.0.3"
