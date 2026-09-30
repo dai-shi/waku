@@ -90,6 +90,7 @@ export function fsRouter(
           default: FunctionComponent<{ children: ReactNode }>;
           getConfig?: () => Promise<{
             render?: 'static' | 'dynamic';
+            unstable_disableSSR?: boolean;
             unstable_getEtag?: (props?: any) => Promise<string | undefined>;
             unstable_searchCodec?: Unstable_SearchCodec<any>;
           }>;

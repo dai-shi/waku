@@ -21,7 +21,23 @@ This can be useful for:
 
 It is usually a poor fit for public content pages, marketing pages, documentation, or any route where SEO and initial HTML content matter.
 
-## Disable SSR for a Programmatic Route
+## Disable SSR for a Page
+
+With the file-system router, return `unstable_disableSSR` from the page's `getConfig`:
+
+```tsx
+// src/pages/app.tsx
+export default async function AppPage() {
+  return <h1>App</h1>;
+}
+
+export const getConfig = async () => {
+  return {
+    render: 'static',
+    unstable_disableSSR: true,
+  } as const;
+};
+```
 
 With `createPages`, use `unstable_disableSSR` on a page:
 
@@ -56,7 +72,7 @@ The simplest whole-app version looks like this:
 import { fsRouter } from 'waku';
 import adapter from 'waku/adapters/default';
 
-const router = fsRouter(import.meta.glob('./**/*.tsx', { base: './pages' }));
+const router = fsRouter(import.meta.glob('./pages/**/*.tsx'));
 
 export default adapter({
   handleRequest: async (input, utils) => {
@@ -81,6 +97,8 @@ handleRequest: async (input, utils) => {
   return router.handleRequest(input, utils);
 };
 ```
+
+In production, a static page is served from the HTML the build prerendered for it, before `handleRequest` runs, so `'fallback'` only reaches dynamic pages. Give a static page [`unstable_disableSSR`](#disable-ssr-for-a-page) as well, and the build writes the fallback shell for it instead.
 
 ## What the Fallback Contains
 

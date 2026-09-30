@@ -733,4 +733,14 @@ test.describe('fs-router', () => {
       },
     );
   });
+
+  test('no ssr from getConfig', async ({ page, request }) => {
+    const response = await request.get(`http://localhost:${port}/no-ssr`);
+    expect(await response.text()).not.toContain('No SSR from getConfig');
+
+    await page.goto(`http://localhost:${port}/no-ssr`);
+    await expect(
+      page.getByRole('heading', { name: 'No SSR from getConfig', exact: true }),
+    ).toBeVisible();
+  });
 });
