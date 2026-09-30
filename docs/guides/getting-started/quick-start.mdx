@@ -52,7 +52,7 @@ waku-project/
 
 - `src/pages` is the router: each file becomes a route, and `_layout.tsx` wraps the pages next to and below it.
 - `src/components` holds regular React components that pages import.
-- `src/middleware` contains optional [Hono](https://hono.dev) middleware that the default setup picks up automatically. The starter ships one that removes trailing slashes.
+- `src/middleware` contains optional [Hono](https://hono.dev) middleware that the default setup picks up automatically. The starter ships one that removes trailing slashes. In production, statically generated pages are served before middleware runs, so it only applies to dynamic routes; see [Redirect Maps](/guides/redirect-maps).
 - `public` files are copied to the site root unchanged, such as images and fonts.
 - `waku.config.ts` configures Waku and Vite. The starter enables Tailwind CSS and React Compiler plugins.
 
