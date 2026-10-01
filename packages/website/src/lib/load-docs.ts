@@ -15,6 +15,7 @@ const GUIDE_CATEGORY_ORDER = [
 
 type Guide = GuideFrontmatter & {
   content: string;
+  fileName: string;
 };
 
 const getCategoryIndex = (category: string) => {
@@ -55,6 +56,7 @@ export const loadGuides = async (): Promise<Guide[]> => {
     guides.push({
       ...frontmatter,
       content: source.replace(/^---\n[\s\S]*?\n---\n*/, ''),
+      fileName,
     });
   }
 

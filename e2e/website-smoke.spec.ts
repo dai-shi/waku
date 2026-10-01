@@ -20,6 +20,10 @@ const waku = fileURLToPath(
   new URL('../packages/waku/dist/cli.js', import.meta.url),
 );
 const guidesDir = fileURLToPath(new URL('../docs/guides', import.meta.url));
+const guideFileNames = readdirSync(guidesDir, {
+  recursive: true,
+  encoding: 'utf8',
+}).filter((fileName) => fileName.endsWith('.mdx'));
 
 const loadGuide = (fileName: string) => {
   const source = readFileSync(`${guidesDir}/${fileName}`, 'utf8').replace(
@@ -70,17 +74,29 @@ test.describe('website smoke test', () => {
     await expect.poll(() => page.title()).toMatch(/^Waku/);
   });
 
-  test('serves the README and all guides for LLMs', async ({ request }) => {
+  test('serves an index of the docs for LLMs', async ({ request }) => {
     const response = await request.get(`http://localhost:${port}/llms.txt`);
     expect(response.ok()).toBe(true);
 
     const content = await response.text();
     expect(content).toContain('# Waku');
+    expect(content).toContain('(https://waku.gg/llms-full.txt)');
 
-    const guideFileNames = readdirSync(guidesDir, {
-      recursive: true,
-      encoding: 'utf8',
-    }).filter((fileName) => fileName.endsWith('.mdx'));
+    for (const fileName of guideFileNames) {
+      const { title } = loadGuide(fileName);
+      const guide = `- [${title}](https://raw.githubusercontent.com/wakujs/waku/refs/heads/main/docs/guides/${fileName.replaceAll('\\', '/')})`;
+      expect(content).toContain(guide);
+    }
+  });
+
+  test('serves the README and all guides for LLMs', async ({ request }) => {
+    const response = await request.get(
+      `http://localhost:${port}/llms-full.txt`,
+    );
+    expect(response.ok()).toBe(true);
+
+    const content = await response.text();
+    expect(content).toContain('# Waku');
 
     for (const fileName of guideFileNames) {
       const { slug, title, content: guideContent } = loadGuide(fileName);
