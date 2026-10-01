@@ -33,9 +33,6 @@ export const getInitialRscEntry = (
     void initialRscEntries.shift();
   }
   initialRscEntries.push([rscPath, rscParams, elements]);
-  void elements.then(undefined, () => {
-    releaseInitialRscEntry(rscPath, rscParams, elements);
-  });
   return elements;
 };
 

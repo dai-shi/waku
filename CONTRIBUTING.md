@@ -146,17 +146,27 @@ incomplete.
 
 ### Comments and documentation
 
-- Reach for a name before a comment. A comment that explains a binding, a
-  constant, or a whole function is describing something the name should say;
-  rename it, or split the function. Comment only what no name can carry.
-- Comment why a branch exists, which invariant must be preserved, or which
-  external behavior requires a workaround.
+Before adding a comment, look for a better home, in this order:
+
+1. A name: rename the binding, constant, or function, or split the function.
+2. A test: an edge case that a regression test pins down needs no comment.
+3. A guide: motivation and design belong in the docs.
+4. The commit message: anything about how the code changed.
+
+- Comment only what none of these homes can carry. A comment explains code
+  that exists: why this branch exists, which invariant the code next to it
+  relies on, or which external behavior forces a workaround. Fitting one of
+  these is required, not sufficient.
+- Do not explain code that is not there. Why something was removed or is not
+  done belongs in the commit message, and a regression test should guard it.
+- Write for the code as it stands. Read the comment as someone who never saw
+  the previous version: words like "either", "still", "no longer", "instead",
+  or "like any other" mean it describes the change, not the code.
+- Keep a comment to one line, rarely two. A comment that needs a paragraph
+  belongs in one of the homes above.
+- The rules above apply equally to tests, fixtures, and e2e specs.
 - Do not restate a name or type, in a comment or in JSDoc, and do not repeat
   the same fact in multiple places.
-- Prefer the durable home: motivation belongs in the guides, edge cases in
-  tests. Comment only what neither can carry.
-- Write for the code as it stands. A comment that only makes sense against the
-  version it replaced belongs in the commit message.
 - `TODO`, `FIXME`, and `HACK` are acceptable when they describe an unresolved
   issue. Remove them only when the issue is actually resolved.
 - Public APIs should have complete JSDoc suitable for editor documentation.

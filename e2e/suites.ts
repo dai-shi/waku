@@ -19,6 +19,7 @@ export const UBUNTU_LTS_ONLY_SPECS = [
   'react-tweet.spec.ts',
   'render-type.prd.spec.ts',
   'router-client-no-404.spec.ts',
+  'router-client-no-ssr.spec.ts',
   'router-client.spec.ts',
   'rsc-asset.spec.ts',
   'rsc-css-modules.spec.ts',

@@ -179,3 +179,26 @@ export class RenderErrorHandler extends Component<
     return this.props.children;
   }
 }
+
+export class MissingRouteHandler extends Component<
+  { children?: ReactNode },
+  { error: unknown | null }
+> {
+  constructor(props: { children?: ReactNode }) {
+    super(props);
+    this.state = { error: null };
+  }
+  static getDerivedStateFromError(error: unknown) {
+    return { error };
+  }
+  render() {
+    const { error } = this.state;
+    if (error === null) {
+      return this.props.children;
+    }
+    if (getErrorInfo(error)?.status !== 404) {
+      throw error;
+    }
+    return <h1>Not Found</h1>;
+  }
+}

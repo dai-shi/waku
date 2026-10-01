@@ -1,6 +1,14 @@
 // @vitest-environment happy-dom
 
-import { StrictMode, Suspense, act, use, useEffect, useState } from 'react';
+import {
+  Component,
+  StrictMode,
+  Suspense,
+  act,
+  use,
+  useEffect,
+  useState,
+} from 'react';
 import type { ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
@@ -200,15 +208,45 @@ describe('minimal/client fetch', () => {
     expect(create).toHaveBeenCalledOnce();
   });
 
-  test('retries a rejected initial fetch', async () => {
-    const first = getInitialRscEntry('R/app.txt', undefined, () =>
+  test('a Root that suspended on its initial fetch gets the rejection, not another fetch', async () => {
+    mocks.createFromFetch.mockImplementation(() =>
       Promise.reject(new Error('failed')),
     );
-    await expect(first).rejects.toThrow('failed');
-    const create = vi.fn(() => Promise.resolve({}));
+    stubFetch();
+    class Catch extends Component<
+      { children: ReactNode },
+      { error?: unknown }
+    > {
+      constructor(props: { children: ReactNode }) {
+        super(props);
+        this.state = {};
+      }
+      static getDerivedStateFromError(error: unknown) {
+        return { error };
+      }
+      render() {
+        return 'error' in this.state
+          ? String(this.state.error)
+          : this.props.children;
+      }
+    }
 
-    expect(getInitialRscEntry('R/app.txt', undefined, create)).not.toBe(first);
-    expect(create).toHaveBeenCalledOnce();
+    const container = document.createElement('div');
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <Root initialRscPath="R/app.txt">
+          <Catch>
+            <Slot id="App" />
+          </Catch>
+        </Root>,
+      );
+    });
+
+    expect(container.textContent).toBe('Error: failed');
+    expect(mocks.createFromFetch).toHaveBeenCalledOnce();
+
+    act(() => root.unmount());
   });
 
   test('server actions use the current fetch, not the one elements decoded with', async () => {

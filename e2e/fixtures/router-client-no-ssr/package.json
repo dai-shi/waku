@@ -1,0 +1,22 @@
+{
+  "name": "router-client-no-ssr",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "waku dev",
+    "build": "waku build",
+    "start": "waku start"
+  },
+  "dependencies": {
+    "react": "~19.3.0",
+    "react-dom": "~19.3.0",
+    "react-server-dom-webpack": "~19.3.0",
+    "waku": "latest"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "typescript": "^6.0.3"
+  }
+}

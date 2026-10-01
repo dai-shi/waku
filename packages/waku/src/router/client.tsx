@@ -19,7 +19,10 @@ import {
   resolveRouteHref,
 } from './client-utils/link.js';
 import { useNavigation } from './client-utils/navigation.js';
-import { RenderErrorHandler } from './client-utils/render-error.js';
+import {
+  MissingRouteHandler,
+  RenderErrorHandler,
+} from './client-utils/render-error.js';
 import {
   RouterContext,
   dispatchChangeRoute,
@@ -281,10 +284,12 @@ export function Router({
   );
   return (
     <Root initialRscPath={initialRscPath} initialRscParams={initialRscParams}>
-      <InnerRouter
-        fallbackRoute={initialRoute}
-        routeInterceptor={unstable_routeInterceptor}
-      />
+      <MissingRouteHandler>
+        <InnerRouter
+          fallbackRoute={initialRoute}
+          routeInterceptor={unstable_routeInterceptor}
+        />
+      </MissingRouteHandler>
     </Root>
   );
 }
