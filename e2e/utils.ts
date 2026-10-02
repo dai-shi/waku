@@ -109,20 +109,20 @@ const unexpectedErrors: RegExp[] = [
 export const ignoreErrors: RegExp[] = [
   /ExperimentalWarning: Custom ESM Loaders is an experimental feature and might change at any time/,
   /npm warn Unknown env config "verify-deps-before-run"\. This will stop working in the next major version of npm\./,
-  /^(Error during rendering: )?Error: Unexpected error\s+at ThrowsComponent/,
-  /^(Error during rendering: )?Error: Intentional render error\s+at ErrorRender/,
+  /^(Error during rendering: )?Error: Unexpected error(\\n|\s)+at ThrowsComponent/,
+  /^(Error during rendering: )?Error: Intentional render error(\\n|\s)+at ErrorRender/,
   /^Error: Input is required\b/,
-  /^(Error during rendering: )?Error: 401 Unauthorized\s+at CheckIfAccessDenied/,
-  /^(Error during rendering: )?Error: Not Found\s+at SyncPage/,
-  /^(Error during rendering: )?Error: Not Found\s+at AsyncPage/,
-  /^(Error during rendering: )?Error: Not Found\s+at info/,
-  /^(Error during rendering: )?Error: Not Found\s+at createCustomError/,
-  /^(Error during rendering: )?Error: Redirect\s+at info/,
-  /^(Error during rendering: )?Error: Redirect\s+at createCustomError/,
+  /^(Error during rendering: )?Error: 401 Unauthorized(\\n|\s)+at CheckIfAccessDenied/,
+  /^(Error during rendering: )?Error: Not Found(\\n|\s)+at SyncPage/,
+  /^(Error during rendering: )?Error: Not Found(\\n|\s)+at AsyncPage/,
+  /^(Error during rendering: )?Error: Not Found(\\n|\s)+at info/,
+  /^(Error during rendering: )?Error: Not Found(\\n|\s)+at createCustomError/,
+  /^(Error during rendering: )?Error: Redirect(\\n|\s)+at info/,
+  /^(Error during rendering: )?Error: Redirect(\\n|\s)+at createCustomError/,
   // FIXME Is this too general and miss meaningful errors?
   /^(Error during rendering: )?\[Error: An error occurred in the Server Components render\./,
   // XXX Is it okay to ignore this error?
-  /^Error: pathname must start with basePath: \/favicon\.ico\s+at removeBase/,
+  /^Error: pathname must start with basePath: \/favicon\.ico(\\n|\s)+at removeBase/,
 ];
 
 export function debugChildProcess(cp: ChildProcess, sourceFile: string) {
