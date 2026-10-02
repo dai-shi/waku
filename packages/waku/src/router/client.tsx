@@ -63,16 +63,23 @@ type NavigateOptions = {
    * away and stream the dynamic parts in, instead of waiting for the response.
    */
   unstable_instant?: boolean;
+  /**
+   * Called when a newer navigation, such as a `<Link>` click, another `push`,
+   * `reload()`, or back/forward, cancels this one before it finishes: before
+   * it commits, or for an instant navigation, while its response is still
+   * streaming. It can run after the returned promise has resolved.
+   */
+  unstable_onSuperseded?: () => void;
 };
 
 /**
  * Resolves once the requested navigation has been handled: after its response
  * when the route needs one, right away when it does not, and when a newer
- * navigation supersedes it. Rejects when the navigation fails, when a redirect
- * hands the page to the browser, and when no custom 404 route can answer a
- * missing route. A redirect or 404 received while fetching is followed before
- * this resolves. It does not wait for React to render, so the address bar may
- * still show the previous URL.
+ * navigation supersedes it (see `unstable_onSuperseded`). Rejects when the
+ * navigation fails, when a redirect hands the page to the browser, and when no
+ * custom 404 route can answer a missing route. A redirect or 404 received while
+ * fetching is followed before this resolves. It does not wait for React to
+ * render, so the address bar may still show the previous URL.
  */
 type Navigate = {
   (to: RouteHref, options?: NavigateOptions): Promise<void>;
@@ -132,6 +139,7 @@ export function useRouter() {
         history,
         url,
         instant: options?.unstable_instant,
+        onSuperseded: options?.unstable_onSuperseded,
       });
     },
     [changeRoute, resolveCodec],

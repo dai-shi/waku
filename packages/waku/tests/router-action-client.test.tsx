@@ -316,6 +316,154 @@ test('a newer navigation supersedes a suspended action destination', async () =>
   expect(window.location.pathname).toBe('/final');
 });
 
+test('a navigation superseded while loading reports it', async () => {
+  const view = await mount();
+  const slowResponse = deferred<Record<string, unknown>>({});
+  const slowFetched = deferred<void>(undefined);
+  decode.mockImplementationOnce(() => {
+    slowFetched.resolve();
+    return slowResponse.promise;
+  });
+  decode.mockReturnValueOnce({
+    [getRouteSlotId('/fast')]: 'fast',
+    [ROUTE_ID]: ['/fast', ''],
+    [IS_STATIC_ID]: false,
+  });
+  const onSlowSuperseded = vi.fn();
+  const onFastSuperseded = vi.fn();
+  await act(async () => {
+    const slow = view.getRouter().push('/slow', {
+      unstable_onSuperseded: onSlowSuperseded,
+    });
+    await slowFetched.promise;
+    expect(onSlowSuperseded).not.toHaveBeenCalled();
+    const fast = view.getRouter().push('/fast', {
+      unstable_onSuperseded: onFastSuperseded,
+    });
+    slowResponse.resolve({
+      [getRouteSlotId('/slow')]: 'slow',
+      [ROUTE_ID]: ['/slow', ''],
+      [IS_STATIC_ID]: false,
+    });
+    await Promise.all([slow, fast]);
+  });
+  expect(view.container.textContent).toBe('fast');
+  expect(onSlowSuperseded).toHaveBeenCalledTimes(1);
+  expect(onFastSuperseded).not.toHaveBeenCalled();
+});
+
+test('a navigation superseded before it renders reports it after its promise resolves', async () => {
+  const view = await mount();
+  const destination = deferred('next');
+  const Destination = () => use(destination.promise);
+  decode.mockReturnValueOnce({
+    [getRouteSlotId('/next')]: <Destination />,
+    [ROUTE_ID]: ['/next', ''],
+    [IS_STATIC_ID]: false,
+  });
+  const onSuperseded = vi.fn();
+  await act(async () => {
+    await view
+      .getRouter()
+      .push('/next', { unstable_onSuperseded: onSuperseded });
+  });
+  expect(view.container.textContent).toBe('start');
+  expect(onSuperseded).not.toHaveBeenCalled();
+  decode.mockReturnValueOnce({
+    [getRouteSlotId('/final')]: 'final',
+    [ROUTE_ID]: ['/final', ''],
+    [IS_STATIC_ID]: false,
+  });
+  await act(async () => {
+    await view.getRouter().push('/final');
+  });
+  expect(onSuperseded).toHaveBeenCalledTimes(1);
+  await act(async () => {
+    destination.resolve('next');
+  });
+  expect(view.container.textContent).toBe('final');
+  expect(window.location.pathname).toBe('/final');
+});
+
+test('a navigation started from unstable_onSuperseded supersedes the newer one', async () => {
+  const view = await mount();
+  const slowResponse = deferred<Record<string, unknown>>({});
+  const slowFetched = deferred<void>(undefined);
+  decode.mockImplementationOnce(() => {
+    slowFetched.resolve();
+    return slowResponse.promise;
+  });
+  decode.mockReturnValue({
+    [getRouteSlotId('/again')]: 'again',
+    [ROUTE_ID]: ['/again', ''],
+    [IS_STATIC_ID]: false,
+  });
+  const onFastSuperseded = vi.fn();
+  let again!: Promise<void>;
+  await act(async () => {
+    const slow = view.getRouter().push('/slow', {
+      unstable_onSuperseded: () => {
+        again = view.getRouter().push('/again');
+      },
+    });
+    await slowFetched.promise;
+    const fast = view.getRouter().push('/fast', {
+      unstable_onSuperseded: onFastSuperseded,
+    });
+    slowResponse.resolve({
+      [getRouteSlotId('/slow')]: 'slow',
+      [ROUTE_ID]: ['/slow', ''],
+      [IS_STATIC_ID]: false,
+    });
+    await Promise.all([slow, fast, again]);
+  });
+  expect(onFastSuperseded).toHaveBeenCalledTimes(1);
+  expect(view.container.textContent).toBe('again');
+  expect(window.location.pathname).toBe('/again');
+});
+
+test('an HMR refetch cancels a pending navigation without reporting it superseded', async () => {
+  Object.defineProperty(import.meta, 'hot', { configurable: true, value: {} });
+  try {
+    const view = await mount();
+    const slowResponse = deferred<Record<string, unknown>>({});
+    const slowFetched = deferred<void>(undefined);
+    decode
+      .mockImplementationOnce(() => {
+        slowFetched.resolve();
+        return slowResponse.promise;
+      })
+      .mockReturnValueOnce({
+        [getRouteSlotId('/start')]: 'refreshed start',
+        [ROUTE_ID]: ['/start', ''],
+        [IS_STATIC_ID]: false,
+      });
+    const onSuperseded = vi.fn();
+    let slow!: Promise<void>;
+    await act(async () => {
+      slow = view
+        .getRouter()
+        .push('/slow', { unstable_onSuperseded: onSuperseded });
+      await slowFetched.promise;
+    });
+    await act(async () => {
+      (
+        globalThis as { __WAKU_RSC_RELOAD_LISTENERS__?: (() => void)[] }
+      ).__WAKU_RSC_RELOAD_LISTENERS__?.forEach((listener) => listener());
+      slowResponse.resolve({
+        [getRouteSlotId('/slow')]: 'slow',
+        [ROUTE_ID]: ['/slow', ''],
+        [IS_STATIC_ID]: false,
+      });
+      await slow;
+    });
+    expect(view.container.textContent).toBe('refreshed start');
+    expect(onSuperseded).not.toHaveBeenCalled();
+  } finally {
+    Reflect.deleteProperty(import.meta, 'hot');
+  }
+});
+
 test('an action delayed by an enhancer navigates relative to the latest committed route', async () => {
   window.history.replaceState({}, '', '/start#section');
   const view = await mount();

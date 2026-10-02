@@ -10,6 +10,7 @@ export type ChangeRouteOptions = {
   instant?: boolean | undefined;
   follows?: number | undefined;
   pendingTransition?: ((fn: TransitionFunction) => void) | undefined;
+  onSuperseded?: (() => void) | undefined;
 };
 
 export type ChangeRoute = (
