@@ -1,0 +1,498 @@
+---
+slug: authentication
+title: Authentication
+description: Read a session, protect routes, and set cookies from server actions with the pieces Waku gives you.
+category: Integrations
+order: 20
+---
+
+## What Waku provides
+
+Waku does not ship an authentication system; that is a deliberate boundary (see [Use Cases](/guides/use-cases)). What it provides is enough to plug one in: request headers in server code, server actions for signing in and out, middleware that owns the response, and layouts that run for every route beneath them. This guide shows where each part of an auth flow goes, and the two places where the obvious approach does not work.
+
+The session itself can come from a library or, as in the code below, from a few lines over a signed cookie. Everything here is condensed from the [`nextjs-dashboard`](https://github.com/wakujs/waku-examples/tree/main/fs-router/nextjs-dashboard) example in the waku-examples repository, which runs the full flow end to end.
+
+## Reading the session
+
+The snippets use two small libraries — `cookie` to parse and serialize headers
+and `jose` to sign and verify the token — and the cookie jar below imports
+`node:async_hooks`, whose declarations come from `@types/node`, which the starter
+template does not include. `hono`, whose `MiddlewareHandler` type the middleware
+imports, is already a dependency of a Waku project.
+
+```sh
+npm install cookie jose
+npm install --save-dev @types/node
+```
+
+Server code reads request cookies from `unstable_getHeaders()`. Wrap that in one function and use it everywhere:
+
+```ts
+// ./src/lib/session.ts
+import * as cookie from 'cookie';
+import { jwtVerify } from 'jose';
+import { getEnv } from 'waku';
+import { unstable_getHeaders as getHeaders } from 'waku/router/server';
+
+export type Session = { userId: string };
+
+// Resolve the key on first use, not at module scope: page modules are also
+// evaluated during `waku build`, where a runtime secret need not exist. And
+// never fall back silently — an unset secret would become a guessable key.
+// getEnv() is Waku's runtime-agnostic env access; process.env does not exist
+// on Cloudflare Workers or Deno.
+let secret: Uint8Array | undefined;
+const getSecret = () => {
+  if (!secret) {
+    const value = getEnv('SESSION_SECRET');
+    if (!value || value.length < 32) {
+      throw new Error(
+        'SESSION_SECRET must be set to at least 32 random characters.',
+      );
+    }
+    secret = new TextEncoder().encode(value);
+  }
+  return secret;
+};
+
+export const verifySessionToken = async (
+  token: string | undefined,
+): Promise<Session | null> => {
+  if (!token) {
+    return null;
+  }
+  // Resolve the key before the try: a missing secret is a deployment error and
+  // must surface, whereas a bad token is an ordinary "no session".
+  const key = getSecret();
+  try {
+    const { payload } = await jwtVerify(token, key);
+    return { userId: payload.sub! };
+  } catch {
+    return null;
+  }
+};
+
+export const auth = async (): Promise<Session | null> => {
+  const cookies = cookie.parseCookie(getHeaders()['cookie'] ?? '');
+  return verifySessionToken(cookies.session);
+};
+```
+
+`auth()` works anywhere the router runs your code: pages, layouts, slices, server actions and API route handlers. It does not work in a static render. Static pages and layouts are prerendered at build time, so anything that reads the session must be `render: 'dynamic'`; see [Sessions on static pages](#sessions-on-static-pages) for keeping the rest of the page static.
+
+## Protecting routes
+
+There are two different jobs here, and they go in two different places.
+
+**Authorization belongs in the data layer.** Every function that returns
+protected data, and every mutation, verifies the session before doing anything
+else:
+
+```ts
+// ./src/lib/session.ts (continued)
+export const requireSession = async (): Promise<Session> => {
+  const session = await auth();
+  if (!session) {
+    throw new Error('Unauthorized');
+  }
+  return session;
+};
+```
+
+```ts
+// ./src/lib/data.ts
+export async function fetchInvoices() {
+  await requireSession();
+  return sql`SELECT ...`;
+}
+```
+
+```ts
+// ./src/lib/actions.ts
+'use server';
+
+export async function deleteInvoice(id: string) {
+  await requireSession();
+  await sql`DELETE FROM invoices WHERE id = ${id}`;
+}
+```
+
+This is the boundary, and it has to be, because of how a route renders. Waku
+renders a route's layouts and its page as independent slots of one response. A
+`redirect()` thrown in a layout redirects the layout; it does not stop the page
+beneath it from rendering. With a check in the layout only, an unauthenticated
+request still gets the page's data:
+
+```
+GET /dashboard                     -> 307  Location: /login?callbackUrl=%2Fdashboard
+GET /RSC/R/dashboard.txt           -> 200  22,532 bytes, including every figure on the page
+```
+
+With `requireSession()` in the data functions, the same request carries error
+slots and nothing else. A server action is an endpoint of its own and an API
+route is outside every layout, so neither is covered by anything but its own
+check either.
+
+**The redirect is for people.** Put it in the layout that wraps the protected
+routes, which runs for every route beneath it on both a full page load and a
+client-side navigation, so a signed-out visitor lands on the login page instead
+of an error:
+
+```tsx
+// ./src/pages/dashboard/_layout.tsx
+import type { ReactNode } from 'react';
+import {
+  unstable_getRequest as getRequest,
+  unstable_parseRouterRequest as parseRouterRequest,
+  unstable_redirect as redirect,
+} from 'waku/router/server';
+import { auth } from '../../lib/session';
+
+export default async function DashboardLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const session = await auth();
+  if (!session) {
+    redirect(loginUrl());
+  }
+
+  return <>{children}</>;
+}
+
+// Pass the requested route along as callbackUrl so that signing in can return
+// to it. An action's request addresses no route, so it falls back to /login.
+const loginUrl = () => {
+  const route = parseRouterRequest(getRequest());
+  if (route?.type !== 'route') {
+    return '/login';
+  }
+  const callbackUrl = route.query ? `${route.path}?${route.query}` : route.path;
+  return `/login?${new URLSearchParams({ callbackUrl })}` as const;
+};
+
+export const getConfig = async () => {
+  return {
+    render: 'dynamic',
+  } as const;
+};
+```
+
+An API route answers with a status instead:
+
+```ts
+// ./src/pages/_api/report.ts
+import { auth } from '../../lib/session';
+
+export async function GET() {
+  if (!(await auth())) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  // ...
+}
+```
+
+### Why not middleware
+
+If you are coming from a framework where route protection lives in middleware, the natural port is a Hono middleware that matches the path:
+
+```ts
+// This looks right and is not enough.
+if (c.req.path.startsWith('/dashboard') && !session) {
+  return c.redirect('/login');
+}
+```
+
+`c.req.path` only sees document requests. A client-side navigation to `/dashboard` requests `/RSC/R/dashboard.txt` instead, so the middleware never matches and the protected route's payload is served:
+
+```
+GET /dashboard                    -> 302  Location: /login
+GET /RSC/R/dashboard.txt?query=   -> 200  the rendered dashboard
+```
+
+A visitor with no session who clicks a `<Link to="/dashboard">` gets the page. The check passes the obvious manual test (loading the URL redirects) and fails on the path users actually take.
+
+That much is fixable. `unstable_parseRouterRequest` reads either url as the route it addresses, and `unstable_formatRouterRequest` builds the destination in the shape the caller asked for — a document for a document request, an RSC payload for an RSC one. The [redirect maps](/guides/redirect-maps) guide builds a middleware on the pair:
+
+```ts
+import {
+  unstable_formatRouterRequest as formatRouterRequest,
+  unstable_parseRouterRequest as parseRouterRequest,
+} from 'waku/router/server';
+
+const parsed = parseRouterRequest(c.req.raw);
+const path = parsed?.type === 'route' ? parsed.path : null;
+const inDashboard = path === '/dashboard' || path?.startsWith('/dashboard/');
+if (inDashboard && !session) {
+  const location = formatRouterRequest(c.req.raw, '/login');
+  if (location) {
+    c.res = new Response(null, {
+      status: 302,
+      headers: { location: location.toString() },
+    });
+    return;
+  }
+}
+```
+
+Redirecting an RSC request to `/login` with `c.redirect()` would send the fetch a document, which the client then fails to decode as a Flight payload; the formatter is what keeps the shapes matched.
+
+What it does not fix is the reason to keep authorization out of middleware. A server action dispatched from the client carries no route — it reports `{ type: 'action' }` — so no path rule covers it, and a component that reads protected data inside an action is reachable whatever the middleware decides. A route match is an optimistic redirect, not a boundary. Middleware is the right place for response-level concerns such as headers, logging and cookies; authorization belongs in the data layer, with the redirect in the layout.
+
+## Signing in: setting a cookie from a server action
+
+Waku has no cookie-writing API. Server components and server functions can read the request; only middleware owns the response. Setting a cookie from a sign-in action therefore takes a small bridge: a request-scoped jar that the action writes into and middleware empties onto the response.
+
+```ts
+// ./src/lib/cookie-jar.ts
+import { AsyncLocalStorage } from 'node:async_hooks';
+import * as cookie from 'cookie';
+
+type CookieJar = { setCookies: string[] };
+
+const storage = new AsyncLocalStorage<CookieJar>();
+
+export const runWithCookieJar = <T>(fn: () => Promise<T>) =>
+  storage.run({ setCookies: [] }, fn);
+
+export const getCookieJar = () => storage.getStore();
+
+export const queueSetCookie = (value: string) => {
+  const jar = storage.getStore();
+  if (!jar) {
+    throw new Error(
+      'No cookie jar in scope. Is the cookies middleware registered?',
+    );
+  }
+  jar.setCookies.push(value);
+};
+
+// A cookie queued earlier in this same request, so a render that follows the
+// write sees it. See "The read-through" below for why this matters.
+export const readPendingCookie = (name: string): string | undefined => {
+  const queued = storage.getStore()?.setCookies ?? [];
+  for (let i = queued.length - 1; i >= 0; i -= 1) {
+    const parsed = cookie.parseSetCookie(queued[i]!);
+    if (parsed?.name === name) {
+      return parsed.value;
+    }
+  }
+  return undefined;
+};
+```
+
+```ts
+// ./src/middleware/cookies.ts
+import type { MiddlewareHandler } from 'hono';
+import { getCookieJar, runWithCookieJar } from '../lib/cookie-jar';
+
+const cookies = (): MiddlewareHandler => {
+  return async (c, next) => {
+    await runWithCookieJar(async () => {
+      await next();
+      const jar = getCookieJar();
+      if (!jar?.setCookies.length || !c.res) {
+        return;
+      }
+      const headers = new Headers(c.res.headers);
+      for (const value of jar.setCookies) {
+        headers.append('set-cookie', value);
+      }
+      c.res = new Response(c.res.body, {
+        status: c.res.status,
+        statusText: c.res.statusText,
+        headers,
+      });
+    });
+  };
+};
+
+export default cookies;
+```
+
+The sign-in action verifies the credentials, queues the cookie, and redirects:
+
+```ts
+// ./src/lib/session.ts (continued)
+import { SignJWT } from 'jose';
+import { queueSetCookie } from './cookie-jar';
+
+export const signIn = async (userId: string) => {
+  const token = await new SignJWT({})
+    .setProtectedHeader({ alg: 'HS256' })
+    .setSubject(userId)
+    .setExpirationTime('7d')
+    .sign(getSecret());
+
+  queueSetCookie(
+    cookie.stringifySetCookie({
+      name: 'session',
+      value: token,
+      httpOnly: true,
+      path: '/',
+      sameSite: 'lax',
+      // Secure by default; only plain-http local development opts out. Do not
+      // key this on NODE_ENV === 'production': Cloudflare Workers set no NODE_ENV.
+      secure: getEnv('NODE_ENV') !== 'development',
+      maxAge: 60 * 60 * 24 * 7,
+    }),
+  );
+};
+```
+
+```ts
+// ./src/lib/actions.ts
+'use server';
+
+import { unstable_redirect as redirect } from 'waku/router/server';
+import { signIn } from './session';
+import { verifyPassword } from './users';
+
+export async function authenticate(
+  prevState: string | undefined,
+  formData: FormData,
+) {
+  const user = await verifyPassword(
+    String(formData.get('email')),
+    String(formData.get('password')),
+  );
+  if (!user) {
+    return 'Invalid credentials.';
+  }
+  await signIn(user.id);
+  // 303, so that a browser following the redirect without JavaScript requests
+  // the destination with GET. The default 307 re-sends the form POST — with the
+  // action encoded in it — to the destination.
+  redirect(dashboardPath(String(formData.get('redirectTo') ?? '')), 303);
+}
+
+// Anyone can write a callbackUrl into the login page's query string, so follow
+// it only to a same-origin path under /dashboard, which is all the layout
+// sends. The cast is needed because redirect() is typed against the app's
+// routes.
+const dashboardPath = (url: string) => {
+  try {
+    const { origin, pathname, search } = new URL(url, 'http://localhost');
+    if (origin === 'http://localhost' && /^\/dashboard(\/|$)/.test(pathname)) {
+      return `${pathname}${search}` as Parameters<typeof redirect>[0];
+    }
+  } catch {
+    // Not a URL at all.
+  }
+  return '/dashboard';
+};
+```
+
+The login form reads `callbackUrl` from `useRouter().query` and posts it back in a hidden `redirectTo` field.
+
+### The read-through
+
+`redirect()` resolves on the server: the destination renders inside the same request that ran the action. At that point `unstable_getHeaders()` still reports the cookies the browser sent, which do not include the one just queued, so a protected destination would bounce the user straight back to the login page. The cookie is set, the login worked, and it looks like it did not.
+
+That is what `readPendingCookie` is for. Make `auth()` prefer a cookie queued in this request over the one from the headers:
+
+```ts
+import { readPendingCookie } from './cookie-jar';
+
+export const auth = async (): Promise<Session | null> => {
+  const pending = readPendingCookie('session');
+  if (pending !== undefined) {
+    return verifySessionToken(pending || undefined);
+  }
+  const cookies = cookie.parseCookie(getHeaders()['cookie'] ?? '');
+  return verifySessionToken(cookies.session);
+};
+```
+
+An empty pending value is a cookie being cleared, which is why it verifies as no session.
+
+### What does not work
+
+Hono's `c.header()` cannot be used from server code to set the cookie, even with `hono/context-storage` making the context reachable. Waku's handler returns its own `Response`, which replaces `c.res` and discards headers prepared on the context, so the write is silently lost. Rebuilding the response in middleware after `next()`, as above, is the approach that works.
+
+## Signing out
+
+Queue an expired cookie and redirect. Because `auth()` reads through the jar, the redirect destination already renders signed out:
+
+```ts
+export const signOut = () => {
+  queueSetCookie(
+    cookie.stringifySetCookie({
+      name: 'session',
+      value: '',
+      httpOnly: true,
+      path: '/',
+      sameSite: 'lax',
+      maxAge: 0,
+    }),
+  );
+};
+```
+
+```tsx
+<form
+  action={async () => {
+    'use server';
+    signOut();
+    redirect('/', 303);
+  }}
+>
+  <button>Sign out</button>
+</form>
+```
+
+## Sessions on static pages
+
+A page that reads the session cannot be prerendered, but a page that merely _shows_ something session-dependent can be. Put the session-dependent part in a lazy dynamic [slice](https://waku.gg/#slices): the page is built once, and the slice is rendered per request with the request's cookies.
+
+```tsx
+// ./src/pages/_slices/account-menu.tsx
+import { auth } from '../../lib/session';
+
+export default async function AccountMenu() {
+  const session = await auth();
+  return session ? (
+    <a href="/account">Account</a>
+  ) : (
+    <a href="/login">Sign in</a>
+  );
+}
+
+export const getConfig = async () => {
+  return {
+    render: 'dynamic',
+  } as const;
+};
+```
+
+```tsx
+// ./src/pages/index.tsx
+import { Slice } from 'waku';
+
+export default async function HomePage() {
+  return (
+    <>
+      <Slice id="account-menu" lazy fallback={<span />} />
+      {/* the rest of the page is static */}
+    </>
+  );
+}
+
+export const getConfig = async () => {
+  return {
+    render: 'static',
+  } as const;
+};
+```
+
+Keep session reads as far down the tree as they can go. A root layout that reads the session makes every page dynamic.
+
+## Choosing a library
+
+The code above is a complete, small session, and it is a reasonable place to stop for an app with a password form. If you want OAuth providers, email links, or session storage, any framework-agnostic library fits the same shape: it verifies credentials in a server action or API route, and it needs `auth()` to read its cookie. Writing one depends on where it runs: a server action needs the cookie jar above, while an API route can return the library's own `Response` unchanged, `Set-Cookie` and all. [Auth.js](https://authjs.dev) (`@auth/core`, not a framework wrapper) and [Better Auth](https://www.better-auth.com) are two options. A library that is built on another framework's internals, such as one that imports that framework's request or header helpers, will not port.
+
+## Runtime notes
+
+The cookie jar uses `AsyncLocalStorage`, which Waku itself already depends on, so it runs wherever Waku runs: Node.js, Bun, Deno, and Cloudflare Workers with the `nodejs_als` compatibility flag that the [Cloudflare guide](/guides/cloudflare) sets. Keep the jar request-scoped and small; it exists only to carry headers from where they are decided to where they are written.
+Read configuration through `getEnv` from `waku` rather than `process.env`, which Node.js provides and the other runtimes do not.

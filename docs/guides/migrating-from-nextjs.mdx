@@ -1,0 +1,335 @@
+---
+slug: migrating-from-nextjs
+title: Migrating from Next.js
+description: What each Next.js App Router API becomes in Waku, and what to do about the ones with no counterpart.
+category: Getting Started
+order: 60
+---
+
+## Before you start
+
+Waku and the Next.js App Router share a foundation — React Server Components,
+`'use client'`, server actions, `<Suspense>` streaming — so most of an app moves
+across unchanged. Components, styles, forms, validation, data access and business
+logic are not the work. The work is the framework surface around them: routing
+conventions, metadata, caching, cookies, environment variables, and the handful
+of Next.js APIs that Waku deliberately does not have.
+
+This guide is written from four migrations of real Next.js apps, which live in
+the [waku-examples](https://github.com/wakujs/waku-examples) repository and are
+referenced throughout:
+
+| Example                                                                                                  | Migrated from                                 | What it exercises                                      |
+| -------------------------------------------------------------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------ |
+| [`nextjs-blog-starter`](https://github.com/wakujs/waku-examples/tree/main/fs-router/nextjs-blog-starter) | `vercel/next.js` `examples/blog-starter`      | static generation, metadata, markdown, CSS modules     |
+| [`nextjs-dashboard`](https://github.com/wakujs/waku-examples/tree/main/fs-router/nextjs-dashboard)       | `vercel/next-learn` `dashboard/final-example` | auth, a database, server actions, streaming, search    |
+| [`nextjs-commerce`](https://github.com/wakujs/waku-examples/tree/main/fs-router/nextjs-commerce)         | `vercel/commerce`                             | caching, cookies, optimistic UI, sitemap and OG images |
+| [`nextjs-photo-modal`](https://github.com/wakujs/waku-examples/tree/main/fs-router/nextjs-photo-modal)   | `vercel/nextgram`                             | parallel and intercepting routes                       |
+
+## The shape of the project
+
+```
+app/layout.tsx            →  src/pages/_root.tsx  +  src/pages/_layout.tsx
+app/page.tsx              →  src/pages/index.tsx
+app/about/page.tsx        →  src/pages/about.tsx
+app/blog/[slug]/page.tsx  →  src/pages/blog/[slug].tsx
+app/shop/[...rest]/page   →  src/pages/shop/[...rest].tsx
+app/(marketing)/…         →  src/pages/(marketing)/…
+app/api/hello/route.ts    →  src/pages/_api/api/hello.ts   (_api is stripped from the URL)
+middleware.ts             →  src/middleware/*.ts   (Hono middleware — read on)
+next.config.js            →  waku.config.ts
+```
+
+Two conventions have no Next.js equivalent and are worth knowing early:
+`src/pages/_slices/` holds page fragments with their own rendering mode, and
+`src/pages/_interceptors/` wraps each render. Three directory names are
+ignored by the router so that files can be co-located inside `src/pages`:
+`_actions`, `_components` and `_hooks`. Other `_`-prefixed names are not
+special, so put `lib/` and `utils/` outside `src/pages` as before.
+
+Catch-alls need one adjustment. Waku has `[...rest]` but no `[[...rest]]`, and
+its catch-all does not match the base path: `shop/[...rest].tsx` serves
+`/shop/a` and `/shop/a/b`, not `/shop`. An optional catch-all therefore becomes
+two files, `shop/index.tsx` and `shop/[...rest].tsx`. Carrying the Next.js
+filename across on its own leaves `/shop` with no route.
+
+### The document shell moves
+
+Next.js renders `<html>` and `<body>` from the root layout. Waku splits that: the
+document shell is `src/pages/_root.tsx` and `_layout.tsx` renders inside it.
+
+```tsx
+// src/pages/_root.tsx
+import type { ReactNode } from 'react';
+import '../styles.css';
+
+export default function RootElement({ children }: { children: ReactNode }) {
+  return (
+    <html lang="en">
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </head>
+      <body>{children}</body>
+    </html>
+  );
+}
+
+export const getConfig = async () => ({ render: 'static' }) as const;
+```
+
+Next.js adds the charset and viewport tags for you. A `_root.tsx` replaces
+Waku's default document head, so it declares them itself.
+
+### Every page declares how it renders
+
+This is the one addition Waku asks for on every route. Next.js infers static or
+dynamic from what a page touches; Waku wants it stated:
+
+```tsx
+export const getConfig = async () => ({ render: 'static' }) as const;
+// or
+export const getConfig = async () => ({ render: 'dynamic' }) as const;
+```
+
+A dynamic segment that renders statically also lists its paths, which is where
+`generateStaticParams()` ends up:
+
+```tsx
+export const getConfig = async () => {
+  const posts = await getAllPosts();
+  return { render: 'static', staticPaths: posts.map((p) => p.slug) } as const;
+};
+```
+
+### Params and search params arrive as props
+
+```tsx
+// Next.js
+export default async function Page(props: {
+  params: Promise<{ slug: string }>;
+  searchParams?: Promise<{ q?: string }>;
+}) {
+  const { slug } = await props.params;
+  const { q } = (await props.searchParams) ?? {};
+}
+
+// Waku
+import type { PageProps } from 'waku/router';
+
+export default async function Page({ slug, query }: PageProps<'/blog/[slug]'>) {
+  const q = new URLSearchParams(query).get('q') ?? '';
+}
+
+// A page that reads `query` has to be dynamic: a static page is rendered at
+// build time, with no request, and receives no query at all.
+export const getConfig = async () => ({ render: 'dynamic' }) as const;
+```
+
+`query` is the raw query string, not a parsed object. A static page never sees
+one — it is rendered once at build time — so any page that filters or paginates
+from search params must be `render: 'dynamic'`.
+
+Attaching a [search codec](/guides/typed-routes) in `getConfig` does not change
+`query`; it adds a second prop, `search`, parsed and typed for that route. Reach
+for it instead of `new URLSearchParams(query)` when you want validation or
+coercion.
+
+## Metadata
+
+There is no `metadata` export and no `generateMetadata()`. Render the tags; React
+hoists any `<title>`, `<meta>` and `<link>` into the document head, so
+"generated" metadata is just data you already fetched:
+
+```tsx
+export default async function ProductPage({
+  handle,
+}: PageProps<'/product/[handle]'>) {
+  const product = await getProduct(handle);
+  return (
+    <>
+      <title>{product.title}</title>
+      <meta name="description" content={product.description} />
+      {/* ... */}
+    </>
+  );
+}
+```
+
+As in Next.js, a page's tags override its layout's. For `title`, `description`
+and the Open Graph properties that hold one value, the last declaration wins, so
+a layout that declares its defaults before rendering `{children}` is overridden
+by its pages. Three things do not carry over: there is no `title.template`, so
+write the full title on each page; repeated properties such as `og:image` are
+emitted as written rather than replaced; and `charset` and `viewport` belong in
+`_root.tsx`. [Metadata](/guides/metadata) has the full rules.
+
+## Routing APIs
+
+| Next.js                                       | Waku                                                                                                                                                                                                                                                                                                                                                                                        |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `import Link from 'next/link'`, `<Link href>` | `import { Link } from 'waku'`, `<Link to>`                                                                                                                                                                                                                                                                                                                                                  |
+| `useRouter()` from `next/navigation`          | `useRouter()` from `waku`                                                                                                                                                                                                                                                                                                                                                                   |
+| `usePathname()`                               | `useRouter().path`                                                                                                                                                                                                                                                                                                                                                                          |
+| `useSearchParams()`                           | `new URLSearchParams(useRouter().query)`                                                                                                                                                                                                                                                                                                                                                    |
+| `redirect()`                                  | `unstable_redirect()` from `waku/router/server`; pass `303` from a server action so a no-JavaScript form POST is not re-sent to the destination                                                                                                                                                                                                                                             |
+| `notFound()`                                  | `unstable_notFound()` from `waku/router/server`                                                                                                                                                                                                                                                                                                                                             |
+| `revalidatePath()`                            | from a server action, `unstable_rerenderRoute()` for the route the action came from, or `unstable_rerenderRoute(path, query)` for another one; on the client, `useRouter().reload()`; from a route handler there is no equivalent — `unstable_rerenderRoute` throws `Rerender is not available.` outside an action — see [Rerendering After Server Actions](/guides/rerender-after-actions) |
+
+`useSearchParams()` in Next.js opts a page into client rendering and is usually
+wrapped in `<Suspense>`; Waku's `useRouter()` carries no such requirement, so
+those boundaries can go.
+
+### Typed routes reject computed hrefs
+
+Once `waku router typegen` has run, `<Link to>` and `router.push()` accept known
+route patterns rather than any string. Three ways to satisfy it:
+
+```tsx
+<Link to="/about">About</Link>                                     // a literal
+<Link to={{ to: '/blog/[slug]', params: { slug } }}>{title}</Link>  // structured
+const href: `/search?${string}` = `/search?${params}`;       // typed template
+```
+
+For a component whose target is genuinely dynamic, the type `Link` accepts is not
+exported; borrow it with `ComponentProps<typeof Link>['to']`. Where the href comes
+from user input — a login `callbackUrl`, say — the type error is doing you a
+favour: check it against the routes you mean to allow before you cast.
+`nextjs-dashboard` follows a callback only to a same-origin path under
+`/dashboard`.
+
+## Files that were conventions
+
+| Next.js                      | Waku                                                                                                                                                               |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `loading.tsx`                | a `<Suspense fallback>` where you want it                                                                                                                          |
+| `error.tsx`                  | an error boundary you place, e.g. `react-error-boundary`                                                                                                           |
+| `not-found.tsx`, per segment | one `src/pages/404.tsx` for the app                                                                                                                                |
+| `template.tsx`               | no equivalent; remount with a `key`                                                                                                                                |
+| `default.tsx`                | no equivalent (see parallel routes below)                                                                                                                          |
+| `sitemap.ts`, `robots.ts`    | `_api/sitemap.xml.ts`, `_api/robots.txt.ts` — only the final extension is stripped, so the name carries the one the crawler asks for                               |
+| `opengraph-image.tsx`        | an API route; `satori` + `@resvg/resvg-js` for PNG                                                                                                                 |
+| `route.ts`                   | `src/pages/_api/**/*.ts` exporting `GET`, `POST`, …; the `_api` segment is stripped from the URL, so `app/api/x/route.ts` becomes `_api/api/x.ts` to keep `/api/x` |
+
+Losing per-segment `not-found.tsx` is a real reduction: `notFound()` anywhere in
+the app renders the same `404.tsx`.
+
+## Caching, or the lack of it
+
+Delete it. There is no `fetch` cache, no `unstable_cache`, no `use cache`, no
+`cacheTag`/`cacheLife`, no ISR and no `revalidateTag`. Static pages are built once
+and dynamic pages run on every request, so nothing is stale and nothing needs
+invalidating. Most `revalidateTag`/`revalidatePath` calls simply disappear.
+
+Check one thing per route before deleting them: a Next.js route that used ISR
+(`export const revalidate = 60`) or was refreshed with `revalidatePath()` after
+a content change was static _with a refresh path_. A static Waku page has no
+refresh path — it is frozen until the next build, and no cache can change that,
+because the route code never runs again. So either trigger a rebuild in the flow
+that used to call `revalidatePath()`, or make the route `render: 'dynamic'`. Only
+once it is dynamic does caching enter the picture: wrap the expensive work in an
+explicit [`waku-cache`](/guides/explicit-caching) and invalidate that in the same
+flow. Either way, removing the call should not turn "fresh within a minute" into
+"fresh at the next deploy".
+
+Two exceptions:
+
+- An action that stays on the page and expects the screen to update needs
+  `unstable_rerenderRoute()` — an action that ends in `redirect()` does not.
+  Called with no arguments it renders the route the action came from, query
+  included, which is also what stops a `useOptimistic` value from snapping back
+  when the action settles; pass `(pathname, query)` only to render a different
+  route. A re-render carries the route's own elements, not a lazy `<Slice>`: a
+  mounted slice keeps what it fetched, so a mutation that changes slice data
+  needs the slice remounted with a `key` or refetched on its own. See
+  [Rerendering After Server Actions](/guides/rerender-after-actions).
+- If you measure a need for caching, add it explicitly. See
+  [Explicit Caching](/guides/explicit-caching).
+
+## Cookies, sessions and route protection
+
+Two Next.js habits do not survive the move, and both fail silently rather than
+loudly:
+
+- **`middleware.ts` is not an authorization boundary.** A client-side navigation
+  requests `/RSC/R/<path>.txt`, not the page path, so a middleware matching
+  `/dashboard` on `c.req.path` sees the first page load and nothing after it,
+  and serves the protected payload to anyone who clicks a link.
+  `unstable_parseRouterRequest` closes that particular gap, but an action
+  dispatched from the client carries no route at all, so no path rule covers it.
+  And a layout is not the boundary either: Waku renders a route's layouts and
+  page as independent slots, so a layout that redirects still lets the page
+  render its data. Put the authorization check in the data access layer and the
+  mutations, and the redirect in the layout.
+- **There is no `cookies().set()`.** Server code reads request headers; only
+  middleware owns the response. A sign-in action writes its cookie through a
+  request-scoped jar that middleware empties onto the response — and that jar
+  must be readable too, because `redirect()` renders the destination inside the
+  same request, where the just-set cookie is otherwise invisible.
+
+Both are worked through, with the code, in the
+[Authentication](/guides/authentication) guide. `next-auth` v5 specifically is
+built on Next.js internals and does not port; that guide covers what replaces it.
+
+## Parallel and intercepting routes
+
+Waku has neither, and no `default.tsx`. The common use — a modal over the page
+you came from, a standalone page on a direct load — is reachable through **layout
+persistence**: a navigation swaps the page element and keeps the layout mounted.
+Move the "background" UI into the layout, and let the route render only the
+overlay. `nextjs-photo-modal` does exactly this and matches the original on all
+four behaviours.
+
+What the app has to supply itself is the soft-versus-hard navigation distinction
+that an intercepting route encodes. A module-level flag set by an effect in the
+root layout, read during render, is enough.
+
+## Things Next.js provides that Waku does not
+
+- **`next/image`.** Use `<img>`, or an image CDN. There is no built-in resizing,
+  format negotiation or layout-shift prevention.
+- **`next/font`.** Use `@fontsource/*` packages, which self-host the same fonts,
+  and declare the family in CSS.
+- **`next/form`.** A plain `<form>`; submitting does a full page load.
+- **Integrated auth, i18n, analytics and image processing.** These are ecosystem
+  choices in Waku by design — see [Use Cases](/guides/use-cases).
+
+## Build and tooling details
+
+- Waku projects are ESM. A `postcss.config.js` using `module.exports` must become
+  `export default` (or be renamed `.cjs`).
+- `NEXT_PUBLIC_*` variables become `WAKU_PUBLIC_*`, read in client code as
+  `import.meta.env.WAKU_PUBLIC_*`; every other variable stays on the server.
+  Read those with `getEnv()` from `waku` rather than `process.env`, which not
+  every runtime provides: code copied from `lib/` that reads `process.env` can
+  pass on Node.js and fail after deploying elsewhere.
+- Vite needs `resolve.tsconfigPaths: true` to resolve `paths` and `baseUrl` from
+  `tsconfig.json`; without it, `waku dev` cannot find the aliased imports. Set it
+  under `vite.resolve` in `waku.config.ts` rather than mirroring each alias in
+  `vite.resolve.alias`.
+- A dependency that loads runtime assets next to itself (a WASM database, `sharp`,
+  a generated Prisma client) must stay out of the server bundle:
+  `vite.environments.rsc.resolve.external`.
+- Tailwind v4 with `@tailwindcss/vite` works unchanged, and so do CSS modules.
+  Tailwind v3 with PostCSS keeps working too, but its `content` globs are a list
+  of paths: a config scanning `./app/**/*` finds nothing once the routes live in
+  `src/pages`, and the build succeeds with those classes missing from the CSS.
+  Point `content` at `./src/**/*` when you move them.
+
+## A migration order that works
+
+1. Scaffold a Waku project and copy `components/`, `lib/` and styles across.
+2. Rename `NEXT_PUBLIC_*` variables to `WAKU_PUBLIC_*`, read on the client
+   through `import.meta.env`, and switch server reads from `process.env` to
+   `getEnv()`.
+3. Move pages and layouts into `src/pages`, adding `getConfig` to each.
+4. Replace `metadata` exports with rendered tags in the same layouts and pages.
+5. Swap `next/link` and `next/navigation` for `waku`. On a large app, a six-line
+   compatibility module keeps that step to one import line per file —
+   `nextjs-commerce` does this and `nextjs-dashboard` does it the direct way.
+6. Delete the caching layer.
+7. Port route handlers to `_api/`, and `sitemap`/`robots`/OG images with them.
+8. Move authorization out of middleware and into the data layer, with the
+   redirect in a layout, and rebuild cookie writes around a jar — the
+   [Authentication](/guides/authentication) guide has both.
+9. Handle the remainder: images, fonts, parallel routes.
