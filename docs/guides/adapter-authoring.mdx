@@ -68,9 +68,7 @@ Then use it from `src/waku.server.tsx`:
 import { fsRouter } from 'waku';
 import adapter from './my-waku-adapter';
 
-export default adapter(
-  fsRouter(import.meta.glob('./**/*.{tsx,ts}', { base: './pages' })),
-);
+export default adapter(fsRouter(import.meta.glob('./pages/**/*.{tsx,ts}')));
 ```
 
 This direct shape is useful for learning the contract, but most production adapters need middleware and platform-specific build output.
