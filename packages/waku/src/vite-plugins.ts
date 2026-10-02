@@ -11,5 +11,6 @@ export { htmlTransformPlugin as unstable_htmlTransformPlugin } from './lib/vite-
 export { notFoundPlugin as unstable_notFoundPlugin } from './lib/vite-plugins/not-found.js';
 export { patchRsdwPlugin as unstable_patchRsdwPlugin } from './lib/vite-plugins/patch-rsdw.js';
 export { privateDirPlugin as unstable_privateDirPlugin } from './lib/vite-plugins/private-dir.js';
+export { scanClientPlugin as unstable_scanClientPlugin } from './lib/vite-plugins/scan-client.js';
 export { staticBuildPlugin as unstable_staticBuildPlugin } from './lib/vite-plugins/static-build.js';
 export { virtualConfigPlugin as unstable_virtualConfigPlugin } from './lib/vite-plugins/virtual-config.js';

@@ -23,4 +23,15 @@ test.describe('spa example coverage', () => {
     await page.getByRole('button', { name: 'Increment' }).click();
     await expect(page.getByTestId('count')).toHaveText('Count: 1');
   });
+
+  test('calls a server function imported only from client code', async ({
+    page,
+  }) => {
+    await page.goto(`http://localhost:${port}/`);
+    await waitForHydration(page);
+    await page.getByRole('button', { name: 'Greet' }).click();
+    await expect(page.getByTestId('greeting')).toHaveText(
+      'Hello Waku from the server',
+    );
+  });
 });

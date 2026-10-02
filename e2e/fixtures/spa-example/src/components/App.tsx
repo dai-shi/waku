@@ -1,4 +1,5 @@
 import { Counter } from './Counter';
+import { Greeting } from './Greeting';
 
 export function App() {
   return (
@@ -11,6 +12,7 @@ export function App() {
       <body>
         <h1 data-testid="title">Hello Client</h1>
         <Counter />
+        <Greeting />
       </body>
     </html>
   );

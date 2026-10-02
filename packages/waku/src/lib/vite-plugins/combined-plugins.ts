@@ -16,6 +16,7 @@ import { patchReactDomPlugin } from './patch-react-dom.js';
 import { patchRsdwPlugin } from './patch-rsdw.js';
 import { privateDirPlugin } from './private-dir.js';
 import { rscDevtoolsPlugin } from './rsc-devtools.js';
+import { scanClientPlugin } from './scan-client.js';
 import { staticBuildPlugin } from './static-build.js';
 import { virtualConfigPlugin } from './virtual-config.js';
 
@@ -49,6 +50,7 @@ export function combinedPlugins(config: Required<Config>): PluginOption {
       useBuildAppHook: true,
       clientChunks: (meta) => meta.serverChunk,
     }),
+    scanClientPlugin(),
     rscDevtoolsPlugin(),
     buildIdPlugin(),
     environmentsPlugin(config),
