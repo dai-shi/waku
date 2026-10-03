@@ -107,6 +107,38 @@ export default defineConfig(
     files: ['e2e/**'],
   },
   {
+    files: ['packages/waku/src/router/**/*.{ts,tsx}'],
+    rules: {
+      'import/no-restricted-paths': [
+        'error',
+        {
+          zones: [
+            {
+              target: './packages/waku/src/router',
+              from: './packages/waku/src',
+              except: ['./router'],
+              message:
+                'Use a public Waku entry point or a Router-local module.',
+            },
+          ],
+        },
+      ],
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              regex:
+                '^waku(?:$|/(?!minimal/(?:client|server)$|client$|server$))',
+              message:
+                'Router depends only on public Minimal, client, and server APIs.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: [
       'packages/waku/cli.js',
       'packages/waku/src/lib/vite-entries/*',

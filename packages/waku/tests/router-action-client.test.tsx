@@ -11,10 +11,10 @@ import {
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { ETAGS_HEADER, ETAGS_ID } from '../src/lib/utils/etags.js';
+import { unstable_callServerRsc as callServerRsc } from '../src/minimal/client-runtime.js';
 import { clearInitialRscEntries } from '../src/minimal/client-utils/initial-rsc-store.js';
 import {
   Children_UNSTABLE as Children,
-  unstable_callServerRsc as callServerRsc,
   useRegisterRscEnhancer_UNSTABLE as useRegisterRscEnhancer,
 } from '../src/minimal/client.js';
 import { Link, Router, useRouter } from '../src/router/client.js';

@@ -1,7 +1,5 @@
-import {
-  unstable_createCustomError as createCustomError,
-  unstable_defineHandlers as defineHandlers,
-} from '../minimal/server.js';
+import { unstable_createCustomError as createCustomError } from 'waku/minimal/server';
+import type { Unstable_Handlers as Handlers } from 'waku/minimal/server';
 import { createBuildHandler } from './define-router-utils/build-handler.js';
 import { createConfigRegistry } from './define-router-utils/config-registry.js';
 import type {
@@ -168,7 +166,8 @@ export function unstable_defineRouter(fns: {
     skipBuild: fns.unstable_skipBuild,
   });
 
-  return Object.assign(defineHandlers({ handleRequest, handleBuild }), {
+  const handlers: Handlers = { handleRequest, handleBuild };
+  return Object.assign(handlers, {
     unstable_getRouterConfigs: async () => configRegistry.getAll(),
   });
 }

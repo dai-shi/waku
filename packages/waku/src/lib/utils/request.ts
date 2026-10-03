@@ -1,10 +1,9 @@
 import type { ReactFormState } from 'react-dom/client';
 import type { Config } from '../../config.js';
 import type { Unstable_HandleRequest as HandleRequest } from '../types.js';
-import { decodeFuncId, decodeRscPath } from '../utils/rsc-path.js';
 import { createCustomError } from './custom-errors.js';
 import { ETAGS_HEADER, parseClientEtags } from './etags.js';
-import { removeBase } from './path.js';
+import { parseRequestUrl } from './request-url.js';
 
 type HandleRequestInput = Parameters<HandleRequest>[0];
 
@@ -24,20 +23,16 @@ export async function getInput(
   loadServerAction: (id: string) => Promise<unknown>,
 ) {
   const url = new URL(req.url);
-  const pathname = removeBase(url.pathname, config.basePath);
-  const rscPathPrefix = '/' + config.rscBase + '/';
+  const parsed = parseRequestUrl(url, config.basePath, config.rscBase);
+  const { pathname } = parsed;
   const etags = parseClientEtags(req.headers.get(ETAGS_HEADER));
-  let rscPath: string | undefined;
   let input: HandleRequestInput;
-  if (pathname.startsWith(rscPathPrefix)) {
-    rscPath = decodeRscPath(pathname.slice(rscPathPrefix.length));
-    // server action: js
-    const actionId = decodeFuncId(rscPath);
-    if (actionId) {
+  if (parsed.type !== 'http') {
+    if (parsed.type === 'call') {
       validateServerActionRequest(req);
       const body = await getActionBody(req);
       const args = await decodeReply(body, { temporaryReferences });
-      const action = await loadServerAction(actionId);
+      const action = await loadServerAction(parsed.actionId);
       input = {
         type: 'call',
         fn: action as never,
@@ -47,7 +42,6 @@ export async function getInput(
         etags,
       };
     } else {
-      // client RSC request
       let rscParams: unknown = url.searchParams;
       if (req.body) {
         validateServerActionRequest(req);
@@ -58,7 +52,7 @@ export async function getInput(
       }
       input = {
         type: 'rsc',
-        rscPath,
+        rscPath: parsed.rscPath,
         rscParams,
         pathname,
         req,

@@ -27,24 +27,59 @@ Exports marked `unstable_*` or `*_UNSTABLE` in this document may still change.
 
 ### API Surface
 
-The minimal API is small, but it exposes both server-side handlers and client-side rendering primitives:
+The Minimal API consists of server handler contracts and client rendering primitives:
 
-| Entry point           | Surface                           | Use when                                                              |
-| --------------------- | --------------------------------- | --------------------------------------------------------------------- |
-| `waku/minimal/server` | `unstable_defineHandlers`         | Defining `handleRequest` and `handleBuild`.                           |
-| `waku/minimal/server` | `unstable_defineServerEntry`      | Writing server entries directly, usually for adapters.                |
-| `waku/minimal/client` | `Root_UNSTABLE`                   | Installing the minimal client runtime.                                |
-| `waku/minimal/client` | `Slot_UNSTABLE`                   | Rendering a server element by RSC ID.                                 |
-| `waku/minimal/client` | `Children_UNSTABLE`               | Placing client-side `Slot` children inside a server-rendered element. |
-| `waku/minimal/client` | `useFetchRsc_UNSTABLE`            | Fetching and decoding an RSC payload.                                 |
-| `waku/minimal/client` | `useMergeElements_UNSTABLE`       | Merging an RSC payload into the current element map.                  |
-| `waku/minimal/client` | `useRegisterRscEnhancer_UNSTABLE` | Extending the RSC requests a `Root` makes.                            |
-| `waku/minimal/client` | `unstable_combineElements`        | Combining element maps without losing their etags.                    |
-| `waku/minimal/client` | `unstable_*` helpers              | Building router-like abstractions.                                    |
+| Entry point           | Surface                                                       | Use when                                                              |
+| --------------------- | ------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `waku/minimal/server` | `Unstable_Handlers`                                           | Defining `handleRequest` and `handleBuild` for an adapter.            |
+| `waku/minimal/server` | `Unstable_HandleRequest`, `Unstable_HandleBuild`              | Typing individual handlers.                                           |
+| `waku/minimal/server` | `Unstable_RenderRsc`, `Unstable_RenderHtml`, `Unstable_Etags` | Typing rendering utilities and validators.                            |
+| `waku/minimal/server` | `unstable_createCustomError`, `unstable_getErrorInfo`         | Creating and reading status and redirect errors.                      |
+| `waku/minimal/client` | `Root_UNSTABLE`                                               | Installing the minimal client runtime.                                |
+| `waku/minimal/client` | `Slot_UNSTABLE`                                               | Rendering a server element by RSC ID.                                 |
+| `waku/minimal/client` | `Children_UNSTABLE`                                           | Placing client-side `Slot` children inside a server-rendered element. |
+| `waku/minimal/client` | `useFetchRsc_UNSTABLE`                                        | Fetching and decoding an RSC payload.                                 |
+| `waku/minimal/client` | `useMergeElements_UNSTABLE`                                   | Merging an RSC payload into the current element map.                  |
+| `waku/minimal/client` | `useElementsPromise_UNSTABLE`                                 | Reading the current element map.                                      |
+| `waku/minimal/client` | `useRegisterRscEnhancer_UNSTABLE`                             | Extending the RSC requests a `Root` makes.                            |
+| `waku/minimal/client` | `useRegisterRscReloadListener_UNSTABLE`                       | Choosing the RSC input to refresh during development reloads.         |
+| `waku/minimal/client` | `unstable_combineElements`                                    | Combining element maps without losing their etags.                    |
+| `waku/minimal/client` | `unstable_getErrorInfo`                                       | Reading status, redirect and network-error information.               |
 
 Examples below often import these as shorter names.
-This guide does not document every exported helper from `waku/minimal/client`;
-undocumented exports are for Waku internals or custom integrations.
+
+`waku/adapter-builders` exports `Unstable_ServerEntry` for adapter authors
+who own a complete server entry. Waku's bootstrap and HTML renderer use private
+implementation modules.
+
+Advanced composition APIs remain available to any Minimal-based framework:
+
+- `unstable_combineElements(a, b, { unstable_filter })` selects keys from `b`
+  while preserving their validators.
+- `unstable_isImmutableElement(elements, slotId)` inspects a slot's immutable
+  status without exposing its validator.
+- `useMergeElements_UNSTABLE` accepts `unstable_overlay` and `unstable_swr`
+  options for eager rendering while a response streams.
+- `unstable_buildElements`, `Unstable_ElementSource`, and
+  `Unstable_BuiltElements` build payloads that omit slots the client already
+  holds, using the etags supplied to `handleRequest`.
+- `unstable_parseRequest(request)` inspects HTTP, RSC, and server-call URLs
+  without consuming their bodies. `unstable_formatRscUrl(rscPath, baseUrl)`
+  constructs a payload URL using the configured base path and RSC endpoint.
+  These support middleware in Minimal-based frameworks; request inspection
+  does not validate actions or authorize access.
+
+For compatibility, the following existing exports are deprecated:
+
+- `waku/minimal/client`: `INTERNAL_ServerRoot`, `unstable_callServerRsc`,
+  `unstable_addBase`, and `unstable_removeBase`.
+- `waku/minimal/server`: `unstable_defineHandlers`,
+  `unstable_defineServerEntry`,
+  `unstable_base64ToBytes`, `unstable_bytesToBase64`,
+  `unstable_getGrouplessPath`, and `unstable_isIgnoredPath`.
+
+Start with the kernel above. Use handler objects or the exported
+types in place of the identity helpers.
 
 ### Mental Model
 
@@ -90,12 +125,12 @@ A minimal SSR setup has two entry points:
 `src/waku.server.tsx`:
 
 ```tsx
-import { unstable_defineHandlers as defineHandlers } from 'waku/minimal/server';
+import type { Unstable_Handlers as Handlers } from 'waku/minimal/server';
 import adapter from 'waku/adapters/default';
 import { Slot_UNSTABLE as Slot } from 'waku/minimal/client';
 import App from './components/App.js';
 
-const handlers = defineHandlers({
+const handlers: Handlers = {
   handleRequest: async (input, { renderRsc, renderHtml }) => {
     if (input.type === 'rsc') {
       return renderRsc({ App: <App name={input.rscPath || 'Waku'} /> });
@@ -124,7 +159,7 @@ const handlers = defineHandlers({
     const html = await renderHtml(htmlStream, <Slot id="App" />, { rscPath });
     await generateFile('index.html', html.body!);
   },
-});
+};
 
 export default adapter(handlers);
 ```
@@ -154,7 +189,7 @@ if ((globalThis as any).__WAKU_HYDRATE__) {
 }
 ```
 
-`unstable_defineHandlers` is optional. It is currently an identity helper that gives you a typed place to define handlers before passing them to an adapter. Most examples in this repository pass the handler object directly to `adapter(...)`.
+Passing a handler object directly to `adapter(...)` also infers these types.
 
 ### Request Flow
 
@@ -169,12 +204,18 @@ In the example above, a request to `/` looks like this:
 
 ### Server API
 
-#### `unstable_defineHandlers`
+#### Handler Objects
 
-`unstable_defineHandlers` is the main server-side entry point from `waku/minimal/server`.
+Define `handleRequest` and `handleBuild` in the object passed to an adapter.
+Use `Handlers` when defining the object separately:
 
 ```tsx
-import { unstable_defineHandlers as defineHandlers } from 'waku/minimal/server';
+import type { Unstable_Handlers as Handlers } from 'waku/minimal/server';
+
+const handlers: Handlers = {
+  handleRequest: async () => null,
+  handleBuild: async () => {},
+};
 ```
 
 Use it when you want to:
@@ -183,7 +224,7 @@ Use it when you want to:
 - compose handlers before exporting them
 - keep type checking close to the handler object
 
-If you do not need that, this is equivalent:
+Or let the adapter infer the handler types:
 
 ```tsx
 import adapter from 'waku/adapters/default';
@@ -320,7 +361,38 @@ Important details:
 - RSC IDs starting with `_` are reserved for Waku internals.
 - `rscPath` and `rscParams` are opaque application data. Waku does not assign them semantics.
 - Each `fetchRsc` call issues a new request. A router-like abstraction can own prefetching and response reuse.
-- Throwing from `handleRequest` turns into an HTTP error response, and a custom error keeps its status. A location is a redirect a document request answers with a 3xx, but a fetch cannot follow one it is unable to read, so an RSC or server function request answers 200 and the client throws an error whose info carries the location and `unstable_leave`, for you to navigate to.
+
+#### Status And Redirect Errors
+
+Use `createCustomError` to attach status or redirect information to an error
+that survives Flight serialization:
+
+```ts
+import { unstable_createCustomError as createCustomError } from 'waku/minimal/server';
+
+throw createCustomError('Not found', { status: 404 });
+```
+
+Throwing a status error directly from `handleRequest` produces an HTTP
+response with that status. A redirect uses a `location` and a redirect status
+such as `307`. Document requests become HTTP redirects, while RSC and server
+function redirects return a readable payload with status `200` and surface
+the redirect on the client. Payload consumers can inspect it and choose how
+to navigate:
+
+```ts
+import { unstable_getErrorInfo as getErrorInfo } from 'waku/minimal/client';
+
+const handleError = (error: unknown) => {
+  const info = getErrorInfo(error);
+  if (info?.location) {
+    window.location.assign(info.location);
+  }
+};
+```
+
+`getErrorInfo` returns `null` for errors without valid Waku information. It is
+also available from `waku/minimal/server` for server-side error handling.
 
 #### `handleBuild(utils)`
 
@@ -428,7 +500,7 @@ Props:
 Important behavior:
 
 - `initialRscPath` defaults to `''`.
-- `Root` is required for `Slot`, `Children`, `useMergeElements`,
+- `Root` is required for `Slot`, `Children`, `useElementsPromise`, `useMergeElements`,
   `useRegisterRscEnhancer`, and `useRegisterRscReloadListener`. Outside a
   `Root`, `useFetchRsc` still works but runs no enhancers.
 - Each `Root` owns its client store. Bare server action calls use the `Root`
@@ -514,6 +586,24 @@ Client:
 
 This is useful for nested layouts and composition patterns where the server tree decides where client-provided children should appear.
 
+#### Reading Elements
+
+`useElementsPromise` returns the enclosing Root's current element-map promise.
+Read it with React's `use`; the component suspends while the record is pending:
+
+```tsx
+import { use } from 'react';
+import { useElementsPromise_UNSTABLE as useElementsPromise } from 'waku/minimal/client';
+
+const ElementIds = () => {
+  const elements = use(useElementsPromise());
+  return <p>{Object.keys(elements).join(', ')}</p>;
+};
+```
+
+The record is read-only. Use `combineElements` to construct a new map while
+preserving its etags, then pass it to `mergeElements` to update the Root.
+
 #### Refetching
 
 The Minimal API exposes fetching and merging separately. Define a hook for the behavior your application needs:
@@ -523,25 +613,15 @@ import { useCallback, useTransition } from 'react';
 import {
   useFetchRsc_UNSTABLE as useFetchRsc,
   useMergeElements_UNSTABLE as useMergeElements,
-  useRegisterRscReloadListener_UNSTABLE as useRegisterRscReloadListener,
 } from 'waku/minimal/client';
 
 const useRefetch = () => {
   const fetchRsc = useFetchRsc();
   const mergeElements = useMergeElements();
-  const registerRscReloadListener = useRegisterRscReloadListener();
   return useCallback(
-    (rscPath: string, rscParams?: unknown) => {
-      const refetch = () => mergeElements(fetchRsc(rscPath, rscParams));
-      registerRscReloadListener(
-        () => {
-          void refetch();
-        },
-        { replace: true },
-      );
-      return refetch();
-    },
-    [fetchRsc, mergeElements, registerRscReloadListener],
+    (rscPath: string, rscParams?: unknown) =>
+      mergeElements(fetchRsc(rscPath, rscParams)),
+    [fetchRsc, mergeElements],
   );
 };
 
@@ -568,9 +648,19 @@ Important behavior:
 - `refetch(...)` requests a new RSC payload for the given `rscPath` and optional `rscParams`.
 - The returned payload is merged into the current element map by key.
 - Each slot's etag stays with the element map Minimal made it in. Passing a map as `unstable_base` to `fetchRsc` sends its etags, so the server can skip the slots it holds. A map made by `combineElements` keeps them; a copy made with a spread or `Object.assign` does not.
-- The reload registration keeps development HMR on the refetched RSC path and has no effect in production.
 - If you return only `InnerApp`, previously rendered elements such as `App` stay mounted.
 - If the refetch fails, the existing element map stays in place.
+
+#### Development Reloads
+
+Development RSC reloads refetch the Root's initial `rscPath` and `rscParams` by
+default. Fetching and merging a different input does not change that target.
+
+`useRegisterRscReloadListener_UNSTABLE` returns a registrar for the enclosing
+Root. Register a callback that fetches and merges the current input with
+`{ replace: true }` to refresh that input after an edit. Without `replace`,
+listeners run alongside the Root's refetch. The registrar returns an unregister
+function for effect cleanup and is a no-op in production.
 
 #### Request enhancers
 
@@ -692,7 +782,9 @@ if (input.type === 'http' && input.pathname === '/') {
 
 ### Adapter Authors
 
-`waku/minimal/server` also exports `unstable_defineServerEntry`. That is a lower-level hook than `unstable_defineHandlers` and is meant for adapter authors who need to work directly with server entries, request processing, and build processing. Most advanced users of the minimal API do not need it.
+Adapter authors own server entries, request processing, and build processing.
+`waku/adapter-builders` exports `Unstable_ServerEntry` for entries authored
+directly. Minimal applications normally pass their handlers to an adapter.
 
 For adapter implementation details, see [Adapter Authoring](/guides/adapter-authoring).
 

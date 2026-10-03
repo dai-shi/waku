@@ -33,7 +33,11 @@ const isErrorInfo = (x: unknown): x is ErrorInfo => {
 
 const prefix = '__WAKU_CUSTOM_ERROR__;';
 
-// This is an internal API and not for public use
+/**
+ * Creates an error whose status and redirect information survives Flight
+ * serialization. A location redirects document requests; payload consumers
+ * can read it with `getErrorInfo` and decide how to navigate.
+ */
 export const createCustomError = (message: string, errorInfo: ErrorInfo) => {
   const err = new Error(message);
   (err as { digest?: string }).digest = prefix + JSON.stringify(errorInfo);
@@ -45,6 +49,7 @@ export const getDigest = (err: unknown) =>
     ? (err as { digest: string }).digest
     : undefined;
 
+/** Returns validated Waku status, redirect or network-error info, or null for other errors. */
 export const getErrorInfo = (err: unknown) => {
   const digest = (err as { digest?: string } | undefined)?.digest;
   if (typeof digest !== 'string' || !digest.startsWith(prefix)) {

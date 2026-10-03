@@ -23,6 +23,7 @@ import {
 } from 'vitest';
 import { getErrorInfo } from '../src/lib/utils/custom-errors.js';
 import { ETAGS_ID, IMMUTABLE_ETAG } from '../src/lib/utils/etags.js';
+import { unstable_callServerRsc } from '../src/minimal/client-runtime.js';
 import { adoptElements } from '../src/minimal/client-utils/element-etags.js';
 import {
   clearInitialRscEntries,
@@ -36,7 +37,6 @@ import {
 import {
   Root_UNSTABLE as Root,
   Slot_UNSTABLE as Slot,
-  unstable_callServerRsc,
   useElementsPromise_UNSTABLE,
   useFetchRsc_UNSTABLE,
   useMergeElements_UNSTABLE,

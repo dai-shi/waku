@@ -2,7 +2,7 @@ import { useLayoutEffect } from 'react';
 import {
   unstable_combineElements as combineElements,
   useRegisterRscEnhancer_UNSTABLE as useRegisterRscEnhancer,
-} from '../../minimal/client.js';
+} from 'waku/minimal/client';
 import type { RouteProps } from '../isomorphic-utils/route-path.js';
 import {
   ACTION_LOCATION_HEADER,

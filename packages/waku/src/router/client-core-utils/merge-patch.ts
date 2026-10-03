@@ -1,4 +1,4 @@
-import { unstable_combineElements as combineElements } from '../../minimal/client.js';
+import { unstable_combineElements as combineElements } from 'waku/minimal/client';
 import {
   HAS404_ID,
   IS_STATIC_ID,

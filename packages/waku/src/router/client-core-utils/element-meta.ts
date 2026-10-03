@@ -1,4 +1,4 @@
-import { unstable_isImmutableElement as isImmutableElement } from '../../minimal/client.js';
+import { unstable_isImmutableElement as isImmutableElement } from 'waku/minimal/client';
 import {
   HAS404_ID,
   IS_STATIC_ID,

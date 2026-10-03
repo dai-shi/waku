@@ -5,7 +5,7 @@ import {
   unstable_isImmutableElement as isImmutableElement,
   useElementsPromise_UNSTABLE as useElementsPromise,
   useMergeElements_UNSTABLE as useMergeElements,
-} from '../../minimal/client.js';
+} from 'waku/minimal/client';
 import { getSliceSlotId } from '../isomorphic-utils/route-path.js';
 import { useRouterCache } from './caches.js';
 

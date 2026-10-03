@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { unstable_defineHandlers as defineHandlers } from '../../minimal/server.js';
+import type { Unstable_HandleBuild as HandleBuild } from 'waku/minimal/server';
 import { INTERNAL_ServerRouter } from '../client.js';
 import {
   type PathSpec,
@@ -29,8 +29,6 @@ import {
   getSlotCacheId,
 } from './element-cache.js';
 import type { createRouteEntries } from './route-entries.js';
-
-type HandleBuild = Parameters<typeof defineHandlers>[0]['handleBuild'];
 
 const createTaskRunner = (limit: number) => {
   let running = 0;

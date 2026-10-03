@@ -10,7 +10,7 @@ import {
 import {
   useMergeElements_UNSTABLE as useMergeElements,
   useRegisterRscReloadListener_UNSTABLE as useRegisterRscReloadListener,
-} from '../../minimal/client.js';
+} from 'waku/minimal/client';
 import { useActionRouting } from '../client-core-utils/action-routing.js';
 import { useRouterCache } from '../client-core-utils/caches.js';
 import { has404FromElements } from '../client-core-utils/element-meta.js';

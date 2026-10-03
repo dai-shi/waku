@@ -5,7 +5,7 @@ import {
   Root_UNSTABLE as Root,
   Slot_UNSTABLE as Slot,
   useElementsPromise_UNSTABLE as useElementsPromise,
-} from '../minimal/client.js';
+} from 'waku/minimal/client';
 import { useRouterCache } from './client-core-utils/caches.js';
 import type { PrefetchOptions } from './client-core-utils/caches.js';
 import { RouterHostContext } from './client-core-utils/host.js';

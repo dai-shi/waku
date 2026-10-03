@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import {
   unstable_isImmutableElement as isImmutableElement,
   useMergeElements_UNSTABLE as useMergeElements,
-} from '../../minimal/client.js';
+} from 'waku/minimal/client';
 import {
   createRscParams,
   useRouterCache,

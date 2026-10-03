@@ -13,9 +13,10 @@ import {
   test,
   vi,
 } from 'vitest';
+import * as minimalClientRuntime from '../src/minimal/client-runtime.js';
+import { INTERNAL_ServerRoot } from '../src/minimal/client-runtime.js';
 import type { FetchRsc } from '../src/minimal/client-utils/root-store.js';
 import * as minimalClient from '../src/minimal/client.js';
-import { INTERNAL_ServerRoot } from '../src/minimal/client.js';
 import { getRouterCache } from '../src/router/client-core-utils/caches.js';
 import type { RouterCache } from '../src/router/client-core-utils/caches.js';
 import { useHmrRefetch } from '../src/router/client-core-utils/hmr.js';
@@ -201,7 +202,7 @@ describe('useHmrRefetch', () => {
 
     let reload: (() => void) | undefined;
     const register = vi
-      .spyOn(minimalClient, 'useRegisterRscReloadListener_UNSTABLE')
+      .spyOn(minimalClientRuntime, 'useRegisterRscReloadListener_UNSTABLE')
       .mockImplementation(() => (listener) => {
         reload = listener;
         return () => {};

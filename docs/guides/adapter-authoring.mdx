@@ -293,20 +293,22 @@ Only use a preview server when direct `processBuild(...)` is not enough. It is m
 
 ## Direct Server Entries
 
-`waku/minimal/server` exports `unstable_defineServerEntry` for cases where you already have a complete server entry and do not want to wrap app handlers with an adapter builder.
+Use `Unstable_ServerEntry` from `waku/adapter-builders` when you already have a complete server entry and do not need an adapter builder.
 
 ```ts
-import { unstable_defineServerEntry as defineServerEntry } from 'waku/minimal/server';
+import type { Unstable_ServerEntry as ServerEntry } from 'waku/adapter-builders';
 
-export default defineServerEntry({
+const entry: ServerEntry = {
   fetch: async (req) => {
     return new Response(`Request: ${new URL(req.url).pathname}`);
   },
   build: async () => {},
-});
+};
+
+export default entry;
 ```
 
-This bypasses router and Minimal API handler helpers. Use it only when you are intentionally owning the entire server entry contract.
+This bypasses router and Minimal API handlers. Use it only when you are intentionally owning the entire server entry contract.
 
 ## Practical Boundaries
 

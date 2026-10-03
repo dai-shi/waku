@@ -3,11 +3,8 @@ import type { FunctionComponent, ReactElement, ReactNode } from 'react';
 import {
   Children_UNSTABLE as Children,
   Slot_UNSTABLE as Slot,
-} from '../minimal/client.js';
-import {
-  unstable_createCustomError as createCustomError,
-  unstable_getGrouplessPath as getGrouplessPath,
-} from '../minimal/server.js';
+} from 'waku/minimal/client';
+import { unstable_createCustomError as createCustomError } from 'waku/minimal/server';
 import { ErrorBoundary } from '../router/client.js';
 import type {
   AnyPage,
@@ -27,7 +24,10 @@ import {
   pathSpecAsString,
 } from './isomorphic-utils/path-spec.js';
 import type { PathSpec } from './isomorphic-utils/path-spec.js';
-import { pathnameToRoutePath } from './isomorphic-utils/route-path.js';
+import {
+  getGrouplessPath,
+  pathnameToRoutePath,
+} from './isomorphic-utils/route-path.js';
 import type { Unstable_SearchCodec } from './isomorphic-utils/search-codec-registry.js';
 
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods

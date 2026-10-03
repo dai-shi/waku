@@ -1,10 +1,9 @@
-import { addBase, removeBase } from '../../lib/utils/path.js';
 import {
-  decodeFuncId,
-  decodeRscPath,
-  encodeRscPath,
-} from '../../lib/utils/rsc-path.js';
+  unstable_formatRscUrl as formatRscUrl,
+  unstable_parseRequest as parseRequest,
+} from 'waku/minimal/server';
 import {
+  addBase,
   decodeRoutePath,
   decodeSliceId,
   encodeRoutePath,
@@ -12,9 +11,6 @@ import {
 } from '../isomorphic-utils/route-path.js';
 
 const getBasePath = () => import.meta.env?.WAKU_CONFIG_BASE_PATH ?? '/';
-const getRscBase = () => import.meta.env?.WAKU_CONFIG_RSC_BASE ?? 'RSC';
-
-/** Where `createRscParams` nests the route query inside an RSC url. */
 const RSC_QUERY_PARAM = 'query';
 
 type RouterRequest =
@@ -28,44 +24,30 @@ type RouterRequest =
  * request for the same route both report that route.
  *
  * Returns `null` outside `basePath`, or for an RSC url that does not decode.
- * `query` is `undefined` when a fetch RSC input transformer puts the router's
- * params in the request body, out of reach without consuming it.
+ * `query` is `undefined` when the router's params travel in the request body,
+ * out of reach without consuming it.
  *
  * A path rule is an optimistic redirect, not an authorization boundary: it
  * cannot see a client-dispatched action, though a form posted without
  * JavaScript reports as the route it posts to.
  */
 export function parseRouterRequest(req: Request): RouterRequest | null {
-  const basePath = getBasePath();
-  const rscBase = getRscBase();
-  const url = new URL(req.url);
-  let pathname: string;
-  try {
-    pathname = removeBase(url.pathname, basePath);
-  } catch {
+  const input = parseRequest(req);
+  if (!input) {
     return null;
   }
-  const rscPathPrefix = '/' + rscBase + '/';
-  if (!pathname.startsWith(rscPathPrefix)) {
+  if (input.type === 'http') {
     return {
       type: 'route',
-      path: pathnameToRoutePath(pathname),
-      query: url.searchParams.toString(),
+      path: pathnameToRoutePath(input.pathname),
+      query: input.searchParams.toString(),
     };
   }
-  const paramsInBody = req.body !== null;
-  const query = paramsInBody
-    ? undefined
-    : (url.searchParams.get(RSC_QUERY_PARAM) ?? '');
-  let rscPath: string;
-  try {
-    rscPath = decodeRscPath(pathname.slice(rscPathPrefix.length));
-  } catch {
-    return null;
-  }
-  if (decodeFuncId(rscPath) !== null) {
+  if (input.type === 'call') {
     return { type: 'action' };
   }
+  const { rscPath, rscParams } = input;
+  const query = rscParams ? (rscParams.get(RSC_QUERY_PARAM) ?? '') : undefined;
   const sliceId = decodeSliceId(rscPath);
   if (sliceId !== null) {
     return { type: 'slice', id: sliceId };
@@ -95,23 +77,16 @@ export function formatRouterRequest(
   if (parsed?.type !== 'route' || parsed.query === undefined) {
     return null;
   }
-  const basePath = getBasePath();
-  const rscBase = getRscBase();
-  const url = new URL(req.url);
-  const isRscRequest = removeBase(url.pathname, basePath).startsWith(
-    '/' + rscBase + '/',
-  );
+  const isRscRequest = parseRequest(req)?.type === 'rsc';
   const canonicalPath = pathnameToRoutePath(routePath);
-  url.pathname = addBase(
-    isRscRequest
-      ? '/' + rscBase + '/' + encodeRscPath(encodeRoutePath(canonicalPath))
-      : canonicalPath,
-    basePath,
-  );
+  const url = isRscRequest
+    ? formatRscUrl(encodeRoutePath(canonicalPath), req.url)
+    : new URL(req.url);
   const nextQuery = query ?? parsed.query;
   if (isRscRequest) {
     url.searchParams.set(RSC_QUERY_PARAM, nextQuery);
   } else {
+    url.pathname = addBase(canonicalPath, getBasePath());
     url.search = nextQuery;
   }
   return url;

@@ -1,4 +1,4 @@
-import { unstable_getErrorInfo as getErrorInfo } from '../../minimal/client.js';
+import { unstable_getErrorInfo as getErrorInfo } from 'waku/minimal/client';
 import {
   type RouteProps,
   pathnameToRoutePath,

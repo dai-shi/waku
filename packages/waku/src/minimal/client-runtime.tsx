@@ -217,7 +217,9 @@ type FetchRscElementsOptions = {
 };
 
 type MergeElementsOptions = {
+  /** Client-owned entries applied with the response, or eagerly with SWR. */
   unstable_overlay?: Elements;
+  /** Paints unpinned slots as waiting values while retaining the pinned slots. */
   unstable_swr?: {
     pin: (key: string | symbol) => boolean;
     base?: Elements;
@@ -487,7 +489,11 @@ const ElementsContext = createContext<Promise<Elements> | null>(null);
 /**
  * Returns a function that merges an element record, or a promise of one such
  * as the fetch from `useFetchRsc_UNSTABLE` returns, into the current
- * `Root_UNSTABLE`. A rejected payload leaves the current elements unchanged.
+ * `Root_UNSTABLE`. Returns the incoming payload, or rejects on failure; a
+ * rejected ordinary merge leaves the current elements unchanged.
+ * `unstable_overlay` overrides response keys in an ordinary merge. With
+ * `unstable_swr`, it supplies the eager paint while the response streams:
+ * `pin` retains selected slots and `base` supplies additional immutable slots.
  */
 export const useMergeElements_UNSTABLE = () => {
   const store = useRootStore();
@@ -615,6 +621,10 @@ const ChildrenContextProvider = memo(ChildrenContext);
 /** Render the client children passed to the enclosing Slot. */
 export const Children_UNSTABLE = () => use(ChildrenContext);
 
+/**
+ * Returns the enclosing Root's read-only element-map promise. Reading it with
+ * React's `use` suspends while the record is pending.
+ */
 export const useElementsPromise_UNSTABLE = () => {
   const elementsPromise = use(ElementsContext);
   if (!elementsPromise) {
@@ -676,8 +686,6 @@ export const INTERNAL_ServerRoot = ({
   </RootStoreContext>
 );
 
-// Expose internal APIs
-// Subject to change without notice
 export {
   addBase as unstable_addBase,
   removeBase as unstable_removeBase,

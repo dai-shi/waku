@@ -4,6 +4,7 @@ import type { Etags } from './utils/etags.js';
 
 type Elements = Record<string, unknown>;
 
+/** Serializes slots, optional server-action value and validators into a Flight stream. */
 export type Unstable_RenderRsc = (
   elements: Elements,
   options?: {
@@ -14,6 +15,7 @@ export type Unstable_RenderRsc = (
   },
 ) => Promise<ReadableStream>;
 
+/** Renders an HTML document using a Flight stream and an HTML tree containing Slots. */
 export type Unstable_RenderHtml = (
   elementsStream: ReadableStream,
   html: ReactNode,
@@ -32,6 +34,7 @@ export type Unstable_EmitFile = (
   body: ReadableStream,
 ) => Promise<void>;
 
+/** Dispatches payload, action and HTTP requests; return null to leave a request unhandled. */
 export type Unstable_HandleRequest = (
   input: (
     | { type: 'rsc'; rscPath: string; rscParams: unknown }
@@ -59,6 +62,7 @@ export type Unstable_HandleRequest = (
   },
 ) => Promise<ReadableStream | Response | 'fallback' | null | undefined>;
 
+/** Emits prerendered payloads, HTML and build metadata through the supplied utilities. */
 export type Unstable_HandleBuild = (utils: {
   renderRsc: Unstable_RenderRsc;
   renderHtml: Unstable_RenderHtml;
@@ -72,12 +76,14 @@ export type Unstable_HandleBuild = (utils: {
   unstable_registerPrunableFile: (srcPath: string) => void;
 }) => Promise<void>;
 
+/** Runtime and build handlers passed to a Waku adapter. */
 export type Unstable_Handlers = {
   handleRequest: Unstable_HandleRequest;
   handleBuild: Unstable_HandleBuild;
   [someOtherProperty: string]: unknown;
 };
 
+/** Complete request and build entry produced by an adapter, or authored directly. */
 export type Unstable_ServerEntry = {
   fetch: (req: Request, ...args: any[]) => Response | Promise<Response>;
   build: (

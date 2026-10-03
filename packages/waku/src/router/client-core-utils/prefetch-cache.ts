@@ -1,4 +1,4 @@
-import { unstable_combineElements as combineElements } from '../../minimal/client.js';
+import { unstable_combineElements as combineElements } from 'waku/minimal/client';
 
 type Elements = Readonly<Record<string | symbol, unknown>>;
 

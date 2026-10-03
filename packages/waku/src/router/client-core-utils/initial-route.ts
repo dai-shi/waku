@@ -6,7 +6,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { useElementsPromise_UNSTABLE as useElementsPromise } from '../../minimal/client.js';
+import { useElementsPromise_UNSTABLE as useElementsPromise } from 'waku/minimal/client';
 import type { RouteProps } from '../isomorphic-utils/route-path.js';
 import { createRscParams } from './caches.js';
 import { getRouteFromElements } from './element-meta.js';

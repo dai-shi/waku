@@ -8,7 +8,9 @@ import { renderToReadableStream } from 'react-dom/server.edge';
 import { injectRSCPayload } from 'rsc-html-stream/server';
 import htmlShell from 'virtual:vite-rsc-waku/html-shell';
 import htmlTransform from 'virtual:vite-rsc-waku/html-transform';
-import { INTERNAL_ServerRoot } from '../../minimal/client.js';
+// Layering rule: src/lib must not import src modules outside src/lib.
+// Exception: SSR must share Minimal's slot context.
+import { INTERNAL_ServerRoot } from '../../minimal/client-runtime.js';
 import { getErrorInfo } from '../utils/custom-errors.js';
 import {
   createBootstrapScriptContent,

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   assertNonReservedSlotId,
+  base64ToBytes,
   createElementCache,
   getPathSpecCacheId,
   getSlotCacheId,
@@ -16,11 +17,6 @@ vi.mock('../src/server.js', () => ({
   serializeRsc: vi.fn(async (el: unknown) =>
     new TextEncoder().encode(JSON.stringify(el)),
   ),
-}));
-
-vi.mock('../src/minimal/server.js', () => ({
-  unstable_bytesToBase64: (bytes: Uint8Array) =>
-    Buffer.from(bytes).toString('base64'),
 }));
 
 const encode = (value: unknown) =>
@@ -57,13 +53,16 @@ describe('element cache', () => {
     expect(cache.get('slot/missing')).toBeUndefined();
   });
 
-  it('onSerialize runs once with the correct cache id', async () => {
+  it('onSerialize persists bytes that another cache can restore', async () => {
     const onSerialize = vi.fn();
     const cache = createElementCache(onSerialize);
     await cache.set('slot/x', 'a' as never);
     await cache.set('slot/x', 'b' as never);
     expect(onSerialize).toHaveBeenCalledTimes(1);
     expect(onSerialize.mock.calls[0]![0]).toBe('slot/x');
+    const restored = createElementCache();
+    restored.preload('slot/x', base64ToBytes(onSerialize.mock.calls[0]![1]));
+    expect(await restored.get('slot/x')).toBe('a');
   });
 
   it('slot and path-spec cache ids are stable', () => {

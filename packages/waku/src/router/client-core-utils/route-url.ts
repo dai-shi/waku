@@ -1,8 +1,8 @@
 import {
-  unstable_addBase as addBase,
-  unstable_removeBase as removeBase,
-} from '../../minimal/client.js';
-import { pathnameToRoutePath } from '../isomorphic-utils/route-path.js';
+  addBase,
+  pathnameToRoutePath,
+  removeBase,
+} from '../isomorphic-utils/route-path.js';
 import type { RouteProps } from '../isomorphic-utils/route-path.js';
 
 export const pathnameToCurrentRoutePath = (pathname: string) =>

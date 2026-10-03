@@ -1,10 +1,6 @@
-import type { unstable_defineHandlers as defineHandlers } from 'waku/minimal/server';
+import type { Unstable_RenderHtml as RenderHtml } from 'waku/minimal/server';
 import { getServerInsertedHTML, serverInsertedHTMLStorage } from './context';
 import { createHeadInsertionTransformStream } from './stream';
-
-type RenderHtml = Parameters<
-  ReturnType<typeof defineHandlers>['handleRequest']
->[1]['renderHtml'];
 
 export function injectRenderHtml(renderHtml: RenderHtml): RenderHtml {
   if (!import.meta.env.SSR) {

@@ -10,7 +10,7 @@ import type { ReactNode } from 'react';
 import {
   unstable_getErrorInfo as getErrorInfo,
   useElementsPromise_UNSTABLE as useElementsPromise,
-} from '../../minimal/client.js';
+} from 'waku/minimal/client';
 import { has404FromElements } from '../client-core-utils/element-meta.js';
 import {
   MAX_FOLLOWS_PER_NAVIGATION,

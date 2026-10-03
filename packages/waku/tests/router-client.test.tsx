@@ -27,16 +27,16 @@ import {
 import { createCustomError } from '../src/lib/utils/custom-errors.js';
 import { ETAGS_ID, IMMUTABLE_ETAG } from '../src/lib/utils/etags.js';
 import type { Etags } from '../src/lib/utils/etags.js';
+import { INTERNAL_ServerRoot } from '../src/minimal/client-runtime.js';
 import {
   adoptElements,
   collectEtags,
+  isImmutableElement,
 } from '../src/minimal/client-utils/element-etags.js';
 import {
   Children_UNSTABLE as Children,
-  INTERNAL_ServerRoot,
   Root_UNSTABLE as Root,
   Slot_UNSTABLE as Slot,
-  unstable_isImmutableElement as isImmutableElement,
   useElementsPromise_UNSTABLE as useElementsPromise,
   useFetchRsc_UNSTABLE as useFetchRsc,
   useMergeElements_UNSTABLE as useMergeElements,
@@ -269,10 +269,10 @@ vi.mock('react-server-dom-webpack/client', () => ({
 
 // This hand models minimal's merge semantics; minimal-client.test.tsx holds
 // the tests that keep the model honest (see its overlay cases).
-vi.mock('../src/minimal/client.js', async () => {
+vi.mock('../src/minimal/client-runtime.js', async () => {
   const actual = await vi.importActual<
-    typeof import('../src/minimal/client.js')
-  >('../src/minimal/client.js');
+    typeof import('../src/minimal/client-runtime.js')
+  >('../src/minimal/client-runtime.js');
   const React = await vi.importActual<typeof import('react')>('react');
   const { adoptElements } = await vi.importActual<
     typeof import('../src/minimal/client-utils/element-etags.js')

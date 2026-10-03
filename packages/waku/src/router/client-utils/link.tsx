@@ -16,7 +16,6 @@ import type {
   RefObject,
 } from 'react';
 import { preloadModule } from 'react-dom';
-import { unstable_addBase as addBase } from '../../minimal/client.js';
 import {
   type PrefetchOptions,
   type RouterCache,
@@ -30,6 +29,7 @@ import type {
   RouteHref,
   RoutePath,
 } from '../isomorphic-utils/build-route-href.js';
+import { addBase } from '../isomorphic-utils/route-path.js';
 import type { RouteProps } from '../isomorphic-utils/route-path.js';
 import { RouterContext, dispatchChangeRoute } from './router-context.js';
 import { scrollToHash, shouldScrollByDefault } from './scroll.js';

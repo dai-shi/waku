@@ -1,8 +1,5 @@
-import {
-  unstable_base64ToBytes as base64ToBytes,
-  unstable_getErrorInfo as getErrorInfo,
-} from '../../minimal/server.js';
-import type { unstable_defineHandlers as defineHandlers } from '../../minimal/server.js';
+import { unstable_getErrorInfo as getErrorInfo } from 'waku/minimal/server';
+import type { Unstable_HandleRequest as HandleRequest } from 'waku/minimal/server';
 import { INTERNAL_ServerRouter } from '../client.js';
 import { getPathMapping } from '../isomorphic-utils/path-spec.js';
 import {
@@ -18,11 +15,10 @@ import {
 } from './client-code.js';
 import type { ConfigRegistry } from './config-registry.js';
 import { DEFINE_ROUTER_METADATA } from './config.js';
-import { createElementCache } from './element-cache.js';
+import { base64ToBytes, createElementCache } from './element-cache.js';
 import { getNonce, setRerender } from './request-store.js';
 import type { RouteEntries, createRouteEntries } from './route-entries.js';
 
-type HandleRequest = Parameters<typeof defineHandlers>[0]['handleRequest'];
 type HandlerInput = Parameters<HandleRequest>[0];
 
 const parseInternalRoute = (location: string, base: string) => {

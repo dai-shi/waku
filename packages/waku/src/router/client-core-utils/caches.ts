@@ -1,4 +1,4 @@
-import { useFetchRsc_UNSTABLE as useFetchRsc } from '../../minimal/client.js';
+import { useFetchRsc_UNSTABLE as useFetchRsc } from 'waku/minimal/client';
 import {
   encodeRoutePath,
   getRouteSlotId,

@@ -1,4 +1,4 @@
-import type { useMergeElements_UNSTABLE as useMergeElements } from '../../minimal/client.js';
+import type { useMergeElements_UNSTABLE as useMergeElements } from 'waku/minimal/client';
 import { encodeSliceId } from '../isomorphic-utils/route-path.js';
 import type { FetchRsc } from './caches.js';
 

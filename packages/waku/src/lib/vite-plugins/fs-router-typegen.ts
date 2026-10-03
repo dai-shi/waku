@@ -1,14 +1,14 @@
-// waku/router is technically a separate library from waku core.
-// This file is an exception placed here so that fsRouter users
-// get automatic type generation with better DX.
-
 import { existsSync, readFileSync } from 'node:fs';
 import { readdir, writeFile } from 'node:fs/promises';
 import { parse, transformWithOxc } from 'vite';
 import type { ParseResult, Plugin } from 'vite';
+// Layering rule: src/lib must not import src modules outside src/lib.
+// Exception: typegen must share fsRouter's path conventions.
+import {
+  getGrouplessPath,
+  isIgnoredPath,
+} from '../../router/isomorphic-utils/route-path.js';
 import { EXTENSIONS, SRC_PAGES, SRC_SERVER_ENTRY } from '../constants.js';
-import { getGrouplessPath } from '../utils/create-pages.js';
-import { isIgnoredPath } from '../utils/fs-router.js';
 import { joinPath } from '../utils/path.js';
 
 type ProgramNode = ParseResult['program'];

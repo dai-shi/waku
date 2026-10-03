@@ -1,11 +1,16 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { resolveConfig } from '../src/lib/utils/config.js';
 import { getErrorInfo } from '../src/lib/utils/custom-errors.js';
 import { ETAGS_HEADER } from '../src/lib/utils/etags.js';
 import { getInput } from '../src/lib/utils/request.js';
+import { encodeFuncId } from '../src/lib/utils/rsc-path.js';
+import {
+  unstable_formatRscUrl as formatRscUrl,
+  unstable_parseRequest as parseRequest,
+} from '../src/minimal/server.js';
 
-const makeConfig = () => {
-  const { vite: _vite, ...config } = resolveConfig({});
+const makeConfig = (options: Parameters<typeof resolveConfig>[0] = {}) => {
+  const { vite: _vite, ...config } = resolveConfig(options);
   return config;
 };
 
@@ -29,16 +34,109 @@ const makeRequest = (
     ...init,
   });
 
-const makeInput = (req: Request) =>
+const makeInput = (req: Request, config = makeConfig()) =>
   getInput(
     req,
-    makeConfig(),
+    config,
     undefined,
     vi.fn().mockResolvedValue([]),
     vi.fn(),
     vi.fn(),
     vi.fn().mockResolvedValue(vi.fn()),
   );
+
+describe('getInput request URLs', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it.each([
+    { basePath: '/', rscBase: 'RSC' },
+    { basePath: '/app/', rscBase: '_flight' },
+  ])('agrees with public inspection using %j', async (options) => {
+    vi.stubEnv('WAKU_CONFIG_BASE_PATH', options.basePath);
+    vi.stubEnv('WAKU_CONFIG_RSC_BASE', options.rscBase);
+    const config = makeConfig(options);
+    const document = new Request(
+      `https://app.test${options.basePath}form?a=1`,
+      { method: 'POST', body: new FormData() },
+    );
+    const inspectedDocument = parseRequest(document);
+    expect(inspectedDocument).toMatchObject({
+      type: 'http',
+      pathname: '/form',
+    });
+    expect(await makeInput(document, config)).toMatchObject({
+      type: 'http',
+      pathname: '/form',
+      tryAction: expect.any(Function),
+    });
+    expect(document.bodyUsed).toBe(false);
+
+    const payload = new Request(
+      formatRscUrl('widget', 'https://app.test/?query=hello'),
+    );
+    const inspectedPayload = parseRequest(payload);
+    expect(inspectedPayload).toMatchObject({ type: 'rsc', rscPath: 'widget' });
+    if (inspectedPayload?.type !== 'rsc') {
+      throw new Error('expected RSC');
+    }
+    const input = await makeInput(payload, config);
+    expect(input).toMatchObject({
+      type: 'rsc',
+      rscPath: inspectedPayload.rscPath,
+      pathname: `/${options.rscBase}/widget.txt`,
+      rscParams: inspectedPayload.rscParams,
+    });
+    expect(inspectedPayload.rscParams?.get('query')).toBe('hello');
+
+    const action = new Request(
+      formatRscUrl(encodeFuncId('actions.ts#save'), 'https://app.test/'),
+      { method: 'POST', body: '[]', headers: { origin: 'https://app.test' } },
+    );
+    expect(parseRequest(action)).toEqual({ type: 'call' });
+    expect(action.bodyUsed).toBe(false);
+    expect(await makeInput(action, config)).toMatchObject({
+      type: 'call',
+      pathname: `/${options.rscBase}/F/actions.ts/save.txt`,
+      args: [],
+    });
+  });
+
+  it('decodes body-backed RSC params only during dispatch', async () => {
+    const req = new Request(formatRscUrl('widget', 'https://app.test/'), {
+      method: 'POST',
+      body: 'encoded params',
+    });
+    expect(parseRequest(req)).toEqual({
+      type: 'rsc',
+      rscPath: 'widget',
+      rscParams: undefined,
+    });
+    expect(req.bodyUsed).toBe(false);
+    expect(await makeInput(req)).toMatchObject({
+      type: 'rsc',
+      rscPath: 'widget',
+      rscParams: [],
+    });
+    expect(req.bodyUsed).toBe(true);
+  });
+
+  it('rejects invalid URLs that public inspection declines', async () => {
+    vi.stubEnv('WAKU_CONFIG_BASE_PATH', '/app/');
+    const config = makeConfig({ basePath: '/app/' });
+    const outside = new Request('https://app.test/outside');
+    const malformed = new Request('https://app.test/app/RSC/not-encoded');
+    expect(parseRequest(outside)).toBeNull();
+    expect(parseRequest(malformed)).toBeNull();
+    await expect(makeInput(outside, config)).rejects.toThrow(
+      'pathname must start with basePath',
+    );
+    await expect(makeInput(malformed, config)).rejects.toThrow(
+      'Invalid encoded rscPath',
+    );
+  });
+});
 
 describe('getInput server action request validation', () => {
   it('accepts same-origin server function requests over HTTPS', async () => {
