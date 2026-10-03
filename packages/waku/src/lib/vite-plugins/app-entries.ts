@@ -3,7 +3,7 @@ import { SRC_CLIENT_ENTRY, SRC_SERVER_ENTRY } from '../constants.js';
 import {
   getManagedClientEntry,
   getManagedServerEntry,
-} from '../utils/managed.js';
+} from '../utils-build/managed.js';
 
 export function appEntriesPlugin({ srcDir }: { srcDir: string }): Plugin {
   return {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ETAGS_ID } from '../src/lib/utils/etags.js';
+import { ETAGS_ID } from '../src/lib/utils-isomorphic/etags.js';
 import {
   adoptElements,
   collectEtags,

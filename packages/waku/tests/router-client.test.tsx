@@ -24,9 +24,9 @@ import {
   test,
   vi,
 } from 'vitest';
-import { createCustomError } from '../src/lib/utils/custom-errors.js';
-import { ETAGS_ID, IMMUTABLE_ETAG } from '../src/lib/utils/etags.js';
-import type { Etags } from '../src/lib/utils/etags.js';
+import { createCustomError } from '../src/lib/utils-isomorphic/custom-errors.js';
+import { ETAGS_ID, IMMUTABLE_ETAG } from '../src/lib/utils-isomorphic/etags.js';
+import type { Etags } from '../src/lib/utils-isomorphic/etags.js';
 import { INTERNAL_ServerRoot } from '../src/minimal/client-runtime.js';
 import {
   adoptElements,

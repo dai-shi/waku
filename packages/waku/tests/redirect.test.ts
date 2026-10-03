@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { resolveRedirectLocation } from '../src/lib/utils/redirect.js';
+import { resolveRedirectLocation } from '../src/lib/utils-server/redirect.js';
 
 const request = 'https://app.example/RSC/R/next.txt';
 

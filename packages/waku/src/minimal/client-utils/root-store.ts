@@ -1,4 +1,4 @@
-import type { Etags } from '../../lib/utils/etags.js';
+import type { Etags } from '../../lib/utils-isomorphic/etags.js';
 
 type Elements = Readonly<Record<string | symbol, unknown>>;
 

@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from 'vitest';
-import { ETAGS_ID, IMMUTABLE_ETAG } from '../src/lib/utils/etags.js';
-import { createRenderUtils } from '../src/lib/utils/render.js';
+import { ETAGS_ID, IMMUTABLE_ETAG } from '../src/lib/utils-isomorphic/etags.js';
+import { createRenderUtils } from '../src/lib/utils-server/render.js';
 
 const makeRenderUtils = () => {
   const renderToReadableStream = vi.fn(

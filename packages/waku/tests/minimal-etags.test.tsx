@@ -19,7 +19,7 @@ import {
   ETAGS_ID,
   IMMUTABLE_ETAG,
   isValidEtag,
-} from '../src/lib/utils/etags.js';
+} from '../src/lib/utils-isomorphic/etags.js';
 import {
   adoptElements,
   collectEtags,

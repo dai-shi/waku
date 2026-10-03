@@ -1,5 +1,5 @@
 import type { Plugin } from 'vite';
-import { joinPath } from '../utils/path.js';
+import { joinPath } from '../utils-isomorphic/path.js';
 
 export function privateDirPlugin({
   privateDir,

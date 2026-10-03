@@ -1,5 +1,5 @@
 import type { Unstable_RenderHtml, Unstable_RenderRsc } from '../types.js';
-import { ETAGS_ID } from './etags.js';
+import { ETAGS_ID } from '../utils-isomorphic/etags.js';
 
 const validateRscElementIds = (elements: Record<string, unknown>) => {
   for (const id of Object.keys(elements)) {

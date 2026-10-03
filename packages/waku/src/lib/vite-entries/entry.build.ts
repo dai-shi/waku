@@ -1,7 +1,7 @@
 import serverEntry from 'virtual:vite-rsc-waku/server-entry';
 import { unstable_setAllEnv } from '../env.js';
 import type { Unstable_EmitFile } from '../types.js';
-import { joinPath } from '../utils/path.js';
+import { joinPath } from '../utils-isomorphic/path.js';
 
 const DO_NOT_BUNDLE = '';
 

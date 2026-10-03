@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import * as dotenv from 'dotenv';
 import * as vite from 'vite';
 import type { Config } from '../../config.js';
-import { resolveConfig } from '../utils/config.js';
+import { resolveConfig } from '../utils-build/config.js';
 
 export function loadDotEnv() {
   dotenv.config({ path: ['.env.local', '.env'], quiet: true });

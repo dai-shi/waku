@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { resolveConfig } from '../src/lib/utils/config.js';
-import { getErrorInfo } from '../src/lib/utils/custom-errors.js';
-import { ETAGS_HEADER } from '../src/lib/utils/etags.js';
-import { getInput } from '../src/lib/utils/request.js';
-import { encodeFuncId } from '../src/lib/utils/rsc-path.js';
+import { resolveConfig } from '../src/lib/utils-build/config.js';
+import { getErrorInfo } from '../src/lib/utils-isomorphic/custom-errors.js';
+import { ETAGS_HEADER } from '../src/lib/utils-isomorphic/etags.js';
+import { encodeFuncId } from '../src/lib/utils-isomorphic/rsc-path.js';
+import { getInput } from '../src/lib/utils-server/request.js';
 import {
   unstable_formatRscUrl as formatRscUrl,
   unstable_parseRequest as parseRequest,

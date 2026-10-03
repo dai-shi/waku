@@ -1,12 +1,12 @@
 import type { Plugin } from 'vite';
-import { base64ToBytes, bytesToBase64 } from '../utils/base64-node.js';
+import { base64ToBytes, bytesToBase64 } from '../utils-build/base64-node.js';
 import {
   DEBUG_CMD_EVENT,
   DEBUG_DATA_EVENT,
   DEBUG_ID_HEADER,
   type DebugEventPayload,
   assertIsDebugEventPayload,
-} from '../utils/react-debug-channel.js';
+} from '../utils-isomorphic/react-debug-channel.js';
 
 type CreateDebugChannel = () => {
   readable: ReadableStream<Uint8Array>;

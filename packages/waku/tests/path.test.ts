@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { extname, removeBase } from '../src/lib/utils/path.js';
+import { extname, removeBase } from '../src/lib/utils-isomorphic/path.js';
 import {
   getPathMapping,
   parsePathWithSlug,

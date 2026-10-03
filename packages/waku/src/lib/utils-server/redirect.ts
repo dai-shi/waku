@@ -1,4 +1,4 @@
-import { addBase } from './path.js';
+import { addBase } from '../utils-isomorphic/path.js';
 
 const hasControlCharacter = (value: string) =>
   [...value].some((char) => char < ' ' || char === '\u007f');

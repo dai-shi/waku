@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { sanitizeLog } from '../src/lib/utils/log.js';
+import { sanitizeLog } from '../src/lib/utils-isomorphic/log.js';
 
 describe('sanitizeLog', () => {
   test('escapes newlines that could forge log lines', () => {

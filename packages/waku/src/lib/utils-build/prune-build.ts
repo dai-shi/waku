@@ -1,6 +1,6 @@
 import { rm, writeFile } from 'node:fs/promises';
 import { DIST_SERVER } from '../constants.js';
-import { joinPath } from './path.js';
+import { joinPath } from '../utils-isomorphic/path.js';
 
 type Chunk = {
   type: 'chunk';

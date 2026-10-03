@@ -3,10 +3,13 @@
 import { createRequire } from 'node:module';
 import { describe, expect, expectTypeOf, test, vi } from 'vitest';
 import type { Unstable_ServerEntry as ServerEntry } from '../src/adapter-builders.js';
-import { base64ToBytes, bytesToBase64 } from '../src/lib/utils/base64-web.js';
-import { buildElements } from '../src/lib/utils/build-elements.js';
-import { getGrouplessPath } from '../src/lib/utils/create-pages.js';
-import { isIgnoredPath } from '../src/lib/utils/fs-router.js';
+import {
+  base64ToBytes,
+  bytesToBase64,
+} from '../src/lib/utils-isomorphic/base64-web.js';
+import { getGrouplessPath } from '../src/lib/utils-isomorphic/create-pages.js';
+import { isIgnoredPath } from '../src/lib/utils-isomorphic/fs-router.js';
+import { buildElements } from '../src/lib/utils-server/build-elements.js';
 import * as clientRuntime from '../src/minimal/client-runtime.js';
 import * as client from '../src/minimal/client.js';
 import * as server from '../src/minimal/server.js';

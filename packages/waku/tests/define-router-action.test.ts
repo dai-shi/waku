@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { getErrorInfo } from '../src/lib/utils/custom-errors.js';
+import { getErrorInfo } from '../src/lib/utils-isomorphic/custom-errors.js';
 import {
   unstable_defineRouter,
   unstable_redirect,

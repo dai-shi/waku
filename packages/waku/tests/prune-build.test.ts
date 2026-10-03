@@ -8,7 +8,8 @@ vi.mock('node:fs/promises', () => ({
   rm: (...args: unknown[]) => rm(...args),
 }));
 
-const { pruneBuildOutput } = await import('../src/lib/utils/prune-build.js');
+const { pruneBuildOutput } =
+  await import('../src/lib/utils-build/prune-build.js');
 
 type RscBundle = Parameters<typeof pruneBuildOutput>[0]['rscBundle'];
 

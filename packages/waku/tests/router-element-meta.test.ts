@@ -1,5 +1,5 @@
 import { describe, expect, it, test } from 'vitest';
-import { ETAGS_ID, IMMUTABLE_ETAG } from '../src/lib/utils/etags.js';
+import { ETAGS_ID, IMMUTABLE_ETAG } from '../src/lib/utils-isomorphic/etags.js';
 import { adoptElements } from '../src/minimal/client-utils/element-etags.js';
 import {
   canCommitInstantly,

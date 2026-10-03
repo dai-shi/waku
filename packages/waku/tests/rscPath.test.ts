@@ -4,7 +4,7 @@ import {
   decodeRscPath,
   encodeFuncId,
   encodeRscPath,
-} from '../src/lib/utils/rsc-path.js';
+} from '../src/lib/utils-isomorphic/rsc-path.js';
 import {
   decodeRoutePath,
   encodeRoutePath,

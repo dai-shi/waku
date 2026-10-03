@@ -1,7 +1,7 @@
 import type { UserConfig } from 'vite';
 import { expect, test } from 'vitest';
 import type { Config } from '../src/config.js';
-import { resolveConfig } from '../src/lib/utils/config.js';
+import { resolveConfig } from '../src/lib/utils-build/config.js';
 import { environmentsPlugin } from '../src/lib/vite-plugins/environments.js';
 
 const runConfigHook = async (config: Config): Promise<UserConfig> => {

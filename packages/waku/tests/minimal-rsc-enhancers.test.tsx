@@ -3,7 +3,7 @@
 import { Suspense, act, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
-import { ETAGS_HEADER, ETAGS_ID } from '../src/lib/utils/etags.js';
+import { ETAGS_HEADER, ETAGS_ID } from '../src/lib/utils-isomorphic/etags.js';
 import { unstable_callServerRsc as callServerRsc } from '../src/minimal/client-runtime.js';
 import { adoptElements } from '../src/minimal/client-utils/element-etags.js';
 import { clearInitialRscEntries } from '../src/minimal/client-utils/initial-rsc-store.js';

@@ -5,8 +5,8 @@ import {
   ETAGS_ID,
   IMMUTABLE_ETAG,
   parseClientEtags,
-} from '../src/lib/utils/etags.js';
-import type { Etags } from '../src/lib/utils/etags.js';
+} from '../src/lib/utils-isomorphic/etags.js';
+import type { Etags } from '../src/lib/utils-isomorphic/etags.js';
 import { unstable_defineRouter } from '../src/router/define-router.js';
 import {
   IS_STATIC_ID,

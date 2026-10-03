@@ -11,12 +11,12 @@ import htmlTransform from 'virtual:vite-rsc-waku/html-transform';
 // Layering rule: src/lib must not import src modules outside src/lib.
 // Exception: SSR must share Minimal's slot context.
 import { INTERNAL_ServerRoot } from '../../minimal/client-runtime.js';
-import { getErrorInfo } from '../utils/custom-errors.js';
+import { getErrorInfo } from '../utils-isomorphic/custom-errors.js';
+import { batchReadableStream } from '../utils-isomorphic/stream.js';
 import {
   createBootstrapScriptContent,
   getBootstrapPreamble,
-} from '../utils/ssr.js';
-import { batchReadableStream } from '../utils/stream.js';
+} from '../utils-server/ssr.js';
 
 function createFromReadableStream<T>(
   stream: ReadableStream<Uint8Array>,

@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { encodeFuncId, encodeRscPath } from '../src/lib/utils/rsc-path.js';
+import {
+  encodeFuncId,
+  encodeRscPath,
+} from '../src/lib/utils-isomorphic/rsc-path.js';
 import {
   unstable_formatRscUrl as formatRscUrl,
   unstable_parseRequest as parseRequest,

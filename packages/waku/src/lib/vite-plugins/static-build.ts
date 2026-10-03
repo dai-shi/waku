@@ -6,9 +6,9 @@ import { pipeline } from 'node:stream/promises';
 import { pathToFileURL } from 'node:url';
 import pc from 'picocolors';
 import type { Plugin, Rollup } from 'vite';
-import { joinPath } from '../utils/path.js';
-import { createProgressLogger } from '../utils/progress-logger.js';
-import { pruneBuildOutput } from '../utils/prune-build.js';
+import { createProgressLogger } from '../utils-build/progress-logger.js';
+import { pruneBuildOutput } from '../utils-build/prune-build.js';
+import { joinPath } from '../utils-isomorphic/path.js';
 
 export function staticBuildPlugin({
   srcDir,

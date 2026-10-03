@@ -3,7 +3,7 @@ import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { type Plugin, normalizePath } from 'vite';
 import { BUILD_METADATA_FILE, DIST_SERVER } from '../constants.js';
-import { joinPath } from '../utils/path.js';
+import { joinPath } from '../utils-isomorphic/path.js';
 
 const forceRelativePath = (s: string) => (s.startsWith('.') ? s : './' + s);
 

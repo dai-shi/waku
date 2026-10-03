@@ -1,5 +1,3 @@
-// This file should not include Node specific code.
-
 export const encodeRscPath = (rscPath: string) => {
   if (rscPath === '') {
     rscPath = '_';

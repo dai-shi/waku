@@ -1,6 +1,6 @@
 /** @vitest-environment happy-dom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createCustomError } from '../src/lib/utils/custom-errors.js';
+import { createCustomError } from '../src/lib/utils-isomorphic/custom-errors.js';
 import type { FetchRsc } from '../src/minimal/client-utils/root-store.js';
 import { getRouterCache } from '../src/router/client-core-utils/caches.js';
 import { load } from '../src/router/client-core-utils/load.js';

@@ -2,11 +2,11 @@ import { describe, expect, test } from 'vitest';
 import {
   base64ToBytes as base64ToBytesNode,
   bytesToBase64 as bytesToBase64Node,
-} from '../src/lib/utils/base64-node.js';
+} from '../src/lib/utils-build/base64-node.js';
 import {
   base64ToBytes as base64ToBytesWeb,
   bytesToBase64 as bytesToBase64Web,
-} from '../src/lib/utils/base64-web.js';
+} from '../src/lib/utils-isomorphic/base64-web.js';
 
 describe('base64-node and base64-web equivalence', () => {
   const samples = [

@@ -3,7 +3,7 @@
 import { Suspense, act, lazy, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterAll, beforeAll, expect, test, vi } from 'vitest';
-import { ETAGS_ID, IMMUTABLE_ETAG } from '../src/lib/utils/etags.js';
+import { ETAGS_ID, IMMUTABLE_ETAG } from '../src/lib/utils-isomorphic/etags.js';
 import {
   Children_UNSTABLE as Children,
   Slot_UNSTABLE as Slot,

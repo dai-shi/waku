@@ -1,5 +1,5 @@
-import { IMMUTABLE_ETAG, isValidEtag } from './etags.js';
-import type { Etags } from './etags.js';
+import { IMMUTABLE_ETAG, isValidEtag } from '../utils-isomorphic/etags.js';
+import type { Etags } from '../utils-isomorphic/etags.js';
 
 /** A slot renderer and its validator; immutable slots are reusable indefinitely. */
 export type ElementSource = {

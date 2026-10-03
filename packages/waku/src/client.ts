@@ -1,4 +1,4 @@
-import { getErrorInfo } from './lib/utils/custom-errors.js';
+import { getErrorInfo } from './lib/utils-isomorphic/custom-errors.js';
 
 // Experimental, the name and the behavior might change.
 export const unstable_allowServer = <T>(x: T) => x;

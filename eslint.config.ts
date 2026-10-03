@@ -107,6 +107,55 @@ export default defineConfig(
     files: ['e2e/**'],
   },
   {
+    files: ['packages/waku/src/lib/utils-*/**/*.{ts,tsx}'],
+    rules: {
+      'import/no-restricted-paths': [
+        'error',
+        {
+          zones: [
+            {
+              target: [
+                './packages/waku/src/lib/utils-client',
+                './packages/waku/src/lib/utils-isomorphic',
+                './packages/waku/src/lib/utils-server',
+              ],
+              from: './packages/waku/src/lib/utils-build',
+              message: 'Build utilities must stay out of runtime utilities.',
+            },
+            {
+              target: [
+                './packages/waku/src/lib/utils-client',
+                './packages/waku/src/lib/utils-isomorphic',
+              ],
+              from: './packages/waku/src/lib/utils-server',
+              message:
+                'Client and isomorphic utilities must not depend on server utilities.',
+            },
+            {
+              target: [
+                './packages/waku/src/lib/utils-build',
+                './packages/waku/src/lib/utils-isomorphic',
+                './packages/waku/src/lib/utils-server',
+              ],
+              from: './packages/waku/src/lib/utils-client',
+              message: 'Browser runtime utilities must stay on the client.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: [
+      'packages/waku/src/lib/utils-client/**/*.{ts,tsx}',
+      'packages/waku/src/lib/utils-isomorphic/**/*.{ts,tsx}',
+    ],
+    rules: {
+      'no-restricted-imports': ['error', { patterns: ['node:*'] }],
+      'no-restricted-globals': ['error', 'Buffer', 'process'],
+    },
+  },
+  {
     files: ['packages/waku/src/router/**/*.{ts,tsx}'],
     rules: {
       'import/no-restricted-paths': [

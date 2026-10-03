@@ -14,7 +14,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { expect } from '@playwright/test';
-import { getManagedServerEntry } from '../packages/waku/dist/lib/utils/managed.js';
+import { getManagedServerEntry } from '../packages/waku/dist/lib/utils-build/managed.js';
 import { makeTempDir, test } from './utils.js';
 
 const execAsync = promisify(exec);

@@ -1,5 +1,9 @@
-import { addBase, removeBase } from './path.js';
-import { decodeFuncId, decodeRscPath, encodeRscPath } from './rsc-path.js';
+import { addBase, removeBase } from '../utils-isomorphic/path.js';
+import {
+  decodeFuncId,
+  decodeRscPath,
+  encodeRscPath,
+} from '../utils-isomorphic/rsc-path.js';
 
 const getBasePath = () => import.meta.env?.WAKU_CONFIG_BASE_PATH ?? '/';
 const getRscBase = () => import.meta.env?.WAKU_CONFIG_RSC_BASE ?? 'RSC';

@@ -2,7 +2,7 @@ import { describe, expect, test, vi } from 'vitest';
 import {
   createCustomError,
   getErrorInfo,
-} from '../src/lib/utils/custom-errors.js';
+} from '../src/lib/utils-isomorphic/custom-errors.js';
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();

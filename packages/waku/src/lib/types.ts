@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { Config } from '../config.js';
-import type { Etags } from './utils/etags.js';
+import type { Etags } from './utils-isomorphic/etags.js';
 
 type Elements = Record<string, unknown>;
 

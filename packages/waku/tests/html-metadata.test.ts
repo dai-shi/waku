@@ -1,11 +1,11 @@
 import { injectRSCPayload } from 'rsc-html-stream/server';
 import { describe, expect, test } from 'vitest';
+import { streamToBytes } from '../src/lib/utils-isomorphic/stream.js';
 import {
   type MetadataFilter,
   dedupeHeadMetadataForTest,
   dedupeHtmlMetadataStream,
-} from '../src/lib/utils/html-metadata.js';
-import { streamToBytes } from '../src/lib/utils/stream.js';
+} from '../src/lib/utils-server/html-metadata.js';
 
 const enc = new TextEncoder();
 const dec = new TextDecoder('utf-8', { ignoreBOM: true });

@@ -18,15 +18,15 @@ import type {
   Unstable_ProcessBuild as ProcessBuild,
   Unstable_ProcessRequest as ProcessRequest,
 } from '../types.js';
-import { getDigest, getErrorInfo } from '../utils/custom-errors.js';
-import { sanitizeLog } from '../utils/log.js';
-import { joinPath } from '../utils/path.js';
-import { DEBUG_ID_HEADER } from '../utils/react-debug-channel.js';
-import { resolveRedirectLocation } from '../utils/redirect.js';
-import { createRenderUtils } from '../utils/render.js';
-import { getInput } from '../utils/request.js';
-import { encodeRscPath } from '../utils/rsc-path.js';
-import { stringToStream } from '../utils/stream.js';
+import { getDigest, getErrorInfo } from '../utils-isomorphic/custom-errors.js';
+import { sanitizeLog } from '../utils-isomorphic/log.js';
+import { joinPath } from '../utils-isomorphic/path.js';
+import { DEBUG_ID_HEADER } from '../utils-isomorphic/react-debug-channel.js';
+import { encodeRscPath } from '../utils-isomorphic/rsc-path.js';
+import { stringToStream } from '../utils-isomorphic/stream.js';
+import { resolveRedirectLocation } from '../utils-server/redirect.js';
+import { createRenderUtils } from '../utils-server/render.js';
+import { getInput } from '../utils-server/request.js';
 
 function loadSsrEntryModule() {
   // This is an API to communicate between two server environments `rsc` and `ssr`.

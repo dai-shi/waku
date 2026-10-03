@@ -9,7 +9,7 @@ import {
   isIgnoredPath,
 } from '../../router/isomorphic-utils/route-path.js';
 import { EXTENSIONS, SRC_PAGES, SRC_SERVER_ENTRY } from '../constants.js';
-import { joinPath } from '../utils/path.js';
+import { joinPath } from '../utils-isomorphic/path.js';
 
 type ProgramNode = ParseResult['program'];
 type ImportDeclaration = ProgramNode['body'][number] & {

@@ -21,8 +21,8 @@ import {
   test,
   vi,
 } from 'vitest';
-import { getErrorInfo } from '../src/lib/utils/custom-errors.js';
-import { ETAGS_ID, IMMUTABLE_ETAG } from '../src/lib/utils/etags.js';
+import { getErrorInfo } from '../src/lib/utils-isomorphic/custom-errors.js';
+import { ETAGS_ID, IMMUTABLE_ETAG } from '../src/lib/utils-isomorphic/etags.js';
 import { unstable_callServerRsc } from '../src/minimal/client-runtime.js';
 import { adoptElements } from '../src/minimal/client-utils/element-etags.js';
 import {

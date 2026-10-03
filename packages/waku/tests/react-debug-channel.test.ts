@@ -3,7 +3,7 @@ import {
   DEBUG_CMD_EVENT,
   DEBUG_DATA_EVENT,
   DEBUG_ID_HEADER,
-} from '../src/lib/utils/react-debug-channel.js';
+} from '../src/lib/utils-isomorphic/react-debug-channel.js';
 import {
   type DebugChannelRegistry,
   rscDevtoolsPlugin,

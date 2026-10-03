@@ -1,5 +1,8 @@
 import { describe, expect, test, vi } from 'vitest';
-import { base64ToBytes, bytesToBase64 } from '../src/lib/utils/base64-web.js';
+import {
+  base64ToBytes,
+  bytesToBase64,
+} from '../src/lib/utils-isomorphic/base64-web.js';
 import {
   batchReadableStream,
   bytesToStream,
@@ -7,7 +10,7 @@ import {
   produceMultiplexedStream,
   streamToBytes,
   stringToStream,
-} from '../src/lib/utils/stream.js';
+} from '../src/lib/utils-isomorphic/stream.js';
 
 const enc = new TextEncoder();
 const dec = new TextDecoder();

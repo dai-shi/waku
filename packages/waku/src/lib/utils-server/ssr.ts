@@ -1,5 +1,33 @@
 import { DEV_BUILD_ID } from '../constants.js';
-import { createInitialRscEntryCode } from './initial-rsc.js';
+
+// DEV: hold the stream ~5s so React's late debug-channel chunks settle before close. https://github.com/wakujs/waku/pull/2154
+const createInitialRscEntryCode = (debugId: string | undefined) =>
+  `
+  (() => {
+    const e = {};
+    e.response = Promise.resolve(new Response(new ReadableStream({
+      start(c) {
+        const d = (window.__FLIGHT_DATA ||= []);
+        const t = new TextEncoder();
+        const f = (s) => c.enqueue(typeof s === 'string' ? t.encode(s) : s);
+        d.forEach(f);
+        d.length = 0;
+        d.push = f;
+        const close = ${import.meta.env.DEV ? '() => setTimeout(() => c.close(), 5000)' : '() => c.close()'};
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', close);
+        } else {
+          close();
+        }
+      }
+    })));
+    ${debugId ? `e.debugId = ${JSON.stringify(debugId)};` : ''}
+    return e;
+  })()
+`
+    .split('\n')
+    .map((line) => line.trim())
+    .join('');
 
 function getRecoveryBuildId(): string | undefined {
   const buildId = import.meta.env?.WAKU_BUILD_ID;

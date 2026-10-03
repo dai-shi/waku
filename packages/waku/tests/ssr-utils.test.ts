@@ -1,11 +1,33 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { consumeInitialRscEntry } from '../src/lib/utils-client/initial-rsc.js';
 import {
   createBootstrapScriptContent,
   getBootstrapPreamble,
-} from '../src/lib/utils/ssr.js';
+} from '../src/lib/utils-server/ssr.js';
 
 afterEach(() => {
   vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
+});
+
+it('the client consumes the payload emitted by server bootstrap once', async () => {
+  vi.stubEnv('DEV', false);
+  vi.stubGlobal('__WAKU_INITIAL_RSC__', undefined);
+  const chunks = ['first', new TextEncoder().encode('second')];
+  const window = { __FLIGHT_DATA: chunks };
+  const code = getBootstrapPreamble({
+    hydrate: false,
+    initialRsc: true,
+    debugId: 'initial-debug-id',
+  });
+  new Function('window', 'document', code)(window, {
+    readyState: 'complete',
+  });
+
+  const entry = consumeInitialRscEntry();
+  expect(entry?.debugId).toBe('initial-debug-id');
+  expect(consumeInitialRscEntry()).toBeUndefined();
+  expect(await (await entry!.response).text()).toBe('firstsecond');
 });
 
 describe('createBootstrapScriptContent', () => {

@@ -1,6 +1,6 @@
 /** @vitest-environment happy-dom */
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { createCustomError } from '../src/lib/utils/custom-errors.js';
+import { createCustomError } from '../src/lib/utils-isomorphic/custom-errors.js';
 import {
   MAX_FOLLOWS_PER_NAVIGATION,
   decideFollow,

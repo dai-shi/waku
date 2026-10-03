@@ -1,4 +1,4 @@
-import { concatUint8Array } from './stream.js';
+import { concatUint8Array } from '../utils-isomorphic/stream.js';
 
 // This is not an HTML parser. It reads the head React renders, and stops at
 // anything else it finds in one, including markup passed through by

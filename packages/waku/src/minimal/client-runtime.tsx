@@ -12,12 +12,18 @@ import {
 } from 'react';
 import type { ReactNode } from 'react';
 import RSDWClient from 'react-server-dom-webpack/client';
-import { createCustomError } from '../lib/utils/custom-errors.js';
-import { ETAGS_HEADER, serializeClientEtags } from '../lib/utils/etags.js';
-import type { Etags } from '../lib/utils/etags.js';
-import { consumeInitialRscEntry } from '../lib/utils/initial-rsc.js';
-import { setupDebugChannel } from '../lib/utils/react-debug-channel.js';
-import { encodeFuncId, encodeRscPath } from '../lib/utils/rsc-path.js';
+import { consumeInitialRscEntry } from '../lib/utils-client/initial-rsc.js';
+import { setupDebugChannel } from '../lib/utils-client/react-debug-channel.js';
+import { createCustomError } from '../lib/utils-isomorphic/custom-errors.js';
+import {
+  ETAGS_HEADER,
+  serializeClientEtags,
+} from '../lib/utils-isomorphic/etags.js';
+import type { Etags } from '../lib/utils-isomorphic/etags.js';
+import {
+  encodeFuncId,
+  encodeRscPath,
+} from '../lib/utils-isomorphic/rsc-path.js';
 import {
   adoptElements,
   collectEtags,
@@ -689,5 +695,5 @@ export const INTERNAL_ServerRoot = ({
 export {
   addBase as unstable_addBase,
   removeBase as unstable_removeBase,
-} from '../lib/utils/path.js';
-export { getErrorInfo as unstable_getErrorInfo } from '../lib/utils/custom-errors.js';
+} from '../lib/utils-isomorphic/path.js';
+export { getErrorInfo as unstable_getErrorInfo } from '../lib/utils-isomorphic/custom-errors.js';

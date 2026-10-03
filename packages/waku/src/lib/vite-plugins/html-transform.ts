@@ -2,7 +2,7 @@ import assert from 'node:assert';
 import { fileURLToPath } from 'node:url';
 import { normalizePath } from 'vite';
 import type { Plugin } from 'vite';
-import type { MetadataFilter } from '../utils/html-metadata.js';
+import type { MetadataFilter } from '../utils-server/html-metadata.js';
 
 type HtmlTransformOptions = {
   /**
@@ -31,7 +31,7 @@ export function htmlTransformPlugin(
 ): Plugin {
   const { mergeMetadata, maxBufferedHead } = options;
   const runtime = normalizePath(
-    fileURLToPath(new URL('../utils/html-metadata.js', import.meta.url)),
+    fileURLToPath(new URL('../utils-server/html-metadata.js', import.meta.url)),
   );
   return {
     name: 'waku:vite-plugins:html-transform',

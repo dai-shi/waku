@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, test, vi } from 'vitest';
-import { resolveConfig } from '../src/lib/utils/config.js';
+import { resolveConfig } from '../src/lib/utils-build/config.js';
 import { combinedPlugins } from '../src/lib/vite-plugins/combined-plugins.js';
 import {
   detectFsRouterUsage,
