@@ -1,3 +1,4 @@
+export { resolveConfig as unstable_resolveConfig } from './lib/utils-build/config.js';
 export { adapterAliasPlugin as unstable_adapterAliasPlugin } from './lib/vite-plugins/adapter-alias.js';
 export { allowServerPlugin as unstable_allowServerPlugin } from './lib/vite-plugins/allow-server.js';
 export { appEntriesPlugin as unstable_appEntriesPlugin } from './lib/vite-plugins/app-entries.js';

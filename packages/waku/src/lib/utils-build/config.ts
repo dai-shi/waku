@@ -9,6 +9,10 @@ const getDefaultAdapter = () =>
         ? 'waku/adapters/cloudflare'
         : 'waku/adapters/node';
 
+/**
+ * Applies Waku defaults, including environment-based adapter selection.
+ * Throws if `basePath` does not end with `/`.
+ */
 export function resolveConfig(config: Config | undefined): Required<Config> {
   const resolvedConfig: Required<Config> = {
     basePath: '/',

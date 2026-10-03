@@ -1,8 +1,9 @@
 import type { UserConfig } from 'vite';
 import { expect, test } from 'vitest';
 import type { Config } from '../src/config.js';
-import { resolveConfig } from '../src/lib/utils-build/config.js';
+import { unstable_resolveConfig as legacyResolveConfig } from '../src/internals.js';
 import { environmentsPlugin } from '../src/lib/vite-plugins/environments.js';
+import { unstable_resolveConfig as resolveConfig } from '../src/vite-plugins.js';
 
 const runConfigHook = async (config: Config): Promise<UserConfig> => {
   const plugin = environmentsPlugin(resolveConfig(config));
@@ -19,6 +20,10 @@ const runConfigHook = async (config: Config): Promise<UserConfig> => {
     },
   )) as UserConfig;
 };
+
+test('tooling configuration resolution preserves the legacy alias', () => {
+  expect(resolveConfig).toBe(legacyResolveConfig);
+});
 
 test('uses basePath as the default Vite base', async () => {
   const config = await runConfigHook({

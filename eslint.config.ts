@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import eslint from '@eslint/js';
 import { defineConfig } from 'eslint/config';
 import importPlugin from 'eslint-plugin-import';
@@ -6,6 +7,28 @@ import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import unicorn from 'eslint-plugin-unicorn';
 import tseslint from 'typescript-eslint';
+
+const basePath = fileURLToPath(new URL('.', import.meta.url));
+
+const clientModules = [
+  'packages/waku/src/client.ts',
+  'packages/waku/src/minimal/client.ts',
+  'packages/waku/src/minimal/client-runtime.tsx',
+  'packages/waku/src/minimal/client-utils',
+  'packages/waku/src/lib/utils-client',
+  'packages/waku/src/lib/vite-entries/entry.browser.tsx',
+];
+
+const serverModules = [
+  'packages/waku/src/server.ts',
+  'packages/waku/src/minimal/server.ts',
+  'packages/waku/src/lib/hono',
+  'packages/waku/src/lib/utils-server',
+  'packages/waku/src/lib/vite-entries/entry.server.tsx',
+  'packages/waku/src/lib/vite-entries/entry.ssr.tsx',
+  'packages/waku/src/lib/vite-rsc/handler.ts',
+  'packages/waku/src/lib/vite-rsc/ssr.tsx',
+];
 
 export default defineConfig(
   {
@@ -107,24 +130,25 @@ export default defineConfig(
     files: ['e2e/**'],
   },
   {
-    files: ['packages/waku/src/lib/utils-*/**/*.{ts,tsx}'],
+    files: ['packages/waku/src/**/*.{ts,tsx}'],
     rules: {
       'import/no-restricted-paths': [
         'error',
         {
+          basePath,
           zones: [
             {
               target: [
-                './packages/waku/src/lib/utils-client',
+                ...clientModules,
+                ...serverModules,
                 './packages/waku/src/lib/utils-isomorphic',
-                './packages/waku/src/lib/utils-server',
               ],
               from: './packages/waku/src/lib/utils-build',
               message: 'Build utilities must stay out of runtime utilities.',
             },
             {
               target: [
-                './packages/waku/src/lib/utils-client',
+                ...clientModules,
                 './packages/waku/src/lib/utils-isomorphic',
               ],
               from: './packages/waku/src/lib/utils-server',
@@ -133,9 +157,9 @@ export default defineConfig(
             },
             {
               target: [
+                ...serverModules,
                 './packages/waku/src/lib/utils-build',
                 './packages/waku/src/lib/utils-isomorphic',
-                './packages/waku/src/lib/utils-server',
               ],
               from: './packages/waku/src/lib/utils-client',
               message: 'Browser runtime utilities must stay on the client.',
@@ -147,11 +171,15 @@ export default defineConfig(
   },
   {
     files: [
-      'packages/waku/src/lib/utils-client/**/*.{ts,tsx}',
+      ...clientModules.map((path) =>
+        path.endsWith('.ts') || path.endsWith('.tsx')
+          ? path
+          : `${path}/**/*.{ts,tsx}`,
+      ),
       'packages/waku/src/lib/utils-isomorphic/**/*.{ts,tsx}',
     ],
     rules: {
-      'no-restricted-imports': ['error', { patterns: ['node:*'] }],
+      'import/no-nodejs-modules': 'error',
       'no-restricted-globals': ['error', 'Buffer', 'process'],
     },
   },
@@ -161,6 +189,7 @@ export default defineConfig(
       'import/no-restricted-paths': [
         'error',
         {
+          basePath,
           zones: [
             {
               target: './packages/waku/src/router',
