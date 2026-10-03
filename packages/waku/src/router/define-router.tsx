@@ -142,6 +142,7 @@ export function unstable_redirect<Path extends RoutePath = RoutePath>(
 type RouterOptions = {
   resolve: Resolve;
   getBuildPaths?: () => Promise<Iterable<string>>;
+  getBuildElementIds?: () => Promise<Iterable<string>>;
   resolveElement?: ResolveElement;
   unstable_interceptors?: HandlerInterceptor[];
 };
@@ -176,6 +177,7 @@ export const createRouterHandlers = (
   const handleBuild = createBuildHandler({
     resolve: fns.resolve,
     getBuildPaths: fns.getBuildPaths,
+    getBuildElementIds: fns.getBuildElementIds,
     routeEntries,
     runHandled,
   });
@@ -191,7 +193,10 @@ export const createRouterHandlers = (
  * `getBuildPaths` lists concrete paths: immutable routes are prerendered, HTTP
  * handlers emit static responses, and mutable routes cache only immutable
  * elements. `resolveElement` handles `slice:<id>` requests from client `Slice`
- * components. Runtime route content is reused only from build-preloaded entries.
+ * components; `getBuildElementIds` lists immutable IDs to emit as standalone
+ * RSC files. Only `slice:<id>` IDs are supported for standalone requests.
+ * Unresolved or mutable build IDs fail the build.
+ * Runtime route content is reused only from build-preloaded entries.
  * Custom 404 availability is checked once per router instance.
  * Immutable sources must render the same content for the lifetime of their ID.
  */

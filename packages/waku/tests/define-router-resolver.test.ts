@@ -335,6 +335,27 @@ describe('defineRouter route resolver', () => {
     expect(new URL(handler.mock.calls[0]![0].url).pathname).toBe('/api');
   });
 
+  it('preserves the handler body when resolution reads a request clone', async () => {
+    const router = unstable_defineRouter({
+      resolve: async () => {
+        expect(await unstable_getRequest().clone().text()).toBe('body');
+        return async (req) => new Response(await req.text());
+      },
+    });
+    const response = await router.handleRequest(
+      {
+        type: 'http',
+        pathname: '/api',
+        req: new Request('http://localhost/api', {
+          method: 'POST',
+          body: 'body',
+        }),
+      },
+      makeUtils(),
+    );
+    expect(await (response as Response).text()).toBe('body');
+  });
+
   it('omits sources with matching validators and sends client route metadata', async () => {
     const render = vi.fn(() => 'content');
     const router = unstable_defineRouter({
@@ -580,4 +601,84 @@ describe('defineRouter route resolver', () => {
     );
     expect(mutableRender).toHaveBeenCalledTimes(1);
   });
+
+  it('emits independently resolved immutable elements without route build paths', async () => {
+    const id = 'slice:folder/fragment';
+    const render = vi.fn(() => 'fragment');
+    const resolveElement: RouterOptions['resolveElement'] = async (slotId) =>
+      slotId === id ? { immutable: true, render } : null;
+    const router = unstable_defineRouter({
+      resolve: async () => null,
+      resolveElement,
+      getBuildElementIds: async () => [id],
+    });
+    const files = new Map<string, string>();
+    const metadata = new Map<string, string>();
+    const utils = makeUtils();
+    utils.renderRsc.mockImplementation(
+      async (elements, options) =>
+        new Response(JSON.stringify({ elements, etags: options?.etags })).body!,
+    );
+    await router.handleBuild({
+      ...utils,
+      rscPath2pathname: (path) => 'payload/' + path,
+      generateFile: async (path, body) => {
+        files.set(path, await new Response(body).text());
+      },
+      generateDefaultHtml: vi.fn(),
+      saveBuildMetadata: async (key, value) => {
+        metadata.set(key, value);
+      },
+      unstable_registerPrunableFile: vi.fn(),
+    });
+    expect(files.size).toBe(1);
+    expect(
+      JSON.parse(files.get('payload/' + encodeSliceId('folder/fragment'))!),
+    ).toEqual({ elements: { [id]: 'fragment' }, etags: { [id]: 1 } });
+    const runtime = unstable_defineRouter({
+      resolve: async () => null,
+      resolveElement,
+    });
+    const runtimeUtils = makeUtils();
+    runtimeUtils.loadBuildMetadata.mockImplementation(async (key) =>
+      metadata.get(key),
+    );
+    await runtime.handleRequest(
+      { ...rscInput('/'), rscPath: encodeSliceId('folder/fragment') },
+      runtimeUtils,
+    );
+    expect(runtimeUtils.renderRsc).toHaveBeenCalledWith(
+      { [id]: 'fragment' },
+      { etags: { [id]: 1 } },
+    );
+    expect(render).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    ['slice:missing', 'Build element did not resolve'],
+    ['slice:mutable', 'Build element must be immutable'],
+    ['root', 'Unsupported build element ID'],
+  ])(
+    'rejects an invalid independently built element: %s',
+    async (id, message) => {
+      const router = unstable_defineRouter({
+        resolve: async () => null,
+        resolveElement: async (slotId) =>
+          slotId === 'slice:mutable' ? { render: () => 'mutable' } : null,
+        getBuildElementIds: async () => [id],
+      });
+      const generateFile = vi.fn();
+      await expect(
+        router.handleBuild({
+          ...makeUtils(),
+          rscPath2pathname: (path) => path,
+          generateFile,
+          generateDefaultHtml: vi.fn(),
+          saveBuildMetadata: vi.fn(),
+          unstable_registerPrunableFile: vi.fn(),
+        }),
+      ).rejects.toThrow(message + ': ' + id);
+      expect(generateFile).not.toHaveBeenCalled();
+    },
+  );
 });

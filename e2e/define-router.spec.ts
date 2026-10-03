@@ -231,3 +231,33 @@ test.describe(`define-router`, () => {
     expect(await res.text()).toBe('POST to hello world! from the test!');
   });
 });
+
+test.describe('define-router: static server', { tag: '@prd' }, () => {
+  let port: number;
+  let stopApp: () => Promise<void>;
+
+  test.beforeAll(async () => {
+    ({ port, stopApp } = await startApp('STATIC'));
+  });
+
+  test.afterAll(async () => {
+    await stopApp();
+  });
+
+  test('loads a lazy immutable slice without a runtime server', async ({
+    page,
+  }) => {
+    const [payload] = await Promise.all([
+      page.waitForResponse(
+        (response) =>
+          new URL(response.url()).pathname === '/RSC/S/slice001.txt',
+      ),
+      page.goto(`http://localhost:${port}/static-lazy`),
+    ]);
+    await expect(page.getByTestId('static-lazy-title')).toHaveText(
+      'Static lazy',
+    );
+    await expect(page.getByTestId('slice001')).toContainText('Slice 001');
+    expect(payload.status()).toBe(200);
+  });
+});

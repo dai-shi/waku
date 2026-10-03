@@ -2,7 +2,9 @@ import type { Unstable_HandleBuild as HandleBuild } from 'waku/minimal/server';
 import { INTERNAL_ServerRouter } from '../client.js';
 import {
   encodeRoutePath,
+  encodeSliceId,
   getRouteSlotId,
+  isSliceSlotId,
   pathnameToRoutePath,
 } from '../isomorphic-utils/route-path.js';
 import { ROUTER_METADATA } from './build-metadata.js';
@@ -42,11 +44,13 @@ export const createBuildHandler =
   ({
     resolve,
     getBuildPaths,
+    getBuildElementIds,
     routeEntries,
     runHandled,
   }: {
     resolve: Resolve;
     getBuildPaths: (() => Promise<Iterable<string>>) | undefined;
+    getBuildElementIds: (() => Promise<Iterable<string>>) | undefined;
     routeEntries: ReturnType<typeof createRouteEntries>;
     runHandled: <T>(req: Request, fn: () => Promise<T>) => Promise<T>;
   }): HandleBuild =>
@@ -169,6 +173,29 @@ export const createBuildHandler =
       );
     }
     await waitForTasks();
+    for (const id of new Set((await getBuildElementIds?.()) || [])) {
+      runTask(async () => {
+        if (!isSliceSlotId(id)) {
+          throw new Error('Unsupported build element ID: ' + id);
+        }
+        const rscPath = encodeSliceId(id.slice('slice:'.length));
+        const pathname = utils.rscPath2pathname(rscPath);
+        const req = new Request(new URL(pathname, 'http://localhost:3000'));
+        return runHandled(req, async () => {
+          const entries = await routeEntries.getEntriesForElement(id, cache);
+          if (!entries) {
+            throw new Error('Build element did not resolve: ' + id);
+          }
+          if (entries.etags[id] !== 1) {
+            throw new Error('Build element must be immutable: ' + id);
+          }
+          const stream = await utils.renderRsc(entries.elements, {
+            etags: entries.etags,
+          });
+          await utils.generateFile(pathname, stream);
+        });
+      });
+    }
     htmlTasks.forEach(runTask);
     await waitForTasks();
     await utils.saveBuildMetadata(

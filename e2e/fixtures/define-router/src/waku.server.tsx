@@ -6,6 +6,7 @@ import {
   Children_UNSTABLE as Children,
   Slot_UNSTABLE as Slot,
 } from 'waku/minimal/client';
+import { Slice } from 'waku/router/client';
 import {
   unstable_defineRouter as defineRouter,
   unstable_redirect as redirect,
@@ -20,7 +21,7 @@ import FooPage from './routes/foo/page.js';
 import Layout from './routes/layout.js';
 import Page from './routes/page.js';
 
-const STATIC_PAGES = ['/', '/foo', '/bar2', '/baz2'];
+const STATIC_PAGES = ['/', '/foo', '/bar2', '/baz2', '/static-lazy'];
 const PATH_PAGE: Record<string, ReactNode> = {
   '/': <Page />,
   '/foo': <FooPage />,
@@ -28,6 +29,12 @@ const PATH_PAGE: Record<string, ReactNode> = {
   '/bar2': <Bar2Page />, // static page + dynamic slice
   '/baz1': <Baz1Page />, // dynamic page + lazy static slice
   '/baz2': <Baz2Page />, // static page + lazy dynamic slice
+  '/static-lazy': (
+    <div>
+      <h2 data-testid="static-lazy-title">Static lazy</h2>
+      <Slice id="slice001" lazy fallback={null} />
+    </div>
+  ),
 };
 
 const root = {
@@ -116,6 +123,7 @@ const router = defineRouter({
     };
   },
   getBuildPaths: async () => [...Object.keys(PATH_PAGE), '/api/empty'],
+  getBuildElementIds: async () => ['slice:slice001'],
   resolveElement: async (id) =>
     sliceSources[id as keyof typeof sliceSources] || null,
 });

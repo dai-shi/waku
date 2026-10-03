@@ -111,6 +111,8 @@ Return an async function from `resolve` for an API endpoint. The function receiv
 
 Route params are caller-owned: match and capture them in `resolve`, then close over them in the handler or element source. Use `unstable_getRequest` or `unstable_getHeaders` from `waku/router/server` to inspect request information during resolution or rendering.
 
+The request body can be read only once. If resolution needs to inspect it before returning an HTTP handler, read `unstable_getRequest().clone()` so the handler can still read the original body.
+
 ## Build Paths
 
 The optional `getBuildPaths` returns concrete pathname strings, without queries or fragments. Build and runtime use the same `resolve` callback.
@@ -132,11 +134,16 @@ The optional `resolveElement` returns an element source or `null` for a requeste
 // src/waku.server.tsx
 async resolveElement(id) {
   if (id === 'slice:summary') {
-    return { render: () => <Summary /> };
+    return { immutable: true, render: () => <Summary /> };
   }
   return null;
-}
+},
+async getBuildElementIds() {
+  return ['slice:summary'];
+},
 ```
+
+`getBuildElementIds` lists immutable elements to emit as standalone RSC files, including lazy slices needed on a static deployment. It works independently of `getBuildPaths`. Currently only `slice:<id>` IDs are supported. Listed elements must resolve and be immutable; otherwise the build fails. Unlisted elements require a runtime server when fetched independently.
 
 Include an element directly in a route's `elements` when it should arrive in the route payload. There are no separate page, layout, or slice declarations in `defineRouter`; those are `createPages` authoring concepts.
 
