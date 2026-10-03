@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { getErrorInfo } from '../src/lib/utils-isomorphic/custom-errors.js';
+import { createConfiguredRouter } from '../src/router/create-pages-utils/router.js';
 import {
-  unstable_defineRouter,
   unstable_redirect,
   unstable_rerenderRoute,
 } from '../src/router/define-router.js';
@@ -26,7 +26,7 @@ const makeStream = () =>
 describe('define-router action requests', () => {
   it('does not let catch-all api routes intercept component requests', async () => {
     const apiHandler = vi.fn().mockResolvedValue(new Response('api'));
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [
         {
           type: 'api' as const,
@@ -75,7 +75,7 @@ describe('define-router action requests', () => {
   it('does not let catch-all api routes intercept function requests', async () => {
     const apiHandler = vi.fn().mockResolvedValue(new Response('api'));
     const actionFn = vi.fn().mockResolvedValue('action-result');
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [
         {
           type: 'api' as const,
@@ -117,7 +117,7 @@ describe('define-router action requests', () => {
   });
 
   it('sets router initial route for 404 HTML', async () => {
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [
         {
           type: 'route' as const,
@@ -160,7 +160,7 @@ describe('define-router action requests', () => {
   it('allows no-JS form actions to rerender a route', async () => {
     let message = 'before';
     const renderPage = vi.fn(() => `page:${message}`);
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [
         {
           type: 'route' as const,
@@ -216,7 +216,7 @@ describe('define-router action requests', () => {
   it('lets a no-JS form action rerender its own route with no arguments', async () => {
     let message = 'before';
     const renderPage = vi.fn(() => `page:${message}`);
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [
         {
           type: 'route' as const,
@@ -262,7 +262,7 @@ describe('define-router action requests', () => {
     let message = 'before';
     const apiHandler = vi.fn().mockResolvedValue(new Response('api'));
     const renderPage = vi.fn(() => `page:${message}`);
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [
         {
           type: 'route' as const,
@@ -332,7 +332,7 @@ describe('define-router action requests', () => {
     ['/a/.', '/a'],
     ['/a/b/..', '/a'],
   ])('rerenders pathname %s as %s', async (pathname, routePath) => {
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [
         {
           type: 'route' as const,
@@ -383,7 +383,7 @@ describe('define-router action requests', () => {
     ['q=a b', 'q=a+b'],
     ['q=日本', 'q=%E6%97%A5%E6%9C%AC'],
   ])('rerenders query %s as %s', async (query, routeQuery) => {
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [
         {
           type: 'route' as const,
@@ -424,7 +424,7 @@ describe('define-router action requests', () => {
   it('lets api routes handle action requests when no route matches', async () => {
     const apiHandler = vi.fn().mockResolvedValue(new Response('api'));
     const actionFn = vi.fn();
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [
         {
           type: 'api' as const,

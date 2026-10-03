@@ -1,11 +1,6 @@
 import type { ReactNode } from 'react';
+import type { Unstable_ElementSource as ElementSource } from 'waku/minimal/server';
 import { deserializeRsc, serializeRsc } from 'waku/server';
-import type { PathSpec } from '../isomorphic-utils/path-spec.js';
-import {
-  isRouteSlotId,
-  isSliceSlotId,
-} from '../isomorphic-utils/route-path.js';
-import { type SlotId, pathSpecKey } from './config.js';
 
 export const ROOT_SLOT_ID = 'root';
 
@@ -40,7 +35,7 @@ export const createElementCache = (
         deserializeRsc(bytes),
       ) as Promise<ReactNode>;
     },
-    set: (cacheId: CacheId, element: ReactNode) => {
+    set: (cacheId: CacheId, element: unknown) => {
       if (cache.has(cacheId)) {
         return;
       }
@@ -57,20 +52,21 @@ export const createElementCache = (
 
 export type ElementCache = ReturnType<typeof createElementCache>;
 
-export const getSlotCacheId = (slotId: SlotId): CacheId => `slot/${slotId}`;
-export const getPathSpecCacheId = (pathSpec: PathSpec): CacheId =>
-  `pathSpec/${pathSpecKey(pathSpec)}`; // For routeElement
+export const cacheElementSource = (
+  source: ElementSource,
+  cacheId: CacheId,
+  cache: ElementCache,
+): ElementSource =>
+  source.immutable
+    ? {
+        ...source,
+        render: async () => {
+          if (!cache.has(cacheId)) {
+            await cache.set(cacheId, await source.render());
+          }
+          return cache.get(cacheId);
+        },
+      }
+    : source;
 
-export const assertNonReservedSlotId = (slotId: SlotId) => {
-  if (
-    slotId === ROOT_SLOT_ID ||
-    isRouteSlotId(slotId) ||
-    isSliceSlotId(slotId) ||
-    // Capitalized ids are reserved for define-router such as ROUTE_ID, IS_STATIC_ID, HAS404_ID
-    /^[A-Z]/.test(slotId)
-  ) {
-    throw new Error(
-      'Element ID cannot be "root", "route:*", "slice:*", or start with a capital letter',
-    );
-  }
-};
+export const getSlotCacheId = (slotId: string): CacheId => `slot/${slotId}`;

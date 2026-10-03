@@ -1,6 +1,6 @@
 import { runInNewContext } from 'node:vm';
 import { describe, expect, it, vi } from 'vitest';
-import { unstable_defineRouter } from '../src/router/define-router.js';
+import { createConfiguredRouter } from '../src/router/create-pages-utils/router.js';
 import {
   ROUTE_ID,
   encodeRoutePath,
@@ -27,7 +27,7 @@ describe('define-router handleBuild', () => {
       ['/foo', ['shared-module', 'foo-module']],
       ['/bar', ['shared-module', 'bar-module']],
     ]);
-    const { handleBuild } = unstable_defineRouter({
+    const { handleBuild } = createConfiguredRouter({
       getConfigs: async () => [
         {
           type: 'route',
@@ -108,7 +108,7 @@ describe('define-router handleBuild', () => {
   it('caches static elements inside routes whose path is non-literal', async () => {
     const layoutRenderer = vi.fn(() => null);
     const pageRenderer = vi.fn(() => null);
-    const { handleBuild } = unstable_defineRouter({
+    const { handleBuild } = createConfiguredRouter({
       getConfigs: async () => [
         {
           type: 'route',
@@ -167,7 +167,7 @@ describe('define-router handleBuild', () => {
     // routes (which the per-route loop processes via
     // cacheStaticElementsOfRoute, not getEntriesForRoute).
     const sliceRenderer = vi.fn(async () => null);
-    const { handleBuild } = unstable_defineRouter({
+    const { handleBuild } = createConfiguredRouter({
       getConfigs: async () => [
         {
           type: 'route',
@@ -214,7 +214,7 @@ describe('define-router handleBuild', () => {
   });
 
   it('wraps EEXIST on static wildcard emit with a clear error', async () => {
-    const { handleBuild } = unstable_defineRouter({
+    const { handleBuild } = createConfiguredRouter({
       getConfigs: async () => [
         {
           type: 'api',
@@ -272,7 +272,7 @@ describe('define-router handleBuild', () => {
   it('hydrates cached elements before any concurrent first request can read them', async () => {
     // Build phase: produce serializableConfigs + cachedElements metadata.
     const buildSave = vi.fn().mockResolvedValue(undefined);
-    const buildRouter = unstable_defineRouter({
+    const buildRouter = createConfiguredRouter({
       getConfigs: async () => [
         {
           type: 'route',
@@ -301,7 +301,9 @@ describe('define-router handleBuild', () => {
 
     // Runtime: empty getConfigs simulates a fully-pruned route - the merge
     // falls back to noRuntimeFn renderers, so any cache miss throws.
-    const runtimeRouter = unstable_defineRouter({ getConfigs: async () => [] });
+    const runtimeRouter = createConfiguredRouter({
+      getConfigs: async () => [],
+    });
 
     const loadBuildMetadata = vi.fn(async (key: string) => {
       // Slow down the cachedElements load so two concurrent first requests
@@ -341,7 +343,7 @@ describe('define-router handleBuild', () => {
     // A source file that backs both a static and a dynamic config must stay
     // in the runtime bundle - pruning it would break the dynamic config.
     const register = vi.fn();
-    const { handleBuild } = unstable_defineRouter({
+    const { handleBuild } = createConfiguredRouter({
       getConfigs: async () => [
         {
           type: 'route',
@@ -400,7 +402,7 @@ describe('define-router handleBuild', () => {
       elements: {},
       ...extra,
     });
-    const { handleBuild } = unstable_defineRouter({
+    const { handleBuild } = createConfiguredRouter({
       getConfigs: async () => [
         staticRoute('foo'),
         staticRoute('404'),

@@ -7,6 +7,7 @@ import { getErrorInfo } from '../src/lib/utils-isomorphic/custom-errors.js';
 import { Children_UNSTABLE as Children } from '../src/minimal/client.js';
 import type { PathsForPages } from '../src/router/base-types.js';
 import type { GetSlugs } from '../src/router/create-pages-utils/inferred-path-types.js';
+import { createConfiguredRouter } from '../src/router/create-pages-utils/router.js';
 import {
   createPages,
   pathMappingWithoutGroups,
@@ -24,7 +25,6 @@ import type {
   PathWithoutSlug,
   StaticSlugRoutePathsTuple,
 } from '../src/router/create-pages.js';
-import { unstable_defineRouter } from '../src/router/define-router.js';
 import { parsePathWithSlug } from '../src/router/isomorphic-utils/path-spec.js';
 
 function Fake() {
@@ -611,12 +611,12 @@ describe('type tests', () => {
   });
 });
 
-const defineRouterMock = unstable_defineRouter as MockedFunction<
-  typeof unstable_defineRouter
+const configuredRouterMock = createConfiguredRouter as MockedFunction<
+  typeof createConfiguredRouter
 >;
 
-vi.mock('../src/router/define-router.js', () => ({
-  unstable_defineRouter: vi.fn(),
+vi.mock('../src/router/create-pages-utils/router.js', () => ({
+  createConfiguredRouter: vi.fn(),
 }));
 
 beforeEach(() => {
@@ -624,10 +624,10 @@ beforeEach(() => {
 });
 
 function injectedFunctions() {
-  expect(defineRouterMock).toHaveBeenCalledTimes(1);
-  assert(defineRouterMock.mock.calls[0]?.[0].getConfigs);
+  expect(configuredRouterMock).toHaveBeenCalledTimes(1);
+  assert(configuredRouterMock.mock.calls[0]?.[0].getConfigs);
   return {
-    getConfigs: defineRouterMock.mock.calls[0][0].getConfigs,
+    getConfigs: configuredRouterMock.mock.calls[0][0].getConfigs,
   };
 }
 

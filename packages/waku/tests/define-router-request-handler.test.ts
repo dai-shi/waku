@@ -4,7 +4,7 @@ import {
   unstable_createCustomError,
   unstable_getErrorInfo,
 } from '../src/minimal/server.js';
-import { unstable_defineRouter } from '../src/router/define-router.js';
+import { createConfiguredRouter } from '../src/router/create-pages-utils/router.js';
 import {
   ACTION_LOCATION_HEADER,
   IS_ORIGIN_ID,
@@ -74,7 +74,7 @@ const dynamicRoute = (name: string) => ({
 
 describe('request dispatch', () => {
   it('returns null for an unknown rsc route', async () => {
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [dynamicRoute('/about')],
     });
     const res = await handleRequest(
@@ -85,7 +85,7 @@ describe('request dispatch', () => {
   });
 
   it('serves a single-slice rsc request', async () => {
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [
         {
           type: 'slice' as const,
@@ -104,7 +104,7 @@ describe('request dispatch', () => {
   });
 
   it('merges entries scheduled by a server function rerender', async () => {
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [dynamicRoute('/')],
     });
     const utils = makeUtils();
@@ -122,7 +122,7 @@ describe('request dispatch', () => {
   });
 
   it('rerenders the route an action came from when asked with no arguments', async () => {
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [dynamicRoute('/dest')],
     });
     const utils = makeUtils();
@@ -143,7 +143,7 @@ describe('request dispatch', () => {
   });
 
   it('renders a named route, not the one an action came from', async () => {
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [dynamicRoute('/'), dynamicRoute('/dest')],
     });
     const utils = makeUtils();
@@ -162,7 +162,7 @@ describe('request dispatch', () => {
   });
 
   it('renders nothing for an action that does not ask, so an effect calling it cannot loop', async () => {
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [dynamicRoute('/dest')],
     });
     const utils = makeUtils();
@@ -177,7 +177,7 @@ describe('request dispatch', () => {
   });
 
   it('rejects a no-argument rerender when the route an action came from is unknown', async () => {
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [dynamicRoute('/dest')],
     });
     await expect(
@@ -191,7 +191,7 @@ describe('request dispatch', () => {
   });
 
   it('ignores a malformed action location unless the action asks for it', async () => {
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [dynamicRoute('/dest')],
     });
     const utils = makeUtils();
@@ -216,7 +216,7 @@ describe('request dispatch', () => {
   });
 
   it('does not mark a response whose last rerender names a route', async () => {
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [dynamicRoute('/'), dynamicRoute('/dest')],
     });
     const utils = makeUtils();
@@ -234,7 +234,7 @@ describe('request dispatch', () => {
   });
 
   it('marks a response whose last rerender is the route an action came from', async () => {
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [dynamicRoute('/'), dynamicRoute('/dest')],
     });
     const utils = makeUtils();
@@ -252,7 +252,7 @@ describe('request dispatch', () => {
   });
 
   it('rejects a no-argument rerender whose action location is malformed', async () => {
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [dynamicRoute('/dest')],
     });
     await expect(
@@ -266,7 +266,7 @@ describe('request dispatch', () => {
   });
 
   it('does not mark a response after a no-argument rerender that failed', async () => {
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [dynamicRoute('/dest')],
     });
     const utils = makeUtils();
@@ -284,7 +284,7 @@ describe('request dispatch', () => {
   });
 
   it('keeps the query of a server-function redirect', async () => {
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [dynamicRoute('/dest')],
     });
     const utils = makeUtils();
@@ -301,7 +301,7 @@ describe('request dispatch', () => {
   });
 
   it('leaves a server-function redirect to a non-route for the browser', async () => {
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [dynamicRoute('/dest'), dynamicRoute('/404')],
     });
     const utils = makeUtils();
@@ -325,7 +325,7 @@ describe('request dispatch', () => {
   ])(
     'leaves a server-function redirect to %s for the browser to follow',
     async (location) => {
-      const { handleRequest } = unstable_defineRouter({
+      const { handleRequest } = createConfiguredRouter({
         getConfigs: async () => [dynamicRoute('/dest')],
       });
       const utils = makeUtils();
@@ -344,7 +344,7 @@ describe('request dispatch', () => {
   );
 
   it('responds to a server-function redirect with the destination route', async () => {
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [dynamicRoute('/dest')],
     });
     const utils = makeUtils();
@@ -362,7 +362,7 @@ describe('request dispatch', () => {
 
   it('maps api params and rewrites the request pathname', async () => {
     const apiHandler = vi.fn().mockResolvedValue(new Response('api'));
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [
         {
           type: 'api' as const,
@@ -390,7 +390,7 @@ describe('request dispatch', () => {
   });
 
   it('answers an rsc request for a missing route with the 404 payload', async () => {
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [dynamicRoute('/404')],
     });
     const utils = makeUtils();
@@ -418,7 +418,7 @@ describe('request dispatch', () => {
         },
       },
     };
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [notFound, dynamicRoute('/404')],
     });
     const utils = makeUtils();
@@ -439,7 +439,7 @@ describe('request dispatch', () => {
         },
       },
     };
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [boom, dynamicRoute('/404')],
     });
     const utils = makeUtils();
@@ -459,7 +459,7 @@ describe('request dispatch', () => {
         },
       },
     };
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [recursive],
     });
     const utils = makeUtils();
@@ -481,7 +481,7 @@ describe('request dispatch', () => {
         },
       },
     };
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [broken],
     });
     await expect(
@@ -499,7 +499,7 @@ describe('request dispatch', () => {
         },
       },
     };
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [moved, dynamicRoute('/dest')],
     });
     const utils = makeUtils();
@@ -523,7 +523,7 @@ describe('request dispatch', () => {
         },
       },
     };
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [moved, dynamicRoute('/dest')],
       unstable_interceptors: [
         async (next) => {
@@ -550,7 +550,7 @@ describe('request dispatch', () => {
         },
       },
     };
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [moved, dynamicRoute('/dest')],
       unstable_interceptors: [
         async (next) => {
@@ -595,7 +595,7 @@ describe('request dispatch', () => {
         },
       },
     };
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [moved, broken],
     });
     const utils = makeUtils();
@@ -622,7 +622,7 @@ describe('request dispatch', () => {
         },
       },
     };
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [moved],
     });
     const utils = makeUtils();
@@ -648,7 +648,7 @@ describe('request dispatch', () => {
         },
       },
     };
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [gone, dynamicRoute('/404')],
     });
     const utils = makeUtils();
@@ -675,7 +675,7 @@ describe('request dispatch', () => {
         },
       },
     };
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [onward],
     });
     const utils = makeUtils();
@@ -692,7 +692,7 @@ describe('request dispatch', () => {
   });
 
   it('renders the 404 route with the query that was asked for', async () => {
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [dynamicRoute('/404')],
     });
     const utils = makeUtils();
@@ -713,7 +713,7 @@ describe('request dispatch', () => {
   });
 
   it('renders the 404 route for an unknown http page', async () => {
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [dynamicRoute('/404')],
     });
     const utils = makeUtils();
@@ -734,7 +734,7 @@ describe('request dispatch', () => {
   });
 
   it('keeps the 404 fallback render from rethrowing', async () => {
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [
         dynamicRoute('/not-found'),
         dynamicRoute('/404'),
@@ -766,7 +766,7 @@ describe('request dispatch', () => {
   });
 
   it('returns fallback for a noSsr route', async () => {
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [{ ...dynamicRoute('/nossr'), noSsr: true }],
     });
     const res = await handleRequest(
@@ -784,7 +784,7 @@ describe('request dispatch', () => {
     const loadBuildMetadata = vi.fn(async (key: string) =>
       key === 'defineRouter:cachedElements' ? '{}' : undefined,
     );
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [dynamicRoute('/')],
     });
     const request = () =>
@@ -805,7 +805,7 @@ describe('request dispatch', () => {
   });
 
   it('exposes request-store APIs from router/server inside an interceptor', async () => {
-    const { handleRequest } = unstable_defineRouter({
+    const { handleRequest } = createConfiguredRouter({
       getConfigs: async () => [dynamicRoute('/')],
       unstable_interceptors: [
         async (next) => {

@@ -7,7 +7,7 @@ import {
   mergeWithRuntimeConfigs,
   pathSpecKey,
   toSerializable,
-} from '../src/router/define-router-utils/config.js';
+} from '../src/router/create-pages-utils/config.js';
 import type { PathSpec } from '../src/router/isomorphic-utils/path-spec.js';
 
 const path = (name: string): PathSpec => [{ type: 'literal', name }];

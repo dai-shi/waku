@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createConfigRegistry } from '../src/router/define-router-utils/config-registry.js';
+import { createConfigRegistry } from '../src/router/create-pages-utils/config-registry.js';
 import {
   DEFINE_ROUTER_METADATA,
   type RuntimeConfig,
   toSerializable,
-} from '../src/router/define-router-utils/config.js';
+} from '../src/router/create-pages-utils/config.js';
 import {
   type PathSpec,
   pathSpecAsString,

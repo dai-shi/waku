@@ -1,293 +1,147 @@
 ---
 slug: custom-router
 title: Custom Router
-description: Define route, API, and slice configs manually with Waku's low-level router.
+description: Resolve routes directly while using Waku's router client.
 category: Low-level APIs
 order: 20
 ---
 
 ## When to Use a Custom Router
 
-Waku's file-system router and `createPages` cover most applications. Use `unstable_defineRouter` only when you need to generate or own Waku's router config directly, for example:
+Use `unstable_defineRouter` when you want to bring your own route matching: plain strings, regular expressions, a CMS, or another route manifest. It pairs with `waku/router/client`; Waku handles navigation, server actions, redirects, and RSC request encoding.
 
-- building a routing abstraction on top of Waku
-- importing routes from another framework or CMS
-- generating route configs from non-file-system metadata
-- experimenting with custom route, API, or slice behavior
+For programmatic page and layout declarations, use [`createPages`](/create-pages). For a different client protocol or lower-level request handling, use the [Minimal API](/guides/minimal-api).
 
-The API currently uses an `unstable_` name and may change. If you only need programmatic pages, prefer the [`createPages` reference](/create-pages). If you need lower-level request and build control than the router provides, see [Minimal API](/guides/minimal-api).
+## Server Entry
 
-## Entry Points
-
-A custom router still uses the normal Waku router client:
-
-```tsx
-// src/waku.client.tsx
-import { StrictMode } from 'react';
-import { createRoot, hydrateRoot } from 'react-dom/client';
-import { unstable_defaultRootOptions as defaultRootOptions } from 'waku/client';
-import { ErrorBoundary, Router } from 'waku/router/client';
-
-const rootElement = (
-  <StrictMode>
-    <ErrorBoundary>
-      <Router />
-    </ErrorBoundary>
-  </StrictMode>
-);
-
-if ((globalThis as any).__WAKU_HYDRATE__) {
-  hydrateRoot(document, rootElement, defaultRootOptions);
-} else {
-  createRoot(document, defaultRootOptions).render(rootElement);
-}
-```
-
-Then define the server router in `src/waku.server.tsx`:
+`resolve` receives a normalized pathname and the query string without `?`. Return a route, an HTTP handler, or `null` for not found. All resolver callbacks return promises.
 
 ```tsx
 // src/waku.server.tsx
 import adapter from 'waku/adapters/default';
-import {
-  Children_UNSTABLE as Children,
-  Slot_UNSTABLE as Slot,
-} from 'waku/minimal/client';
+import { Children_UNSTABLE as Children } from 'waku/minimal/client';
 import { unstable_defineRouter as defineRouter } from 'waku/router/server';
-import AppLayout from './components/app-layout';
-import HomePage from './components/home-page';
-import PostPage from './components/post-page';
-import Root from './components/root';
+import Home from './components/home';
+import Post from './components/post';
 
-const renderRoot = () => (
-  <Root>
-    <Children />
-  </Root>
-);
-
-const renderAppLayout = () => (
-  <AppLayout>
-    <Children />
-  </AppLayout>
-);
-
-const getPostSlug = (routePath: string) => routePath.split('/').at(-1)!;
-
-export default adapter(
-  defineRouter({
-    getConfigs: async () => [
-      {
-        type: 'route',
-        path: [],
-        isStatic: true,
-        rootElement: { isStatic: true, renderer: renderRoot },
-        routeElement: {
-          isStatic: true,
-          renderer: () => (
-            <Slot id="layout:app">
-              <Slot id="page:home" />
-            </Slot>
-          ),
-        },
-        elements: {
-          'layout:app': { isStatic: true, renderer: renderAppLayout },
-          'page:home': { isStatic: true, renderer: () => <HomePage /> },
-        },
-        slices: [],
-      },
-      {
-        type: 'route',
-        path: [
-          { type: 'literal', name: 'posts' },
-          { type: 'group', name: 'slug' },
-        ],
-        isStatic: false,
-        rootElement: { isStatic: true, renderer: renderRoot },
-        routeElement: {
-          isStatic: true,
-          renderer: () => (
-            <Slot id="layout:app">
-              <Slot id="page:post" />
-            </Slot>
-          ),
-        },
-        elements: {
-          'layout:app': { isStatic: true, renderer: renderAppLayout },
-          'page:post': {
-            isStatic: false,
-            renderer: ({ routePath }) => (
-              <PostPage slug={getPostSlug(routePath)} />
-            ),
-          },
-        },
-        slices: [],
-      },
-      {
-        type: 'api',
-        path: [
-          { type: 'literal', name: 'api' },
-          { type: 'literal', name: 'health' },
-        ],
-        isStatic: false,
-        handler: async () => Response.json({ ok: true }),
-      },
-    ],
-  }),
-);
-```
-
-See [`define-router/basic`](https://github.com/wakujs/waku-examples/tree/main/define-router/basic) for a complete example.
-
-## Path Specs
-
-Routes, APIs, and slug slices use a path spec array instead of a path string.
-
-```ts
-// /
-[];
-
-// /about
-[{ type: 'literal', name: 'about' }];
-
-// /posts/[slug]
-[
-  { type: 'literal', name: 'posts' },
-  { type: 'group', name: 'slug' },
-];
-
-// /files/[...path]
-[
-  { type: 'literal', name: 'files' },
-  { type: 'wildcard', name: 'path' },
-];
-```
-
-`group` segments match one path segment. `wildcard` segments match the rest of the path. A `group` can also include `prefix` and `suffix` fields for segment patterns such as `/@[username]`.
-
-## Route Configs
-
-A route config describes how Waku renders one browser route.
-
-Important fields:
-
-- `type: 'route'` identifies a page route.
-- `path` is the route path spec.
-- `isStatic` marks the route as static for router metadata and build output when the path has no dynamic segments.
-- `rootElement` renders the document root and usually includes `<Children />`.
-- `routeElement` composes the active route from slots.
-- `elements` maps slot IDs to renderers.
-- `slices` lists slice IDs that should be included with the route payload.
-- `noSsr` can return Waku's fallback HTML for document requests.
-- `pathPattern` can associate a concrete static route with the dynamic pattern it came from.
-
-Slot IDs are application-defined strings, but `root`, `route:*`, and `slice:*` are reserved by Waku.
-
-Each element has its own `isStatic` flag. Static elements can be cached and reused. Dynamic elements are rendered for the current request.
-
-Route and element renderers receive:
-
-```ts
-type RendererOption = {
-  routePath: string;
-  query: string | undefined;
+const root = {
+  immutable: true,
+  render: () => (
+    <html>
+      <body>
+        <Children />
+      </body>
+    </html>
+  ),
 };
-```
 
-The router does not pass named params to route element renderers. If you need named params, derive them from `routePath` in your own router layer, or use `createPages` instead.
-
-## API Configs
-
-An API config handles a request directly:
-
-```tsx
-{
-  type: 'api',
-  path: [
-    { type: 'literal', name: 'api' },
-    { type: 'group', name: 'id' },
-  ],
-  isStatic: false,
-  handler: async (req, { params }) => {
-    return Response.json({
-      id: params.id,
-      url: req.url,
-    });
-  },
-}
-```
-
-`params` is derived from the path spec. Use `isStatic: true` only for API responses that can be emitted at build time from a literal path.
-
-## Slice Configs
-
-Slice configs define server-rendered fragments that routes can include in their payload or that the client can request later with Waku's `<Slice>` component.
-
-```tsx
-{
-  type: 'slice',
-  id: 'cart-summary',
-  isStatic: false,
-  renderer: async () => <CartSummary />,
-}
-```
-
-For slug slices, provide `pathSpec`:
-
-```tsx
-{
-  type: 'slice',
-  id: 'product-card/[id]',
-  pathSpec: [
-    { type: 'literal', name: 'product-card' },
-    { type: 'group', name: 'id' },
-  ],
-  isStatic: false,
-  renderer: async (params) => <ProductCard id={String(params?.id)} />,
-}
-```
-
-Include non-lazy slices in the route's `slices` array:
-
-```tsx
-{
-  type: 'route',
-  path: [{ type: 'literal', name: 'cart' }],
-  // ...
-  slices: ['cart-summary'],
-}
-```
-
-## Build Behavior
-
-During `waku build`, the custom router:
-
-- prerenders static route configs with literal paths
-- emits static API responses with literal paths
-- caches static elements for reuse
-- emits static slices when their ID has no slug path spec
-- saves router metadata used by the production server and client prefetching
-
-Use `unstable_skipBuild` to skip selected static route or API outputs:
-
-```tsx
 export default adapter(
   defineRouter({
-    getConfigs,
-    unstable_skipBuild: (routePath) => routePath === '/preview',
+    async resolve(pathname, query) {
+      if (pathname === '/api/health') {
+        return async () => Response.json({ ok: true });
+      }
+      if (pathname === '/') {
+        return {
+          elements: {
+            root,
+            route: { immutable: true, render: () => <Home /> },
+          },
+        };
+      }
+      const match = /^\/posts\/([^/]+)$/.exec(pathname);
+      if (match) {
+        return {
+          elements: {
+            root,
+            route: { render: () => <Post id={match[1]!} query={query} /> },
+          },
+        };
+      }
+      return null;
+    },
+    async getBuildPaths() {
+      return ['/'];
+    },
   }),
 );
 ```
 
-`unstable_skipBuild` receives a concrete route path. It does not run for dynamic path specs that cannot be emitted as a concrete file.
+The `root` source renders the document and places the active route with `Children_UNSTABLE`. The `route` source renders the current route. Add other element sources under IDs you own and compose them with `Slot_UNSTABLE` when independently reusable content is useful.
+
+Each source uses Minimal's `Unstable_ElementSource`:
+
+- `render` produces its content.
+- `immutable: true` lets the client reuse content for that slot ID indefinitely.
+- `getEtag` optionally computes a validator for mutable content before rendering it.
+
+An immutable slot must have the same content for its lifetime. The `root` ID is shared across routes, while `route` is mapped internally to a path-specific slot. Additional IDs are shared wherever they appear, so use distinct IDs for different content.
+
+The server caches immutable named elements. It reuses immutable `route` content from build output, but does not cache new route content by requested pathname at runtime.
+
+Additional IDs must not start with `_`, a capital letter, or `route:`; these names are reserved for Minimal and Router metadata.
+
+Set `noSsr: true` on a route to return Waku's client-rendered document fallback; its RSC response remains available. Resolving `/404` supplies a custom not-found route. Its availability is checked once per router instance; the content is resolved on each visit. See [Redirects and Not Found](/guides/redirects-and-not-found) for streaming behavior.
+
+## Client Entry
+
+Use the normal router client, not a custom Minimal client:
+
+```tsx
+// src/waku.client.tsx
+import { createRoot, hydrateRoot } from 'react-dom/client';
+import { unstable_defaultRootOptions as defaultRootOptions } from 'waku/client';
+import { ErrorBoundary, Router } from 'waku/router/client';
+
+const app = (
+  <ErrorBoundary>
+    <Router />
+  </ErrorBoundary>
+);
+if ((globalThis as any).__WAKU_HYDRATE__) {
+  hydrateRoot(document, app, defaultRootOptions);
+} else {
+  createRoot(document, defaultRootOptions).render(app);
+}
+```
+
+## HTTP Handlers
+
+Return an async function from `resolve` for an API endpoint. The function receives the real request, including its method, headers, and body, with the pathname relative to Waku's base path. It runs only for HTTP requests, not when the client tries to fetch a route payload.
+
+Route params are caller-owned: match and capture them in `resolve`, then close over them in the handler or element source. Use `unstable_getRequest` or `unstable_getHeaders` from `waku/router/server` to inspect request information during resolution or rendering.
+
+## Build Paths
+
+The optional `getBuildPaths` returns concrete pathname strings, without queries or fragments. Build and runtime use the same `resolve` callback.
+
+- Routes with only immutable sources emit RSC and HTML files.
+- Mutable routes cache only their immutable sources; mutable content is rendered at runtime.
+- HTTP handlers emit their response bodies as static files.
+- Immutable routes with `noSsr` emit RSC and a default client-rendered HTML document.
+
+Omit a path to skip its build output. Omit `getBuildPaths` entirely for runtime-only routes. Custom routers do not need `PathSpec`, component source-file metadata, or the private build plan used by `createPages`.
+
+Include `/404` in `getBuildPaths` to emit a static `404.html`.
+
+## Independently Requested Elements
+
+The optional `resolveElement` returns an element source or `null` for a requested slot ID. Existing lazy `Slice` components from `waku/router/client` request IDs of the form `slice:<id>`.
+
+```tsx
+// src/waku.server.tsx
+async resolveElement(id) {
+  if (id === 'slice:summary') {
+    return { render: () => <Summary /> };
+  }
+  return null;
+}
+```
+
+Include an element directly in a route's `elements` when it should arrive in the route payload. There are no separate page, layout, or slice declarations in `defineRouter`; those are `createPages` authoring concepts.
 
 ## Boundaries
 
-`unstable_defineRouter` is lower-level than `createPages`, but it is not the same as the Minimal API. Waku still owns:
+`defineRouter` owns the protocol expected by `waku/router/client`: reserved metadata, root and route slots, action rerenders, redirects, 404 handling, SSR, and build output. Custom routers supply resolution and element sources, without importing internal IDs or encoding helpers from `waku/router/client-core`.
 
-- router request dispatch
-- RSC path encoding
-- document rendering
-- server action and server function plumbing
-- router client metadata
-- static build metadata
-
-Avoid importing constants or helpers from `waku/router/client-core` just to reproduce Waku's internal route IDs or RSC path format. Exports such as `unstable_ROUTE_ID`, `unstable_getRouteSlotId`, and `unstable_encodeRoutePath` are highly experimental implementation details. Prefer plain slot IDs that you own, and let `unstable_defineRouter` handle Waku's reserved entries.
+The API is unstable and may change.

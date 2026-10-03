@@ -2,11 +2,11 @@ import type { ReactNode } from 'react';
 import { createElement } from 'react';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { describe, expect, it, vi } from 'vitest';
+import { createConfiguredRouter } from '../src/router/create-pages-utils/router.js';
 import { createPages } from '../src/router/create-pages.js';
 import {
   type HandlerInterceptor,
   unstable_getRequest as getRequest,
-  unstable_defineRouter,
 } from '../src/router/define-router.js';
 import { fsRouter } from '../src/router/fs-router.js';
 
@@ -27,7 +27,7 @@ const make404Router = (
   renderer: () => ReactNode,
   unstable_interceptors: HandlerInterceptor[],
 ) =>
-  unstable_defineRouter({
+  createConfiguredRouter({
     getConfigs: async () => [
       {
         type: 'route' as const,
@@ -42,7 +42,7 @@ const make404Router = (
   });
 
 const callHandleRequest = (
-  router: ReturnType<typeof unstable_defineRouter>,
+  router: ReturnType<typeof createConfiguredRouter>,
   pathname = '/missing',
 ) =>
   router.handleRequest(
@@ -58,7 +58,7 @@ const callHandleRequest = (
     },
   );
 
-const callHandleBuild = (router: ReturnType<typeof unstable_defineRouter>) =>
+const callHandleBuild = (router: ReturnType<typeof createConfiguredRouter>) =>
   router.handleBuild({
     renderRsc: vi.fn().mockResolvedValue(makeStream()),
     renderHtml: vi.fn().mockResolvedValue(new Response('ok')),
@@ -184,7 +184,7 @@ describe('define-router handler interceptors', () => {
     const als = new AsyncLocalStorage<string>();
     let seen: string | undefined;
     let seenUrl: string | undefined;
-    const router = unstable_defineRouter({
+    const router = createConfiguredRouter({
       getConfigs: async () => [
         {
           type: 'route' as const,
@@ -215,7 +215,7 @@ describe('define-router handler interceptors', () => {
   it('runs interceptors around the deferred static-route html render', async () => {
     const als = new AsyncLocalStorage<string>();
     let seenInHtml: string | undefined;
-    const router = unstable_defineRouter({
+    const router = createConfiguredRouter({
       getConfigs: async () => [
         {
           type: 'route' as const,

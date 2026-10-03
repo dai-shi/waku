@@ -1,12 +1,10 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import {
-  getRouterPrefetchCode,
-  setupRouterSearchCodecs,
-} from '../src/router/define-router-utils/client-code.js';
+import { setupRouterSearchCodecs } from '../src/router/create-pages-utils/client-code.js';
 import {
   DEFINE_ROUTER_METADATA,
   type RuntimeConfig,
-} from '../src/router/define-router-utils/config.js';
+} from '../src/router/create-pages-utils/config.js';
+import { getRouterPrefetchCode } from '../src/router/define-router-utils/client-code.js';
 import {
   type PathSpec,
   pathSpecAsString,

@@ -20,7 +20,6 @@ import FooPage from './routes/foo/page.js';
 import Layout from './routes/layout.js';
 import Page from './routes/page.js';
 
-const STATIC_PATHS = ['/', '/foo', '/baz2'];
 const STATIC_PAGES = ['/', '/foo', '/bar2', '/baz2'];
 const PATH_PAGE: Record<string, ReactNode> = {
   '/': <Page />,
@@ -31,210 +30,94 @@ const PATH_PAGE: Record<string, ReactNode> = {
   '/baz2': <Baz2Page />, // static page + lazy dynamic slice
 };
 
-const router: ReturnType<typeof defineRouter> = defineRouter({
-  getConfigs: async () => [
-    ...Object.keys(PATH_PAGE).map((path) => {
+const root = {
+  immutable: true,
+  render: () => (
+    <html>
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Waku example</title>
+      </head>
+      <body>
+        <Children />
+      </body>
+    </html>
+  ),
+};
+
+const sliceSources = {
+  'slice:slice001': { immutable: true, render: () => <Slice001 /> },
+  'slice:slice002': { render: () => <Slice002 /> },
+};
+
+const router = defineRouter({
+  resolve: async (path) => {
+    if (path === '/api/hi') {
+      return async (req) => {
+        if (req.method === 'GET') {
+          return new Response('hello world!');
+        }
+        if (req.method === 'POST') {
+          return new Response('POST to hello world! ' + (await req.text()));
+        }
+        return new Response(null, { status: 404 });
+      };
+    }
+    if (path === '/api/hi.txt') {
+      return async () => new Response(await readFile('./private/hi.txt'));
+    }
+    if (path === '/api/empty') {
+      return async () => new Response(null, { status: 200 });
+    }
+    if (path === '/moved' || path === '/moved-hash') {
       return {
-        type: 'route' as const,
-        pattern: `^${path}$`,
-        path: path
-          .split('/')
-          .filter(Boolean)
-          .map((name) => ({ type: 'literal', name }) as const),
-        isStatic: STATIC_PATHS.includes(path),
-        ...(path === '/' ? { slices: ['slice001'] } : {}),
-        ...(path === '/bar1' ? { slices: ['slice001'] } : {}),
-        ...(path === '/bar2' ? { slices: ['slice002'] } : {}),
-        rootElement: {
-          isStatic: true,
-          renderer: () => (
-            <html>
-              <head>
-                <meta charSet="utf-8" />
-                <meta
-                  name="viewport"
-                  content="width=device-width, initial-scale=1"
-                />
-                <title>Waku example</title>
-              </head>
-              <body>
-                <Children />
-              </body>
-            </html>
-          ),
+        elements: {
+          root,
+          route: {
+            render: () => redirect(path === '/moved' ? '/foo' : '/foo#bottom'),
+          },
         },
-        routeElement: {
-          isStatic: true,
-          renderer: () => (
+      };
+    }
+    if (!(path in PATH_PAGE)) {
+      return null;
+    }
+    return {
+      elements: {
+        root,
+        route: {
+          immutable: true,
+          render: () => (
             <Slot id="layout:/">
               <Slot id={`page:${path}`} />
             </Slot>
           ),
         },
-        elements: {
-          'layout:/': {
-            isStatic: true,
-            renderer: () => (
-              <Layout>
-                <Children />
-              </Layout>
-            ),
-          },
-          [`page:${path}`]: {
-            isStatic: STATIC_PAGES.includes(path),
-            renderer: () => PATH_PAGE[path],
-          },
-        },
-      };
-    }),
-    {
-      // the renderer throws before anything streams, so the rsc request is
-      // answered with the destination route instead of a redirect
-      type: 'route' as const,
-      pattern: '^/moved$',
-      path: [{ type: 'literal', name: 'moved' } as const],
-      isStatic: false,
-      rootElement: {
-        isStatic: true,
-        renderer: () => (
-          <html>
-            <head>
-              <meta charSet="utf-8" />
-              <meta
-                name="viewport"
-                content="width=device-width, initial-scale=1"
-              />
-              <title>Waku example</title>
-            </head>
-            <body>
+        'layout:/': {
+          immutable: true,
+          render: () => (
+            <Layout>
               <Children />
-            </body>
-          </html>
-        ),
-      },
-      routeElement: {
-        isStatic: false,
-        renderer: () => {
-          redirect('/foo');
+            </Layout>
+          ),
         },
-      },
-      elements: {},
-    },
-    {
-      // a location no route can answer: the client has to navigate it itself
-      type: 'route' as const,
-      pattern: '^/moved-hash$',
-      path: [{ type: 'literal', name: 'moved-hash' } as const],
-      isStatic: false,
-      rootElement: {
-        isStatic: true,
-        renderer: () => (
-          <html>
-            <head>
-              <meta charSet="utf-8" />
-              <meta
-                name="viewport"
-                content="width=device-width, initial-scale=1"
-              />
-              <title>Waku example</title>
-            </head>
-            <body>
-              <Children />
-            </body>
-          </html>
-        ),
-      },
-      routeElement: {
-        isStatic: false,
-        renderer: () => {
-          redirect('/foo#bottom');
+        [`page:${path}`]: {
+          immutable: STATIC_PAGES.includes(path),
+          render: () => PATH_PAGE[path],
         },
+        ...(path === '/' || path === '/bar1'
+          ? { 'slice:slice001': sliceSources['slice:slice001'] }
+          : {}),
+        ...(path === '/bar2'
+          ? { 'slice:slice002': sliceSources['slice:slice002'] }
+          : {}),
       },
-      elements: {},
-    },
-    {
-      type: 'api',
-      path: [
-        { type: 'literal', name: 'api' },
-        { type: 'literal', name: 'hi' },
-      ],
-      isStatic: false,
-      handler: async (req) => {
-        if (req.method === 'GET') {
-          return new Response(
-            new ReadableStream({
-              start(controller) {
-                controller.enqueue(new TextEncoder().encode('hello world!'));
-                controller.close();
-              },
-            }),
-          );
-        }
-        if (req.method === 'POST') {
-          const bodyContent = await new Response(req.body).text();
-          return new Response(
-            new ReadableStream({
-              start(controller) {
-                controller.enqueue(
-                  new TextEncoder().encode(
-                    `POST to hello world! ${bodyContent}`,
-                  ),
-                );
-                controller.close();
-              },
-            }),
-          );
-        }
-        return new Response(null, {
-          status: 404,
-        });
-      },
-    },
-    {
-      type: 'api',
-      path: [
-        { type: 'literal', name: 'api' },
-        { type: 'literal', name: 'hi.txt' },
-      ],
-      isStatic: false,
-      handler: async () => {
-        const hiTxt = await readFile('./private/hi.txt');
-        return new Response(
-          new ReadableStream({
-            start(controller) {
-              controller.enqueue(hiTxt);
-              controller.close();
-            },
-          }),
-        );
-      },
-    },
-    {
-      type: 'api',
-      path: [
-        { type: 'literal', name: 'api' },
-        { type: 'literal', name: 'empty' },
-      ],
-      isStatic: true,
-      handler: async () => {
-        return new Response(null, {
-          status: 200,
-        });
-      },
-    },
-    {
-      type: 'slice',
-      id: 'slice001',
-      isStatic: true,
-      renderer: async () => <Slice001 />,
-    },
-    {
-      type: 'slice',
-      id: 'slice002',
-      isStatic: false,
-      renderer: async () => <Slice002 />,
-    },
-  ],
+    };
+  },
+  getBuildPaths: async () => [...Object.keys(PATH_PAGE), '/api/empty'],
+  resolveElement: async (id) =>
+    sliceSources[id as keyof typeof sliceSources] || null,
 });
 
 export default adapter(router);

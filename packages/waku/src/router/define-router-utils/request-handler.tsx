@@ -1,23 +1,25 @@
 import { unstable_getErrorInfo as getErrorInfo } from 'waku/minimal/server';
 import type { Unstable_HandleRequest as HandleRequest } from 'waku/minimal/server';
 import { INTERNAL_ServerRouter } from '../client.js';
-import { getPathMapping } from '../isomorphic-utils/path-spec.js';
 import {
   ACTION_LOCATION_HEADER,
   IS_ORIGIN_ID,
   decodeSliceId,
   encodeRoutePath,
+  getSliceSlotId,
   pathnameToRoutePath,
 } from '../isomorphic-utils/route-path.js';
-import {
-  getRouterPrefetchCode,
-  setupRouterSearchCodecs,
-} from './client-code.js';
-import type { ConfigRegistry } from './config-registry.js';
-import { DEFINE_ROUTER_METADATA } from './config.js';
+import { ROUTER_METADATA } from './build-metadata.js';
+import { getRouterPrefetchCode } from './client-code.js';
 import { base64ToBytes, createElementCache } from './element-cache.js';
+import type { ElementCache } from './element-cache.js';
 import { getNonce, setRerender } from './request-store.js';
-import type { RouteEntries, createRouteEntries } from './route-entries.js';
+import type { Resolve, Route, createRouteEntries } from './route-entries.js';
+
+type RouteEntries = {
+  elements: Record<string, unknown>;
+  etags: Record<string, string | 1>;
+};
 
 type HandlerInput = Parameters<HandleRequest>[0];
 
@@ -54,24 +56,27 @@ const parseActionOrigin = (req: Request) => {
 };
 
 export const createRequestHandler = ({
-  configRegistry,
+  resolve,
   routeEntries,
   runHandled,
+  elementCache,
+  getExtraScriptContent,
 }: {
-  configRegistry: ConfigRegistry;
+  resolve: Resolve;
   routeEntries: ReturnType<typeof createRouteEntries>;
   runHandled: <T>(req: Request, fn: () => Promise<T>) => Promise<T>;
+  elementCache?: ElementCache | undefined;
+  getExtraScriptContent?: (() => Promise<string>) | undefined;
 }): HandleRequest => {
-  const requestElementCache = createElementCache();
+  const requestElementCache = elementCache ?? createElementCache();
   let requestElementCacheInit: Promise<void> | undefined;
   let cachedPath2moduleIds: Record<string, string[]> | undefined;
 
   return async (input, { renderRsc, renderHtml, loadBuildMetadata }) => {
-    await configRegistry.initialize(loadBuildMetadata);
     return runHandled(input.req, async () => {
       requestElementCacheInit ??= (async () => {
         const cachedElementsMetadata = await loadBuildMetadata(
-          DEFINE_ROUTER_METADATA.cachedElements,
+          ROUTER_METADATA.cachedElements,
         );
         if (cachedElementsMetadata) {
           Object.entries(JSON.parse(cachedElementsMetadata)).forEach(
@@ -88,8 +93,7 @@ export const createRequestHandler = ({
       const getPath2moduleIds = async () => {
         if (!cachedPath2moduleIds) {
           cachedPath2moduleIds = JSON.parse(
-            (await loadBuildMetadata(DEFINE_ROUTER_METADATA.path2moduleIds)) ||
-              '{}',
+            (await loadBuildMetadata(ROUTER_METADATA.path2moduleIds)) || '{}',
           );
         }
         return cachedPath2moduleIds!;
@@ -183,8 +187,8 @@ export const createRequestHandler = ({
       }: Extract<HandlerInput, { type: 'rsc' }>) => {
         const sliceId = decodeSliceId(rscPath);
         if (sliceId !== null) {
-          const entries = await routeEntries.getEntriesForSlice(
-            sliceId,
+          const entries = await routeEntries.getEntriesForElement(
+            getSliceSlotId(sliceId),
             requestElementCache,
           );
           if (!entries) {
@@ -213,7 +217,7 @@ export const createRequestHandler = ({
             throw e;
           }
         }
-        if (!entries && configRegistry.has404()) {
+        if (!entries && (await routeEntries.has404())) {
           entries = await routeEntries
             .getEntriesForRoute(
               encodeRoutePath('/404'),
@@ -267,18 +271,27 @@ export const createRequestHandler = ({
         req,
         tryAction,
       }: Extract<HandlerInput, { type: 'http' }>) => {
-        const pathConfigItem = configRegistry.findPathConfig(pathname);
-        if (pathConfigItem?.type === 'api') {
+        const query = new URL(req.url).searchParams.toString();
+        const resolved = await resolve(
+          pathnameToRoutePath(pathname),
+          query,
+        ).catch((error) => {
+          if (getErrorInfo(error)?.status !== 404) {
+            throw error;
+          }
+          return null;
+        });
+        if (typeof resolved === 'function') {
           const url = new URL(req.url);
           url.pathname = pathname;
           const apiReq = new Request(url, req);
-          const params = getPathMapping(pathConfigItem.path, pathname) ?? {};
-          return pathConfigItem.handler(apiReq, { params });
+          return resolved(apiReq);
         }
         const renderPage = async (
           pathname: string,
           query: string,
           status = 200,
+          resolvedRoute?: Route,
         ) => {
           const routePath = pathnameToRoutePath(pathname);
           const rscPath = encodeRoutePath(routePath);
@@ -288,11 +301,11 @@ export const createRequestHandler = ({
             rscParams,
             clientEtags,
             requestElementCache,
+            resolvedRoute,
           );
           if (!entries) {
             return null;
           }
-          const path2moduleIds = await getPath2moduleIds();
           const route = { path: routePath, query, hash: '' };
           const nonce = getNonce();
           const html = <INTERNAL_ServerRouter route={route} />;
@@ -317,21 +330,19 @@ export const createRequestHandler = ({
               status,
               ...(nonce ? { nonce } : {}),
               unstable_extraScriptContent:
-                getRouterPrefetchCode(path2moduleIds) +
-                setupRouterSearchCodecs(configRegistry.getAll()),
+                getRouterPrefetchCode(await getPath2moduleIds()) +
+                (getExtraScriptContent ? await getExtraScriptContent() : ''),
               unstable_rethrowNotFound:
-                status !== 404 && configRegistry.has404(),
+                status !== 404 && (await routeEntries.has404()),
             },
           );
         };
-        const url = new URL(req.url);
-        const query = url.searchParams.toString();
-        if (pathConfigItem?.noSsr) {
+        if (resolved?.noSsr) {
           return 'fallback';
         }
         try {
-          if (pathConfigItem) {
-            return await renderPage(pathname, query);
+          if (resolved) {
+            return await renderPage(pathname, query, 200, resolved);
           }
         } catch (e) {
           const info = getErrorInfo(e);
@@ -339,7 +350,7 @@ export const createRequestHandler = ({
             throw e;
           }
         }
-        if (configRegistry.has404()) {
+        if (await routeEntries.has404()) {
           // the 404 page renders for the url that was asked for, query and all
           return renderPage('/404', query, 404);
         } else {

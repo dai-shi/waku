@@ -1,12 +1,7 @@
 import { unstable_createCustomError as createCustomError } from 'waku/minimal/server';
 import type { Unstable_Handlers as Handlers } from 'waku/minimal/server';
 import { createBuildHandler } from './define-router-utils/build-handler.js';
-import { createConfigRegistry } from './define-router-utils/config-registry.js';
-import type {
-  ApiHandler,
-  HandlerInterceptor,
-  RuntimeConfig,
-} from './define-router-utils/config.js';
+import type { ElementCache } from './define-router-utils/element-cache.js';
 import { createRequestHandler } from './define-router-utils/request-handler.js';
 import {
   getHeaders,
@@ -18,7 +13,15 @@ import {
   runWithRouterStore,
   setNonce,
 } from './define-router-utils/request-store.js';
+import type {
+  HandlerInterceptor,
+  RouterStore,
+} from './define-router-utils/request-store.js';
 import { createRouteEntries } from './define-router-utils/route-entries.js';
+import type {
+  Resolve,
+  ResolveElement,
+} from './define-router-utils/route-entries.js';
 import { buildRouteHref } from './isomorphic-utils/build-route-href.js';
 import type {
   BuildRouteHrefTarget,
@@ -37,7 +40,7 @@ export {
   getRscParams as unstable_getRscParams,
   setNonce as unstable_setNonce,
 };
-export type { ApiHandler, HandlerInterceptor };
+export type { HandlerInterceptor };
 
 const encodePathname = (pathname: string) => {
   if (!pathname.startsWith('/')) {
@@ -136,38 +139,65 @@ export function unstable_redirect<Path extends RoutePath = RoutePath>(
   throw createCustomError('Redirect', { status, location });
 }
 
-export function unstable_defineRouter(fns: {
-  getConfigs: () => Promise<Iterable<RuntimeConfig>>;
-  unstable_skipBuild?: (routePath: string) => boolean;
+type RouterOptions = {
+  resolve: Resolve;
+  getBuildPaths?: () => Promise<Iterable<string>>;
+  resolveElement?: ResolveElement;
   unstable_interceptors?: HandlerInterceptor[];
-}) {
-  const configRegistry = createConfigRegistry(fns.getConfigs);
-  const routeEntries = createRouteEntries(configRegistry);
+};
 
+export const createRouterHandlers = (
+  fns: RouterOptions,
+  routeEntries: ReturnType<typeof createRouteEntries>,
+  integration?: {
+    elementCache?: ElementCache;
+    getExtraScriptContent?: () => Promise<string>;
+    resolveSearchCodec?: RouterStore['resolveSearchCodec'];
+  },
+): Handlers => {
   const runHandled = <T,>(req: Request, fn: () => Promise<T>): Promise<T> =>
     runWithRouterStore(
-      { req, resolveSearchCodec: configRegistry.resolveSearchCodec },
+      {
+        req,
+        resolveSearchCodec:
+          integration?.resolveSearchCodec ?? getResolveSearchCodec(),
+      },
       (fns.unstable_interceptors ?? []).reduceRight(
         (next, interceptor) => () => interceptor(next),
         fn,
       ),
     );
-
   const handleRequest = createRequestHandler({
-    configRegistry,
+    resolve: fns.resolve,
     routeEntries,
     runHandled,
+    ...integration,
   });
-
   const handleBuild = createBuildHandler({
-    configRegistry,
+    resolve: fns.resolve,
+    getBuildPaths: fns.getBuildPaths,
     routeEntries,
     runHandled,
-    skipBuild: fns.unstable_skipBuild,
   });
+  return { handleRequest, handleBuild };
+};
 
-  const handlers: Handlers = { handleRequest, handleBuild };
-  return Object.assign(handlers, {
-    unstable_getRouterConfigs: async () => configRegistry.getAll(),
-  });
+/**
+ * Creates server handlers for `waku/router/client`. `resolve` receives the
+ * normalized pathname and query string without `?`, and returns element
+ * sources with `root` and `route`, an HTTP handler, or `null` for not found.
+ * The document root uses `Children_UNSTABLE` to place the active route.
+ *
+ * `getBuildPaths` lists concrete paths: immutable routes are prerendered, HTTP
+ * handlers emit static responses, and mutable routes cache only immutable
+ * elements. `resolveElement` handles `slice:<id>` requests from client `Slice`
+ * components. Runtime route content is reused only from build-preloaded entries.
+ * Custom 404 availability is checked once per router instance.
+ * Immutable sources must render the same content for the lifetime of their ID.
+ */
+export function unstable_defineRouter(fns: RouterOptions): Handlers {
+  return createRouterHandlers(
+    fns,
+    createRouteEntries(fns.resolve, fns.resolveElement),
+  );
 }
