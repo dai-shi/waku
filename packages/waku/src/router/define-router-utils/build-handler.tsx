@@ -62,14 +62,12 @@ export const createBuildHandler =
     getBuildElementIds,
     routeEntries,
     runHandled,
-    getExtraScriptContent,
   }: {
     resolve: Resolve;
     getBuildPaths: (() => Promise<Iterable<BuildPath>>) | undefined;
     getBuildElementIds: (() => Promise<Iterable<BuildElementId>>) | undefined;
     routeEntries: ReturnType<typeof createRouteEntries>;
     runHandled: <T>(req: Request, fn: () => Promise<T>) => Promise<T>;
-    getExtraScriptContent: () => Promise<string>;
   }): HandleBuild =>
   async (utils) => {
     const cachedElements: Record<string, string> = {};
@@ -167,9 +165,7 @@ export const createBuildHandler =
             routePath === '/404' ? '404.html' : routePath + '/index.html';
           if (resolved.noSsr) {
             await utils.generateFile(utils.rscPath2pathname(rscPath), stream);
-            await utils.generateDefaultHtml(htmlPath, {
-              unstable_extraScriptContent: await getExtraScriptContent(),
-            });
+            await utils.generateDefaultHtml(htmlPath);
           } else {
             const [payload, htmlPayload] = stream.tee();
             await utils.generateFile(utils.rscPath2pathname(rscPath), payload);
@@ -183,8 +179,7 @@ export const createBuildHandler =
                   {
                     rscPath,
                     unstable_extraScriptContent:
-                      getRouterPrefetchCode(path2moduleIds) +
-                      (await getExtraScriptContent()),
+                      getRouterPrefetchCode(path2moduleIds),
                   },
                 );
                 await utils.generateFile(htmlPath, response.body || '');

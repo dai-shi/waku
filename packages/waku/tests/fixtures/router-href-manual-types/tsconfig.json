@@ -1,0 +1,10 @@
+{
+  "extends": "../router-href-generated-types/tsconfig.json",
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "../../../src/lib/**/*.d.ts",
+    "../../../src/lib/global-types.ts"
+  ],
+  "exclude": []
+}

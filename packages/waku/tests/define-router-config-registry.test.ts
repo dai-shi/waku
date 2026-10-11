@@ -5,10 +5,7 @@ import {
   type RuntimeConfig,
   toSerializable,
 } from '../src/router/create-pages-utils/config.js';
-import {
-  type PathSpec,
-  pathSpecAsString,
-} from '../src/router/isomorphic-utils/path-spec.js';
+import type { PathSpec } from '../src/router/isomorphic-utils/path-spec.js';
 
 // element-cache (pulled in transitively) imports these; the registry never uses them.
 vi.mock('../src/server.js', () => ({
@@ -24,7 +21,7 @@ const route = (
     isStatic?: boolean;
     elements?: Record<string, unknown>;
     pathPattern?: PathSpec;
-    searchCodec?: { id: string };
+    searchCodec?: Extract<RuntimeConfig, { type: 'route' }>['searchCodec'];
   } = {},
 ): RuntimeConfig =>
   ({
@@ -140,21 +137,33 @@ describe('config registry queries', () => {
     expect(without.has404()).toBe(false);
   });
 
-  it('resolves search codecs by pathPattern-or-path key', async () => {
-    const registry = createConfigRegistry(async () => [
-      route('foo', {
-        pathPattern: literal('foopat'),
-        searchCodec: { id: 'cf' },
-      }),
-    ]);
-    await registry.initialize();
-    expect(
-      registry.getSearchCodecs()[pathSpecAsString(literal('foopat'))]?.id,
-    ).toBe('cf');
-    // the raw path is not the key when a pathPattern is present
-    expect(
-      registry.getSearchCodecs()[pathSpecAsString(literal('foo'))],
-    ).toBeUndefined();
+  it('retains the runtime search codec when loading serialized route configs', async () => {
+    const codec = {
+      parse: (query: string) => {
+        const page = Number(new URLSearchParams(query).get('page'));
+        if (!Number.isInteger(page) || page < 1) {
+          throw new Error('Invalid page');
+        }
+        return { page };
+      },
+      serialize: ({ page }: { page: number }) => `page=${page}`,
+    };
+    const runtime = route('foo', { searchCodec: codec });
+    const serialized = JSON.stringify([toSerializable(runtime)]);
+    const registry = createConfigRegistry(async () => [runtime]);
+    await registry.initialize(async (key) =>
+      key === CREATE_PAGES_CONFIGS_KEY ? serialized : undefined,
+    );
+    const config = registry.findPathConfig('/foo');
+    expect(config?.type).toBe('route');
+    if (config?.type !== 'route') {
+      throw new Error('Route config not found');
+    }
+    expect(config.searchCodec).toBe(codec);
+    expect(config.searchCodec?.parse('page=2')).toEqual({ page: 2 });
+    expect(() => config.searchCodec?.parse('page=invalid')).toThrow(
+      'Invalid page',
+    );
   });
 
   it('matches route/api by path and slice by id', async () => {

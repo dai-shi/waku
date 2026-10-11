@@ -13,7 +13,7 @@ const safeDecodeURIComponent = (value: string): string | null => {
 
 /**
  * Match a concrete pathname against a route path and return its params, or
- * null when the pathname does not match. This is the inverse of buildRouteHref:
+ * null when the pathname does not match. This is the inverse of href construction:
  * route groups are stripped, the existing matcher decides the match, and each
  * matched segment is decoded once. The pathname must be the encoded form stored
  * by the router (e.g. useRouter().path); a pre-decoded path would double-decode

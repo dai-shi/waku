@@ -1,13 +1,17 @@
 import { runInNewContext } from 'node:vm';
 import { describe, expect, it, vi } from 'vitest';
-import type { Unstable_HandleRequest as HandleRequest } from '../src/minimal/server.js';
-import type { Unstable_SearchCodec } from '../src/router/base-types.js';
+import {
+  type Unstable_HandleRequest as HandleRequest,
+  unstable_getErrorInfo,
+} from '../src/minimal/server.js';
+import { unstable_createRouteHref } from '../src/router/base-types.js';
 import {
   unstable_defineRouter,
   unstable_getRequest,
   unstable_notFound,
   unstable_redirect,
   unstable_rerenderRoute,
+  unstable_setNonce,
 } from '../src/router/define-router.js';
 import {
   ACTION_LOCATION_HEADER,
@@ -19,12 +23,6 @@ import {
   encodeSliceId,
 } from '../src/router/isomorphic-utils/router-protocol.js';
 import { deserializeRsc, serializeRsc } from '../src/server.js';
-
-declare module '../src/router/base-types.js' {
-  interface SearchCodecsConfig {
-    '/define-router-search/[id]': Unstable_SearchCodec<Record<string, never>>;
-  }
-}
 
 vi.mock('../src/server.js', () => ({
   serializeRsc: vi.fn(async (value: unknown) =>
@@ -110,55 +108,45 @@ describe('defineRouter route resolver', () => {
     }
   });
 
-  it('loads search codecs once for redirects and document scripts', async () => {
+  it('redirects to an href serialized by a local factory outside request scope', async () => {
     const codec = {
-      id: 'post-search',
-      parse: () => ({}),
-      serialize: () => 'encoded=search',
+      parse: vi.fn(() => ({ tag: '' })),
+      serialize: vi.fn(({ tag }: { tag: string }) =>
+        new URLSearchParams({ tag }).toString(),
+      ),
     };
-    const getSearchCodecs = vi.fn(async () => ({
-      '/define-router-search/[id]': codec,
-    }));
+    const post = unstable_createRouteHref({
+      path: '/define-router-search/[id]',
+      search: codec,
+    });
+    const href = post({ params: { id: 'one/two' }, search: { tag: 'a b' } });
+    expect(href).toBe('/define-router-search/one%2Ftwo?tag=a+b');
     const router = unstable_defineRouter({
       resolve: async (path) =>
         path === '/redirect'
-          ? async () =>
-              unstable_redirect({
-                to: '/define-router-search/[id]',
-                params: { id: 'one' },
-                search: {},
-              })
+          ? async () => unstable_redirect(href)
           : makeRoute('content'),
-      getSearchCodecs,
       getHas404: async () => false,
     });
     const utils = makeUtils();
-    await expect(
-      router.handleRequest(
+    const error = await router
+      .handleRequest(
         {
           type: 'http',
           pathname: '/redirect',
           req: new Request('http://localhost/redirect'),
         },
         utils,
-      ),
-    ).rejects.toMatchObject({
-      digest: expect.stringContaining('encoded=search'),
+      )
+      .catch((error: unknown) => error);
+    expect(unstable_getErrorInfo(error)).toEqual({
+      status: 307,
+      location: href,
     });
-    await router.handleRequest(
-      { type: 'http', pathname: '/', req: new Request('http://localhost/') },
-      utils,
-    );
-    expect(getSearchCodecs).toHaveBeenCalledOnce();
-    expect(utils.renderHtml).toHaveBeenLastCalledWith(
-      expect.anything(),
-      expect.anything(),
-      expect.objectContaining({
-        unstable_extraScriptContent: expect.stringContaining(
-          '"/define-router-search/[id]":"post-search"',
-        ),
-      }),
-    );
+    expect(codec.serialize).toHaveBeenCalledExactlyOnceWith({ tag: 'a b' });
+    expect(codec.parse).not.toHaveBeenCalled();
+    expect(utils.renderHtml).not.toHaveBeenCalled();
+    expect(utils.renderRsc).not.toHaveBeenCalled();
   });
 
   it('does not retain immutable route content for arbitrary runtime paths', async () => {
@@ -975,49 +963,66 @@ describe('defineRouter route resolver', () => {
     expect(saveBuildMetadata).not.toHaveBeenCalled();
   });
 
-  it('registers search codecs in runtime and built noSsr HTML', async () => {
-    const codec = {
-      id: 'no-ssr-search',
-      parse: () => ({}),
-      serialize: () => '',
-    };
+  it('serves runtime and built noSsr shells without rendering route HTML', async () => {
+    const render = vi.fn(() => 'content');
     const router = unstable_defineRouter({
-      resolve: async () => ({ ...makeRoute('content', true), noSsr: true }),
+      resolve: async (path) =>
+        path === '/search'
+          ? {
+              elements: {
+                root: { immutable: true, render: () => 'root' },
+                route: { immutable: true, render },
+              },
+              noSsr: true,
+            }
+          : null,
       getHas404: async () => false,
-      getSearchCodecs: async () => ({ '/search': codec }),
       getBuildPaths: async () => ['/search'],
+      unstable_interceptors: [
+        async (next) => {
+          unstable_setNonce('request-nonce');
+          return next();
+        },
+      ],
     });
     const utils = makeUtils();
     const response = await router.handleRequest(
-      { type: 'http', pathname: '/', req: new Request('http://localhost/') },
+      {
+        type: 'http',
+        pathname: '/search',
+        req: new Request('http://localhost/search?q=one'),
+      },
       utils,
     );
     expect(response).toBeInstanceOf(Response);
+    expect(await (response as Response).text()).toBe('fallback');
     expect(utils.renderHtml).not.toHaveBeenCalled();
     expect(utils.renderRsc).not.toHaveBeenCalled();
-    expect(utils.renderHtmlFallback).toHaveBeenCalledWith(
-      expect.objectContaining({
-        unstable_extraScriptContent: expect.stringContaining(
-          '"/search":"no-ssr-search"',
-        ),
-      }),
-    );
+    expect(render).not.toHaveBeenCalled();
+    expect(utils.renderHtmlFallback).toHaveBeenCalledExactlyOnceWith({
+      nonce: 'request-nonce',
+    });
     const generateDefaultHtml = vi.fn();
+    const generateFile = vi.fn();
     await router.handleBuild({
       ...utils,
       rscPath2pathname: (path) => path,
-      generateFile: vi.fn(),
+      generateFile,
       generateDefaultHtml,
       saveBuildMetadata: vi.fn(),
       unstable_registerPrunableFile: vi.fn(),
     });
-    expect(generateDefaultHtml).toHaveBeenCalledWith(
+    expect(generateDefaultHtml).toHaveBeenCalledExactlyOnceWith(
       '/search/index.html',
-      expect.objectContaining({
-        unstable_extraScriptContent: expect.stringContaining(
-          '"/search":"no-ssr-search"',
-        ),
-      }),
+    );
+    expect(generateFile).toHaveBeenCalledExactlyOnceWith(
+      encodeRoutePath('/search'),
+      expect.any(ReadableStream),
+    );
+    expect(utils.renderHtml).not.toHaveBeenCalled();
+    expect(utils.renderRsc).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ 'route:/search': 'content' }),
+      expect.anything(),
     );
   });
 

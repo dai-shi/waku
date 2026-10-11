@@ -349,7 +349,8 @@ The `utils` argument provides these helpers:
 Important details:
 
 - `renderHtml` expects an options object such as `{ rscPath: '' }`.
-- `renderHtmlFallback` accepts `unstable_extraScriptContent` for application bootstrap code and `nonce` for its script's CSP nonce. Return its `Response` when fallback HTML needs these options; returning `'fallback'` uses the defaults.
+- `renderHtmlFallback({ nonce })` sets the CSP nonce on the client bootstrap script without rendering a route. Use the nonce from your response's CSP header for request-time fallback HTML, including dynamic routes with document SSR disabled. Returning `'fallback'` uses the default shell without a nonce. See [Configure CSP](/guides/csp).
+- `renderHtml` and `renderHtmlFallback` accept `unstable_extraScriptContent` for additional bootstrap code. `generateDefaultHtml(fileName, options)` accepts the fallback options for build-time bootstrap code; use request-specific nonces only with request-time HTML, not static files.
 - RSC IDs starting with `_` are reserved for Waku internals.
 - `rscPath` and `rscParams` are opaque application data. Waku does not assign them semantics.
 - Each `fetchRsc` call issues a new request. A router-like abstraction can own prefetching and response reuse.
@@ -392,14 +393,14 @@ also available from `waku/minimal/server` for server-side error handling.
 
 The build utilities are:
 
-| Utility                                     | Purpose                                                                                               |
-| ------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `renderRsc(elements, options?)`             | Render an RSC payload stream. Use `options.value` for a server function result.                       |
-| `renderHtml(elementsStream, html, options)` | Render HTML from an RSC stream and client shell.                                                      |
-| `rscPath2pathname(rscPath)`                 | Convert an RSC path into the correct output pathname for the RSC payload.                             |
-| `saveBuildMetadata(key, value)`             | Persist metadata that will later be available through `loadBuildMetadata(...)` in `handleRequest`.    |
-| `generateFile(fileName, body)`              | Write a file to `dist/public`. Accepts `ReadableStream` or `string`.                                  |
-| `generateDefaultHtml(fileName, options?)`   | Write fallback HTML to `dist/public`, with the same script and nonce options as `renderHtmlFallback`. |
+| Utility                                     | Purpose                                                                                              |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `renderRsc(elements, options?)`             | Render an RSC payload stream. Use `options.value` for a server function result.                      |
+| `renderHtml(elementsStream, html, options)` | Render HTML from an RSC stream and client shell.                                                     |
+| `rscPath2pathname(rscPath)`                 | Convert an RSC path into the correct output pathname for the RSC payload.                            |
+| `saveBuildMetadata(key, value)`             | Persist metadata that will later be available through `loadBuildMetadata(...)` in `handleRequest`.   |
+| `generateFile(fileName, body)`              | Write a file to `dist/public`. Accepts `ReadableStream` or `string`.                                 |
+| `generateDefaultHtml(fileName, options?)`   | Write the default client-rendered HTML shell to `dist/public`, optionally with extra bootstrap code. |
 
 The most common patterns are:
 

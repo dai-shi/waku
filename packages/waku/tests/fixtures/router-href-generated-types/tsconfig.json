@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "target": "esnext",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "jsx": "react-jsx",
+    "noEmit": true,
+    "skipLibCheck": true,
+    "exactOptionalPropertyTypes": true,
+    "noUncheckedIndexedAccess": true,
+    "paths": {
+      "waku": ["../../../src/main.ts"],
+      "waku/router": ["../../../src/router/base-types.ts"],
+      "waku/router/client": ["../../../src/router/client.tsx"],
+      "waku/router/client-core": ["../../../src/router/client-core.ts"],
+      "waku/*": ["../../../src/*.ts", "../../../src/*.tsx"]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "../../../src/lib/**/*.d.ts",
+    "../../../src/lib/global-types.ts"
+  ],
+  "exclude": []
+}

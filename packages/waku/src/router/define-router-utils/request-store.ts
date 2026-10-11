@@ -1,5 +1,4 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
-import type { Unstable_SearchCodec } from '../isomorphic-utils/search-codec-registry.js';
 
 export type HandlerInterceptor = <T>(next: () => Promise<T>) => Promise<T>;
 
@@ -11,8 +10,6 @@ export type RouterStore = {
   rscParams?: unknown;
   rerender?: Rerender;
   nonce?: string;
-  resolveSearchCodec?:
-    ((routePath: string) => Unstable_SearchCodec<any> | undefined) | undefined;
 };
 
 const routerStorage = new AsyncLocalStorage<RouterStore>();
@@ -88,7 +85,3 @@ export function setNonce(nonce: string): void {
 
 export const getNonce = (): string | undefined =>
   routerStorage.getStore()?.nonce;
-
-export const getResolveSearchCodec = ():
-  ((routePath: string) => Unstable_SearchCodec<any> | undefined) | undefined =>
-  routerStorage.getStore()?.resolveSearchCodec;

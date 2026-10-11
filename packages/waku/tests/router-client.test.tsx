@@ -41,6 +41,7 @@ import {
   useFetchRsc_UNSTABLE as useFetchRsc,
   useMergeElements_UNSTABLE as useMergeElements,
 } from '../src/minimal/client.js';
+import { unstable_createRouteHref } from '../src/router/base-types.js';
 import { getRouterCache } from '../src/router/client-core-utils/caches.js';
 import {
   RouterHostContext,
@@ -60,7 +61,6 @@ import {
   INTERNAL_ServerRouter,
   Link,
   Router,
-  SearchCodecsProvider_UNSTABLE,
   Slice,
   useNavigationStatus_UNSTABLE as useNavigationStatus,
   useParams_UNSTABLE as useParams,
@@ -79,7 +79,6 @@ const spyPrefetchRoute = () =>
   vi.spyOn(routerCache(), 'prefetchRoute').mockImplementation(() => {});
 
 const postsSearchCodec = {
-  id: 'posts-test',
   parse: (query: string) => ({
     tab: new URLSearchParams(query).get('tab') ?? '',
   }),
@@ -87,15 +86,10 @@ const postsSearchCodec = {
     new URLSearchParams({ tab: search.tab }).toString(),
 } as const;
 
-declare module '../src/router/base-types.js' {
-  interface SearchCodecsConfig {
-    '/posts/[slug]': typeof postsSearchCodec;
-  }
-}
-
-(
-  globalThis as { __WAKU_ROUTER_SEARCH_CODECS__?: Record<string, string> }
-).__WAKU_ROUTER_SEARCH_CODECS__ = { '/posts/[slug]': 'posts-test' };
+const post = unstable_createRouteHref({
+  path: '/posts/[slug]',
+  search: postsSearchCodec,
+});
 
 type ElementsMap = Record<string, unknown>;
 type RouterApi = ReturnType<typeof useRouter>;
@@ -587,11 +581,7 @@ const renderRouter = async (
   elements: ElementsMap,
 ) => {
   testHoisted.elements = elements;
-  return renderApp(
-    <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
-      <Router {...(props || {})} />
-    </SearchCodecsProvider_UNSTABLE>,
-  );
+  return renderApp(<Router {...(props || {})} />);
 };
 
 const renderRouterInStrictMode = async (
@@ -601,9 +591,7 @@ const renderRouterInStrictMode = async (
   testHoisted.elements = elements;
   return renderApp(
     <StrictMode>
-      <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
-        <Router {...(props || {})} />
-      </SearchCodecsProvider_UNSTABLE>
+      <Router {...(props || {})} />
     </StrictMode>,
   );
 };
@@ -683,67 +671,123 @@ afterEach(() => {
 });
 
 describe('router navigation method path typing', () => {
-  test('prefetch, push, and replace accept the same targets (route href or structured)', () => {
-    // prefetch now mirrors push/replace: a typed route href or a structured
-    // target. RouteConfig.paths is not augmented here, so RouteHref is `string`
-    // and a computed string is still accepted; the rejection of computed
-    // strings in a typed-route app is proven in the augmented fs-router
-    // fixture (router-target-typing.ts, redirect-typing.ts).
-    // Parameters<> on an overloaded type resolves the structured overload, so
-    // this equality asserts the structured form matches; the closure below
-    // exercises the href form.
+  test('prefetch, push, and replace accept raw and factory hrefs', () => {
     type PrefetchArg = Parameters<RouterApi['prefetch']>[0];
     type PushArg = Parameters<RouterApi['push']>[0];
     expectType<TypeEqual<PrefetchArg, PushArg>>(true);
+    expectType<TypeEqual<PrefetchArg, Parameters<RouterApi['replace']>[0]>>(
+      true,
+    );
 
     // Type-level assertions; the closure is never invoked.
     const assertTypes = (router: RouterApi) => {
       void router.prefetch('/x');
       void router.push('/x');
       void router.replace('/x');
-      void router.prefetch({ to: '/posts/[slug]', params: { slug: 'a' } });
+      void router.prefetch(post({ params: { slug: 'a' } }));
+      void router.push(post({ params: { slug: 'a' } }));
+      void router.replace(post({ params: { slug: 'a' } }));
+      // @ts-expect-error navigation consumes href strings, not structured targets
       void router.push({ to: '/posts/[slug]', params: { slug: 'a' } });
-      void router.replace({ to: '/posts/[slug]', params: { slug: 'a' } });
     };
     expect(typeof assertTypes).toBe('function');
   });
 });
 
 describe('router/client utilities', () => {
-  test('SearchCodecsProvider throws on a duplicate codec id', async () => {
-    const a = { id: 'dup', parse: () => ({}), serialize: () => '' } as const;
-    const b = {
-      id: 'dup',
-      parse: () => ({ x: 1 }),
-      serialize: () => '',
-    } as const;
-    await expect(
-      renderApp(
-        <SearchCodecsProvider_UNSTABLE searchCodecs={[a, b]}>
-          <div />
-        </SearchCodecsProvider_UNSTABLE>,
-      ),
-    ).rejects.toThrow(/Duplicate search codec id/);
+  test('local descriptors select independent codecs for the same path', async () => {
+    const descriptor = {
+      path: post.path,
+      searchCodec: {
+        parse: (query: string) => ({
+          count: Number(new URLSearchParams(query).get('count')),
+        }),
+        serialize: (search: { count: number }) => `count=${search.count}`,
+      },
+    };
+    const Probe = () => {
+      const first = useSearch(post);
+      const second = useSearch(descriptor);
+      return (
+        <p>
+          {first?.tab}:{second?.count}
+        </p>
+      );
+    };
+    const view = await renderApp(
+      <RouterHostContext
+        value={{
+          route: { path: '/posts/a', query: 'tab=comments&count=2', hash: '' },
+          navigate: vi.fn(async () => {}),
+        }}
+      >
+        <Probe />
+      </RouterHostContext>,
+    );
+    expect(view.container.textContent).toBe('comments:2');
+    view.unmount();
   });
 
-  test('SearchCodecsProvider warns on and ignores non-codec values', async () => {
-    const codec = {
-      id: 'real',
-      parse: () => ({}),
-      serialize: () => '',
-    } as const;
-    const notCodec = { id: 3, first: 'react', last: 'js' };
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  test('local codec parser errors reach the render boundary', async () => {
+    const descriptor = {
+      path: post.path,
+      searchCodec: {
+        parse: (): { tab: string } => {
+          throw new Error('Invalid tab');
+        },
+        serialize: postsSearchCodec.serialize,
+      },
+    };
+    const Probe = () => {
+      useSearch(descriptor);
+      return null;
+    };
+    await expect(
+      renderApp(
+        <RouterHostContext
+          value={{
+            route: { path: '/posts/a', query: 'tab=invalid', hash: '' },
+            navigate: vi.fn(async () => {}),
+          }}
+        >
+          <Probe />
+        </RouterHostContext>,
+      ),
+    ).rejects.toThrow('Invalid tab');
+  });
+
+  test('local codec serializer errors prevent search navigation', async () => {
+    const navigate = vi.fn(async () => {});
+    const descriptor = {
+      path: post.path,
+      searchCodec: {
+        parse: postsSearchCodec.parse,
+        serialize: (search: { tab: string }) => {
+          if (search.tab !== 'comments') {
+            throw new Error('Invalid tab');
+          }
+          return postsSearchCodec.serialize(search);
+        },
+      },
+    };
+    let setSearch:
+      ReturnType<typeof useSetSearch<string, { tab: string }>> | undefined;
+    const Probe = () => {
+      setSearch = useSetSearch(descriptor);
+      return null;
+    };
     const view = await renderApp(
-      <SearchCodecsProvider_UNSTABLE searchCodecs={{ codec, notCodec }}>
-        <div />
-      </SearchCodecsProvider_UNSTABLE>,
+      <RouterHostContext
+        value={{
+          route: { path: '/posts/a', query: 'tab=comments', hash: '' },
+          navigate,
+        }}
+      >
+        <Probe />
+      </RouterHostContext>,
     );
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining('not a search codec'),
-      notCodec,
-    );
-    warn.mockRestore();
+    await expect(setSearch!({ tab: 'invalid' })).rejects.toThrow('Invalid tab');
+    expect(navigate).not.toHaveBeenCalled();
     view.unmount();
   });
 
@@ -944,7 +988,7 @@ describe('useRouter + Link with context', () => {
     view.unmount();
   });
 
-  test('push/replace execute a structured target through changeRoute', async () => {
+  test('push/replace execute a factory href through changeRoute', async () => {
     const capture = { router: null as RouterApi | null };
     const setRouter = (router: RouterApi) => {
       capture.router = router;
@@ -957,16 +1001,14 @@ describe('useRouter + Link with context', () => {
     };
 
     const view = await renderApp(
-      <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
-        <RouterContext
-          value={{
-            route: { path: '/start', query: '', hash: '' },
-            changeRoute,
-          }}
-        >
-          <Probe />
-        </RouterContext>
-      </SearchCodecsProvider_UNSTABLE>,
+      <RouterContext
+        value={{
+          route: { path: '/start', query: '', hash: '' },
+          changeRoute,
+        }}
+      >
+        <Probe />
+      </RouterContext>,
     );
 
     if (!capture.router) {
@@ -974,18 +1016,20 @@ describe('useRouter + Link with context', () => {
     }
 
     await act(async () => {
-      await capture.router!.push({
-        to: '/posts/[slug]',
-        params: { slug: 'a b/c' },
-        search: { tab: 'comments' },
-        hash: 'top',
-      });
-      await capture.router!.replace({
-        to: '/posts/[slug]',
-        params: { slug: 'a b/c' },
-        search: { tab: 'comments' },
-        hash: 'top',
-      });
+      await capture.router!.push(
+        post({
+          params: { slug: 'a b/c' },
+          search: { tab: 'comments' },
+          hash: 'top',
+        }),
+      );
+      await capture.router!.replace(
+        post({
+          params: { slug: 'a b/c' },
+          search: { tab: 'comments' },
+          hash: 'top',
+        }),
+      );
     });
 
     const expectedRoute = {
@@ -1012,7 +1056,7 @@ describe('useRouter + Link with context', () => {
     view.unmount();
   });
 
-  test('prefetch resolves string and structured targets under a basePath', async () => {
+  test('prefetch resolves raw and factory hrefs under a basePath', async () => {
     vi.stubEnv('WAKU_CONFIG_BASE_PATH', '/base/');
     try {
       expect(import.meta.env.WAKU_CONFIG_BASE_PATH).toBe('/base/');
@@ -1024,16 +1068,14 @@ describe('useRouter + Link with context', () => {
       };
 
       const view = await renderApp(
-        <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
-          <RouterContext
-            value={{
-              route: { path: '/start', query: '', hash: '' },
-              changeRoute: vi.fn(async () => {}),
-            }}
-          >
-            <Probe />
-          </RouterContext>
-        </SearchCodecsProvider_UNSTABLE>,
+        <RouterContext
+          value={{
+            route: { path: '/start', query: '', hash: '' },
+            changeRoute: vi.fn(async () => {}),
+          }}
+        >
+          <Probe />
+        </RouterContext>,
       );
 
       if (!capture.router) {
@@ -1042,10 +1084,7 @@ describe('useRouter + Link with context', () => {
 
       await act(async () => {
         capture.router!.prefetch('/static');
-        capture.router!.prefetch({
-          to: '/posts/[slug]',
-          params: { slug: 'a' },
-        });
+        capture.router!.prefetch(post({ params: { slug: 'a' } }));
       });
 
       expect(prefetchRoute).toHaveBeenNthCalledWith(
@@ -1187,8 +1226,8 @@ describe('useRouter + Link with context', () => {
     };
     const Probe = () => {
       capture.params = useParams({ from: '/posts/[slug]' });
-      capture.search = useSearch({ from: '/posts/[slug]' });
-      const setSearch = useSetSearch({ from: '/posts/[slug]' });
+      capture.search = useSearch(post);
+      const setSearch = useSetSearch(post);
       return (
         <button
           type="button"
@@ -1202,20 +1241,18 @@ describe('useRouter + Link with context', () => {
     };
 
     const view = await renderApp(
-      <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
-        <RouterHostContext
-          value={{
-            route: {
-              path: '/posts/hello',
-              query: 'tab=comments',
-              hash: '#local',
-            },
-            navigate,
-          }}
-        >
-          <Probe />
-        </RouterHostContext>
-      </SearchCodecsProvider_UNSTABLE>,
+      <RouterHostContext
+        value={{
+          route: {
+            path: '/posts/hello',
+            query: 'tab=comments',
+            hash: '#local',
+          },
+          navigate,
+        }}
+      >
+        <Probe />
+      </RouterHostContext>,
     );
 
     expect(capture.params).toEqual({ slug: 'hello' });
@@ -1235,7 +1272,10 @@ describe('useRouter + Link with context', () => {
   test('useSetSearch is a no-op when the host path does not match', async () => {
     const navigate = vi.fn(async () => {});
     const Probe = () => {
-      const setSearch = useSetSearch({ from: '/posts/[slug]' });
+      const setSearch = useSetSearch({
+        path: post.path,
+        searchCodec: postsSearchCodec,
+      });
       return (
         <button
           type="button"
@@ -1249,16 +1289,14 @@ describe('useRouter + Link with context', () => {
     };
 
     const view = await renderApp(
-      <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
-        <RouterHostContext
-          value={{
-            route: { path: '/about', query: '', hash: '' },
-            navigate,
-          }}
-        >
-          <Probe />
-        </RouterHostContext>
-      </SearchCodecsProvider_UNSTABLE>,
+      <RouterHostContext
+        value={{
+          route: { path: '/about', query: '', hash: '' },
+          navigate,
+        }}
+      >
+        <Probe />
+      </RouterHostContext>,
     );
 
     await act(async () => {
@@ -2426,7 +2464,7 @@ describe('Router integration', () => {
   // with the matching route slot, so a route ahead of its slot is unrepresentable
   // and the guard is gone.
 
-  test('push accepts a structured target and builds the href', async () => {
+  test('push accepts a factory href with search', async () => {
     const capture = { router: null as RouterApi | null };
     const Probe = makeProbe(capture);
 
@@ -2450,11 +2488,12 @@ describe('Router integration', () => {
     const refetch = getRefetchMock();
 
     await act(async () => {
-      await capture.router!.push({
-        to: '/posts/[slug]',
-        params: { slug: 'hello' },
-        search: { tab: 'comments' },
-      });
+      await capture.router!.push(
+        post({
+          params: { slug: 'hello' },
+          search: { tab: 'comments' },
+        }),
+      );
     });
 
     expect(refetch).toHaveBeenCalledTimes(1);
@@ -3485,9 +3524,7 @@ describe('Router integration', () => {
       .mockImplementation(() => {});
     const view = await renderApp(
       <ErrorBoundary>
-        <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
-          <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
-        </SearchCodecsProvider_UNSTABLE>
+        <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
       </ErrorBoundary>,
     );
     try {
@@ -3589,7 +3626,7 @@ describe('Router integration', () => {
     };
 
     const view = await renderApp(
-      <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
+      <>
         <div data-testid="root-a">
           <CaptureContext value={captureA}>
             <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
@@ -3600,7 +3637,7 @@ describe('Router integration', () => {
             <Router initialRoute={{ path: '/other', query: '', hash: '' }} />
           </CaptureContext>
         </div>
-      </SearchCodecsProvider_UNSTABLE>,
+      </>,
     );
 
     expect(captureA.router).toBeTruthy();
@@ -3674,7 +3711,7 @@ describe('Router integration', () => {
     };
 
     const view = await renderApp(
-      <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
+      <>
         <div data-testid="root-a">
           <CaptureContext value={captureA}>
             <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
@@ -3685,7 +3722,7 @@ describe('Router integration', () => {
             <Router initialRoute={{ path: '/other', query: '', hash: '' }} />
           </CaptureContext>
         </div>
-      </SearchCodecsProvider_UNSTABLE>,
+      </>,
     );
 
     await act(async () => {
@@ -4394,9 +4431,7 @@ describe('Router integration', () => {
       ),
     };
     const view = await renderApp(
-      <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
-        <Router initialRoute={{ path: '/start', query: 'a=1', hash: '#top' }} />
-      </SearchCodecsProvider_UNSTABLE>,
+      <Router initialRoute={{ path: '/start', query: 'a=1', hash: '#top' }} />,
     );
     try {
       historyPushSpy.mockClear();
@@ -4567,9 +4602,7 @@ describe('Router integration', () => {
       ),
     };
     const view = await renderApp(
-      <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
-        <Router initialRoute={{ path: '/start', query: 'a=1', hash: '' }} />
-      </SearchCodecsProvider_UNSTABLE>,
+      <Router initialRoute={{ path: '/start', query: 'a=1', hash: '' }} />,
     );
     try {
       let navigation: Promise<void> | undefined;
@@ -5022,11 +5055,7 @@ describe('Router integration', () => {
     const Bump = () => {
       const [, setN] = useState(0);
       bump.fn = () => setN((n) => n + 1);
-      return (
-        <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
-          <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
-        </SearchCodecsProvider_UNSTABLE>
-      );
+      return <Router initialRoute={{ path: '/start', query: '', hash: '' }} />;
     };
     testHoisted.elements = {
       ...instantNavElements(),
@@ -5952,9 +5981,7 @@ describe('Router integration', () => {
     };
     const view = await renderApp(
       <ErrorBoundary>
-        <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
-          <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
-        </SearchCodecsProvider_UNSTABLE>
+        <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
       </ErrorBoundary>,
     );
     if (!capture.router) {
@@ -6023,9 +6050,7 @@ describe('Router integration', () => {
       .mockImplementation(() => {});
     const view = await renderApp(
       <ErrorBoundary>
-        <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
-          <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
-        </SearchCodecsProvider_UNSTABLE>
+        <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
       </ErrorBoundary>,
     );
     try {
@@ -6522,11 +6547,9 @@ describe('Router integration', () => {
       .mockImplementation(() => {});
     testHoisted.elements = elements;
     const view = await renderApp(
-      <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
-        <ErrorBoundary>
-          <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
-        </ErrorBoundary>
-      </SearchCodecsProvider_UNSTABLE>,
+      <ErrorBoundary>
+        <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
+      </ErrorBoundary>,
     );
     if (!capture.router) {
       throw new Error('router not initialized');
@@ -6581,11 +6604,9 @@ describe('Router integration', () => {
       .spyOn(console, 'error')
       .mockImplementation(() => {});
     const view = await renderApp(
-      <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
-        <ErrorBoundary>
-          <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
-        </ErrorBoundary>
-      </SearchCodecsProvider_UNSTABLE>,
+      <ErrorBoundary>
+        <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
+      </ErrorBoundary>,
     );
     try {
       await act(async () => {
@@ -6633,11 +6654,9 @@ describe('Router integration', () => {
       .spyOn(console, 'error')
       .mockImplementation(() => {});
     const view = await renderApp(
-      <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
-        <ErrorBoundary>
-          <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
-        </ErrorBoundary>
-      </SearchCodecsProvider_UNSTABLE>,
+      <ErrorBoundary>
+        <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
+      </ErrorBoundary>,
     );
     try {
       await act(async () => {
@@ -6746,9 +6765,7 @@ describe('Router integration', () => {
       .mockImplementation(() => {});
     const view = await renderApp(
       <ErrorBoundary>
-        <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
-          <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
-        </SearchCodecsProvider_UNSTABLE>
+        <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
       </ErrorBoundary>,
     );
     try {
@@ -7369,9 +7386,7 @@ describe('Router integration', () => {
       .mockImplementation(() => {});
     const view = await renderApp(
       <ErrorBoundary>
-        <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
-          <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
-        </SearchCodecsProvider_UNSTABLE>
+        <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
       </ErrorBoundary>,
     );
     try {
@@ -7419,9 +7434,7 @@ describe('Router integration', () => {
       .spyOn(console, 'error')
       .mockImplementation(() => {});
     const view = await renderApp(
-      <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
-        <Router initialRoute={{ path: '/list', query: '', hash: '' }} />
-      </SearchCodecsProvider_UNSTABLE>,
+      <Router initialRoute={{ path: '/list', query: '', hash: '' }} />,
     );
     try {
       await act(async () => {
@@ -7469,9 +7482,7 @@ describe('Router integration', () => {
       .spyOn(console, 'error')
       .mockImplementation(() => {});
     const view = await renderApp(
-      <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
-        <Router initialRoute={{ path: '/list', query: '', hash: '' }} />
-      </SearchCodecsProvider_UNSTABLE>,
+      <Router initialRoute={{ path: '/list', query: '', hash: '' }} />,
     );
     try {
       await act(async () => {
@@ -7728,9 +7739,7 @@ describe('Router integration', () => {
       .mockImplementation(() => {});
     const view = await renderApp(
       <ErrorBoundary>
-        <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
-          <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
-        </SearchCodecsProvider_UNSTABLE>
+        <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
       </ErrorBoundary>,
     );
     try {
@@ -8050,10 +8059,8 @@ describe('Router integration', () => {
     const initialRoute = { path: '/start', query: '', hash: '' };
     const view = await renderApp(
       <StrictMode>
-        <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
-          <Router initialRoute={initialRoute} />
-          <Router initialRoute={initialRoute} />
-        </SearchCodecsProvider_UNSTABLE>
+        <Router initialRoute={initialRoute} />
+        <Router initialRoute={initialRoute} />
       </StrictMode>,
     );
     await flush();
@@ -8356,9 +8363,7 @@ describe('Router integration', () => {
     try {
       const view = await renderApp(
         <ErrorBoundary>
-          <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
-            <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
-          </SearchCodecsProvider_UNSTABLE>
+          <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
         </ErrorBoundary>,
       );
       await flush();
@@ -8478,9 +8483,7 @@ describe('Router integration', () => {
       .mockImplementation(() => {});
     const view = await renderApp(
       <ErrorBoundary>
-        <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
-          <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
-        </SearchCodecsProvider_UNSTABLE>
+        <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
       </ErrorBoundary>,
     );
     try {
@@ -8530,11 +8533,9 @@ describe('Router integration', () => {
       .spyOn(console, 'error')
       .mockImplementation(() => {});
     const view = await renderApp(
-      <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
-        <ErrorBoundary>
-          <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
-        </ErrorBoundary>
-      </SearchCodecsProvider_UNSTABLE>,
+      <ErrorBoundary>
+        <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
+      </ErrorBoundary>,
     );
     try {
       for (let i = 0; i < 110; i += 1) {
@@ -8588,9 +8589,7 @@ describe('Router integration', () => {
     try {
       const view = await renderApp(
         <ErrorBoundary>
-          <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
-            <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
-          </SearchCodecsProvider_UNSTABLE>
+          <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
         </ErrorBoundary>,
       );
       await flush();
@@ -8636,9 +8635,7 @@ describe('Router integration', () => {
     try {
       const view = await renderApp(
         <ErrorBoundary>
-          <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
-            <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
-          </SearchCodecsProvider_UNSTABLE>
+          <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
         </ErrorBoundary>,
       );
       await flush();
@@ -8832,9 +8829,7 @@ describe('Router integration', () => {
       .mockImplementation(() => {});
     const view = await renderApp(
       <ErrorBoundary>
-        <SearchCodecsProvider_UNSTABLE searchCodecs={[postsSearchCodec]}>
-          <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
-        </SearchCodecsProvider_UNSTABLE>
+        <Router initialRoute={{ path: '/start', query: '', hash: '' }} />
       </ErrorBoundary>,
     );
     try {

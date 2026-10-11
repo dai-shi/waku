@@ -139,7 +139,6 @@ test.describe(`create-pages`, () => {
     await expect(page.getByTestId('server-search')).toHaveText(
       '{"q":"hi","page":2}',
     );
-    // client useSearch resolved the same codec by id and re-parsed the query
     await expect(page.getByTestId('client-search')).toHaveText(
       '{"q":"hi","page":2}',
     );
@@ -159,8 +158,6 @@ test.describe(`create-pages`, () => {
   }) => {
     await page.goto(`http://localhost:${port}/`);
     await waitForHydration(page);
-    // push({ to: '/search', search }) serializes via the target route's codec,
-    // resolved from the route -> codec id map shipped to the client
     await page.getByTestId('home-to-search').click();
     await expect(page).toHaveURL(/\/search\?q=hello&page=5$/);
     await expect(page.getByTestId('server-search')).toHaveText(
@@ -176,7 +173,6 @@ test.describe(`create-pages`, () => {
   }) => {
     await page.goto(`http://localhost:${port}/`);
     await waitForHydration(page);
-    // <Link to={{ to: '/search', search }}> serializes via the target codec too
     await page.getByTestId('home-to-search-link').click();
     await expect(page).toHaveURL(/\/search\?q=linked&page=7$/);
     await expect(page.getByTestId('server-search')).toHaveText(
@@ -188,10 +184,6 @@ test.describe(`create-pages`, () => {
   });
 
   test('search params (cross-route Link serializes its href during SSR)', async () => {
-    // The cross-route <Link to={{ to: '/search', search }}> serializes its href
-    // on the server. This requires the route -> codec id map to be available
-    // during SSR (not only the browser-injected global), otherwise the link
-    // throws while rendering and its href is missing from the server HTML.
     const res = await fetch(`http://localhost:${port}/`);
     expect(res.status).toBe(200);
     const html = await res.text();
@@ -199,12 +191,9 @@ test.describe(`create-pages`, () => {
     expect(html).toContain('/search?q=linked');
   });
 
-  test('search params (typed structured redirect serializes search via server codec)', async ({
+  test('search params (factory redirect serializes search via local codec)', async ({
     page,
   }) => {
-    // unstable_redirect({ to: '/search', search }) is typed against /search's
-    // codec and serialized server-side via the codec-instance registry; the
-    // browser follows the 307 to the built href.
     await page.goto(`http://localhost:${port}/redirect-to-search`);
     await waitForHydration(page);
     await expect(page).toHaveURL(/\/search\?q=hi&page=2$/);
@@ -213,12 +202,9 @@ test.describe(`create-pages`, () => {
     );
   });
 
-  test('search params (typed structured redirect to a dynamic route with a codec)', async ({
+  test('search params (factory redirect to a dynamic route with a codec)', async ({
     request,
   }) => {
-    // resolves the codec for a dynamic route (/items/[id]) and serializes both
-    // params and search into the Location (catches a route-key normalization
-    // mismatch, which would otherwise throw instead of redirecting)
     const res = await request.get(`http://localhost:${port}/redirect-to-item`, {
       maxRedirects: 0,
     });

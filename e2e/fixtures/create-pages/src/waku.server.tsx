@@ -33,6 +33,7 @@ import SearchPage from './components/SearchPage.js';
 import { Slice001 } from './components/slice001.js';
 import { Slice002 } from './components/slice002.js';
 import { Slice003 } from './components/slice003.js';
+import { itemRoute } from './lib/routes.js';
 import { demoSearchCodec } from './lib/search.js';
 
 const renderLayoutProps = (title: string, testIdPrefix: string, props: any) => (
@@ -87,8 +88,6 @@ const pages: ReturnType<typeof createPages> = createPages(
       component: RedirectToSearchPage,
     }),
 
-    // a dynamic route that also has a search codec, to exercise the codec
-    // resolver for a slug route end to end (see /redirect-to-item)
     createPage({
       render: 'dynamic',
       path: '/items/[id]',
@@ -100,11 +99,12 @@ const pages: ReturnType<typeof createPages> = createPages(
       render: 'dynamic',
       path: '/redirect-to-item',
       component: () =>
-        redirect({
-          to: '/items/[id]',
-          params: { id: '7' },
-          search: { q: 'hi', page: 2 },
-        }),
+        redirect(
+          itemRoute({
+            params: { id: '7' },
+            search: { q: 'hi', page: 2 },
+          }),
+        ),
     }),
 
     createPage({

@@ -4,7 +4,6 @@ import {
   getNonce,
   getRequest,
   getRerender,
-  getResolveSearchCodec,
   getRscParams,
   getRscPath,
   runWithRouterStore,
@@ -95,15 +94,6 @@ describe('request-store', () => {
       return getNonce();
     });
     expect(nonce).toBe('nonce-1');
-  });
-
-  it('getResolveSearchCodec returns the resolver provided to the store', () => {
-    const req = makeRequest();
-    const resolveSearchCodec = vi.fn(() => undefined);
-    const resolver = runWithRouterStore({ req, resolveSearchCodec }, () =>
-      getResolveSearchCodec(),
-    );
-    expect(resolver).toBe(resolveSearchCodec);
   });
 
   it('setters are no-ops outside a store', () => {

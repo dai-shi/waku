@@ -5,6 +5,7 @@ import {
   unstable_redirect,
   unstable_rerenderRoute,
 } from '../src/router/define-router.js';
+import { unstable_createRouteHref } from '../src/router/href-factory.js';
 import {
   ROUTE_ID,
   encodeRoutePath,
@@ -471,7 +472,9 @@ describe('define-router action requests', () => {
 });
 
 describe('unstable_redirect', () => {
-  const getRedirectInfo = (location: string) => {
+  const getRedirectInfo = (
+    location: Parameters<typeof unstable_redirect>[0],
+  ) => {
     try {
       unstable_redirect(location, 303);
     } catch (e) {
@@ -516,7 +519,7 @@ describe('unstable_redirect', () => {
     }
   });
 
-  it('accepts a URL, which is how a variable gets through', () => {
+  it('accepts a URL target', () => {
     try {
       unstable_redirect(new URL('https://example.com/next?a=1'), 303);
     } catch (e) {
@@ -541,25 +544,11 @@ describe('unstable_redirect', () => {
     );
   });
 
-  // The structured form serializes server-side via buildRouteHref; `to` is cast
-  // because this test file declares no routes (RouteSearch<string> is `never`).
-  const getStructuredRedirectInfo = (to: unknown) => {
-    try {
-      unstable_redirect(to as never, 303);
-    } catch (e) {
-      return getErrorInfo(e);
-    }
-  };
-
-  it('serializes a structured target with params', () => {
-    expect(
-      getStructuredRedirectInfo({
-        to: '/posts/[slug]',
-        params: { slug: 'hello world' },
-      }),
-    ).toEqual({ status: 303, location: '/posts/hello%20world' });
+  it('redirects to an eagerly built href with encoded params', () => {
+    const post = unstable_createRouteHref({ path: '/posts/[id]' });
+    expect(getRedirectInfo(post({ params: { id: 'hello world' } }))).toEqual({
+      status: 303,
+      location: '/posts/hello%20world',
+    });
   });
-
-  // Search serialization needs the per-request router store (codec resolver),
-  // so it is covered end to end by the create-pages e2e (/redirect-to-search).
 });

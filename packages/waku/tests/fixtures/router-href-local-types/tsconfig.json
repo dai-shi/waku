@@ -1,0 +1,17 @@
+{
+  "extends": "../../../../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "../../..",
+    "composite": false,
+    "incremental": false,
+    "noEmit": true,
+    "emitDeclarationOnly": false,
+    "lib": ["esnext", "dom", "dom.iterable"]
+  },
+  "include": [
+    "index.tsx",
+    "../../router-href-factory.test.tsx",
+    "../../../src/lib/**/*.d.ts",
+    "../../../src/lib/global-types.ts"
+  ]
+}

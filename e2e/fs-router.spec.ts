@@ -225,7 +225,6 @@ test.describe('fs-router', () => {
     await expect(page.getByTestId('server-search')).toHaveText(
       '{"q":"hi","page":2}',
     );
-    // useSearch resolves the same codec on the client (provider in _layout)
     await expect(page.getByTestId('client-search')).toHaveText(
       '{"q":"hi","page":2}',
     );
@@ -240,12 +239,7 @@ test.describe('fs-router', () => {
     );
   });
 
-  test('search params (grouped route, normalized path keys)', async ({
-    page,
-  }) => {
-    // a route inside a (group) is keyed by its groupless path everywhere; the
-    // client useSearch must resolve via the same normalized key in the
-    // route -> codec id map (the codec is shared with /search by id)
+  test('search params (local codec on a grouped route)', async ({ page }) => {
     await page.goto(`http://localhost:${port}/grouped-search?q=hi&page=2`);
     await waitForHydration(page);
     await expect(page.getByTestId('grouped-server-search')).toHaveText(

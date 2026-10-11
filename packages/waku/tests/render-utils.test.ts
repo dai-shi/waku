@@ -20,10 +20,10 @@ const makeRenderUtils = () => {
 };
 
 describe('createRenderUtils', () => {
-  test('renders independent fallback documents with bootstrap options', async () => {
+  test('renders fallback documents with independent request nonces', async () => {
     const renderToReadableStream = vi.fn(() => new ReadableStream());
     const renderHtmlFallback = vi.fn(
-      async (options?: { nonce?: string; extraScriptContent?: string }) =>
+      async (options?: Parameters<typeof createHtmlFallback>[2]) =>
         createHtmlFallback('<html><body></body></html>', '/entry.js', options),
     );
     const renderUtils = createRenderUtils({
@@ -38,19 +38,23 @@ describe('createRenderUtils', () => {
     });
     const first = await renderUtils.renderHtmlFallback({
       nonce: 'first-nonce',
-      unstable_extraScriptContent: 'globalThis.first = true;',
+      unstable_extraScriptContent: 'globalThis.customBootstrap = true;',
     });
     const second = await renderUtils.renderHtmlFallback({
-      unstable_extraScriptContent: 'globalThis.second = true;',
+      nonce: 'second-nonce',
     });
     const plain = await renderUtils.renderHtmlFallback();
     expect(first.headers.get('content-type')).toBe('text/html; charset=utf-8');
-    expect(await first.text()).toContain('nonce="first-nonce"');
+    const firstHtml = await first.text();
+    expect(firstHtml).toContain('nonce="first-nonce"');
+    expect(firstHtml).toContain('globalThis.customBootstrap = true;');
     const secondHtml = await second.text();
-    expect(secondHtml).toContain('globalThis.second = true;');
-    expect(secondHtml).not.toContain('nonce=');
-    expect(secondHtml).not.toContain('globalThis.first');
-    expect(await plain.text()).not.toContain('globalThis.second');
+    expect(secondHtml).toContain('nonce="second-nonce"');
+    expect(secondHtml).not.toContain('first-nonce');
+    expect(secondHtml).not.toContain('customBootstrap');
+    const plainHtml = await plain.text();
+    expect(plainHtml).toContain('import("/entry.js");');
+    expect(plainHtml).not.toContain('nonce=');
     expect(renderToReadableStream).not.toHaveBeenCalled();
   });
 
@@ -205,6 +209,36 @@ describe('createRenderUtils', () => {
       expect.anything(),
       expect.anything(),
       expect.objectContaining({ onError }),
+    );
+  });
+
+  test('passes extra bootstrap code to the HTML renderer', async () => {
+    const renderHtmlStream = vi.fn().mockResolvedValue({
+      stream: new ReadableStream(),
+      status: undefined,
+    });
+    const renderUtils = createRenderUtils({
+      temporaryReferences: undefined,
+      renderToReadableStream: () => new ReadableStream(),
+      loadSsrEntryModule: async () => ({
+        INTERNAL_renderHtmlStream: renderHtmlStream,
+        INTERNAL_renderHtmlFallback: vi.fn(),
+      }),
+      buildId: '',
+      onError: vi.fn(),
+    });
+
+    await renderUtils.renderHtml(new ReadableStream(), 'app', {
+      rscPath: '',
+      unstable_extraScriptContent: 'globalThis.prefetch = true;',
+    });
+
+    expect(renderHtmlStream).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({
+        extraScriptContent: 'globalThis.prefetch = true;',
+      }),
     );
   });
 

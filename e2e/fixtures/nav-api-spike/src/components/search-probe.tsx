@@ -5,11 +5,14 @@ import {
   useSearch_UNSTABLE as useSearch,
   useSetSearch_UNSTABLE as useSetSearch,
 } from 'waku/router/client-core';
+import { spikeSearchCodec } from '../lib/search.js';
+
+const searchRoute = { path: '/search', searchCodec: spikeSearchCodec } as const;
 
 export const SearchProbe = () => {
   const { route } = useRouterHost();
-  const search = useSearch({ from: '/search' });
-  const setSearch = useSetSearch({ from: '/search' });
+  const search = useSearch(searchRoute);
+  const setSearch = useSetSearch(searchRoute);
   return (
     <>
       <p data-testid="search">{search ? search.q : 'none'}</p>

@@ -21,27 +21,15 @@ import {
   type RouterCache,
   useRouterCache,
 } from '../client-core-utils/caches.js';
-import { useResolveSearchCodec } from '../client-core-utils/route-hooks.js';
 import { isSameRscRoute, parseRoute } from '../client-core-utils/route-url.js';
-import { buildRouteHref } from '../isomorphic-utils/build-route-href.js';
-import type {
-  BuildRouteHrefTarget,
-  RouteHref,
-  RoutePath,
-} from '../isomorphic-utils/build-route-href.js';
+import type { NavigationHref } from '../isomorphic-utils/build-route-href.js';
 import { addBase } from '../isomorphic-utils/route-path.js';
 import type { RouteProps } from '../isomorphic-utils/route-path.js';
 import { RouterContext, dispatchChangeRoute } from './router-context.js';
 import { scrollToHash, shouldScrollByDefault } from './scroll.js';
 
-export const resolveRouteHref = <Path extends RoutePath>(
-  to: RouteHref | BuildRouteHrefTarget<Path>,
-  resolveCodec: ReturnType<typeof useResolveSearchCodec>,
-): string =>
-  addBase(
-    typeof to === 'string' ? to : buildRouteHref(to, resolveCodec),
-    import.meta.env.WAKU_CONFIG_BASE_PATH,
-  );
+export const resolveRouteHref = (to: NavigationHref): string =>
+  addBase(to, import.meta.env.WAKU_CONFIG_BASE_PATH);
 
 export const preloadRouteModules = (path: string) => {
   globalThis.__WAKU_ROUTER_PREFETCH__?.(path, (id) => {
@@ -177,8 +165,8 @@ const NavigationStatusContext = createContext<NavigationStatus>({});
 export const useNavigationStatus_UNSTABLE = (): NavigationStatus =>
   useContext(NavigationStatusContext);
 
-export type LinkProps<Path extends RoutePath> = {
-  to: RouteHref | BuildRouteHrefTarget<Path>;
+export type LinkProps = {
+  to: NavigationHref;
   children: ReactNode;
   /**
    * Whether the link should scroll on navigation.
@@ -203,7 +191,7 @@ export type LinkProps<Path extends RoutePath> = {
  * is discouraged and still routes in place (use `<a>` instead). Failures
  * surface through the router error boundary rather than a returned promise.
  */
-export function Link<Path extends RoutePath>({
+export function Link({
   to,
   children,
   scroll,
@@ -212,9 +200,8 @@ export function Link<Path extends RoutePath>({
   unstable_prefetchOnView,
   ref: refProp,
   ...props
-}: LinkProps<Path>): ReactElement {
-  const resolveCodec = useResolveSearchCodec();
-  const resolvedTo = resolveRouteHref(to, resolveCodec);
+}: LinkProps): ReactElement {
+  const resolvedTo = resolveRouteHref(to);
   const router = useContext(RouterContext);
   const changeRoute = router
     ? router.changeRoute

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { buildRouteHref } from '../src/router/isomorphic-utils/build-route-href.js';
+import { unstable_createRouteHref } from '../src/router/base-types.js';
 import { matchRouteParams } from '../src/router/isomorphic-utils/match-route-params.js';
 
 describe('matchRouteParams', () => {
@@ -55,17 +55,17 @@ describe('matchRouteParams', () => {
     ).toEqual({ slug: 'hello' });
   });
 
-  test('round-trips with buildRouteHref', () => {
-    const slugHref = buildRouteHref({
-      to: '/posts/[slug]',
+  test('round-trips with route href factories', () => {
+    const post = unstable_createRouteHref({ path: '/posts/[slug]' });
+    const slugHref = post({
       params: { slug: 'a b/c' },
     }).split(/[?#]/, 1)[0]!;
     expect(matchRouteParams('/posts/[slug]', slugHref)).toEqual({
       slug: 'a b/c',
     });
 
-    const catchAllHref = buildRouteHref({
-      to: '/docs/[...path]',
+    const docs = unstable_createRouteHref({ path: '/docs/[...path]' });
+    const catchAllHref = docs({
       params: { path: ['a b', 'c'] },
     }).split(/[?#]/, 1)[0]!;
     expect(matchRouteParams('/docs/[...path]', catchAllHref)).toEqual({

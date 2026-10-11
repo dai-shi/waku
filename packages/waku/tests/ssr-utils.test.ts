@@ -17,35 +17,54 @@ describe('createHtmlFallback', () => {
     const html = await createHtmlFallback(
       '<html><body></body></html>',
       '/entry.js',
-      {
-        extraScriptContent: 'globalThis.example = "ready";',
-      },
     );
-    expect(html).toContain('import("/entry.js");globalThis.example = "ready";');
+    expect(html).toContain('import("/entry.js");');
     expect(html).not.toContain('__WAKU_HYDRATE__');
     expect(html).not.toContain('__WAKU_INITIAL_RSC__');
   });
 
   it('escapes the nonce and keeps bootstrap strings inside their script element', async () => {
+    const entryUrl = '/</ScRiPt><!--<script>.js';
+    const buildId = 'build-</script><!--<script>';
+    vi.stubEnv('WAKU_BUILD_ID', buildId);
     const html = await createHtmlFallback(
       '<html><body></body></html>',
-      '/entry.js',
+      entryUrl,
       {
         nonce: 'nonce"<&',
-        extraScriptContent:
-          'globalThis.example = "</ScRiPt><!--<script>";globalThis.matched = 0</script/.test("script");',
+        extraScriptContent: 'bootstrap.value = "</script><!--<script>";',
       },
     );
     expect(html).toContain('nonce="nonce&quot;&lt;&amp;"');
     expect(html.match(/<\/script>/gi)).toHaveLength(1);
     const script = html.match(/<script[^>]*>([\s\S]*?)<\/script>/)![1]!;
-    const globals: { example?: string; matched?: boolean } = {};
-    runInNewContext(
-      script.replace(createBootstrapScriptContent('/entry.js'), ''),
-      globals,
+    const imports: string[] = [];
+    const listeners = new Map<string, (event: unknown) => void>();
+    const sessionStorage = { getItem: vi.fn(), setItem: vi.fn() };
+    const bootstrap = { value: '' };
+    runInNewContext(script.replace(/import\(/g, 'captureImport('), {
+      bootstrap,
+      captureImport: (url: string) => {
+        imports.push(url);
+        return Promise.resolve();
+      },
+      window: {
+        addEventListener: (type: string, listener: (event: unknown) => void) =>
+          listeners.set(type, listener),
+        location: { reload: vi.fn() },
+      },
+      document: { readyState: 'complete' },
+      sessionStorage,
+    });
+    expect(imports).toEqual([entryUrl]);
+    expect(bootstrap.value).toBe('</script><!--<script>');
+    const preventDefault = vi.fn();
+    listeners.get('vite:preloadError')!({ preventDefault });
+    expect(sessionStorage.setItem).toHaveBeenCalledWith(
+      'waku:preload-error-build-id',
+      buildId,
     );
-    expect(globals.example).toBe('</ScRiPt><!--<script>');
-    expect(globals.matched).toBe(true);
+    expect(preventDefault).toHaveBeenCalledOnce();
   });
 });
 

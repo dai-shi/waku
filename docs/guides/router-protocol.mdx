@@ -110,6 +110,23 @@ Reading `ROUTE` is therefore not enough to decide what to write to history.
 On failure, retained elements can describe an earlier route. The attempted URL
 and error state belong to the client binding, not the server metadata.
 
+## Navigation Hrefs and Search
+
+`Link`, `push`, `replace`, `prefetch`, and `unstable_redirect` consume URL strings.
+`unstable_createRouteHref` from `waku/router` binds a local pattern and optional
+search codec to a function returning an app-base-free primitive string. Its
+type-only brand records the normalized route pattern, not membership in a
+finite static build. Construction requires no codec registry, provider, or
+additional Flight metadata. See [Typed Routes](/guides/typed-routes).
+
+Search interpretation belongs to the code supplying the codec: `createPages`
+parses incoming page queries, and client search hooks parse the current query
+using an explicit factory or `{ path, searchCodec }` descriptor. A custom
+`defineRouter` resolver receives the query string and chooses how to parse it.
+Generated `SearchCodecsConfig` types describe `PageProps.search`, not navigation.
+Outbound construction calls `serialize` without reparsing its result; the
+destination must independently validate its incoming query.
+
 ## Loading Without a Cache
 
 `unstable_load` from `waku/router/client-core` accepts a fetch callback. It follows

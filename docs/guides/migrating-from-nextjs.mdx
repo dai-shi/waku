@@ -180,21 +180,32 @@ emitted as written rather than replaced; and `charset` and `viewport` belong in
 wrapped in `<Suspense>`; Waku's `useRouter()` carries no such requirement, so
 those boundaries can go.
 
-### Typed routes reject computed hrefs
+### Typed routes reject broad strings
 
 Once `waku router typegen` has run, `<Link to>` and `router.push()` accept known
-route patterns rather than any string. Three ways to satisfy it:
+raw hrefs or strings constructed from known route patterns. Use a literal,
+a [local href factory](/guides/typed-routes), or a matching template-literal type:
 
 ```tsx
-<Link to="/about">About</Link>                                     // a literal
-<Link to={{ to: '/blog/[slug]', params: { slug } }}>{title}</Link>  // structured
-const href: `/search?${string}` = `/search?${params}`;       // typed template
+import { unstable_createRouteHref as createRouteHref } from 'waku/router';
+
+const blogPost = createRouteHref({ path: '/blog/[slug]' });
+
+<Link to="/about">About</Link>;
+<Link to={blogPost({ params: { slug } })}>{title}</Link>;
+const href: `/search?${string}` = `/search?${params}`;
 ```
 
-For a component whose target is genuinely dynamic, the type `Link` accepts is not
-exported; borrow it with `ComponentProps<typeof Link>['to']`. Where the href comes
-from user input — a login `callbackUrl`, say — the type error is doing you a
-favour: check it against the routes you mean to allow before you cast.
+Factory results carry type-only pattern provenance, not proof that a slug is
+among the generated static paths. Keep their inferred type: widening a result
+to `string` discards that evidence.
+
+For a reusable link wrapper, type its `to` prop as
+`ComponentProps<typeof Link>['to']`. This preserves generated route checks; it
+does not accept arbitrary strings. For a runtime-only destination such as a login
+`callbackUrl`, validate it against an application allowlist before asserting
+`href as ComponentProps<typeof Link>['to']`. An assertion performs no runtime
+validation.
 `nextjs-dashboard` follows a callback only to a same-origin path under
 `/dashboard`.
 

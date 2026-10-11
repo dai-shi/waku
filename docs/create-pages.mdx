@@ -317,7 +317,7 @@ export default adapter(pages);
 
 Once this is done, string navigation targets use the inferred paths. In this case, the one valid use would be `<Link to="/" />`, but as you add more pages to the router, this type will grow to include them.
 
-This does not check structured navigation targets against the route table. Structured targets still infer their parameters from the supplied pattern, but `<Link to={{ to: '/missing' }} />` is accepted.
+For parameterized URLs, use `unstable_createRouteHref` from `waku/router`. Its factories infer params and search from a local pattern and optional codec. This augmentation checks raw string hrefs, not factory patterns: without generated route metadata, a factory for an unknown path is accepted by navigation. See [Typed Routes](/guides/typed-routes#what-the-types-check).
 
 #### PageProps
 
@@ -333,9 +333,10 @@ export const AboutPage = ({ foo }: PageProps<'/about/[foo]'>) => {
 };
 ```
 
-The route patterns passed to `PageProps` and `useParams_UNSTABLE` are not checked against the route table. Do not add the following augmentation:
+The route patterns passed to `PageProps`, `useParams_UNSTABLE`, and href factories are not checked against this manual route table. Do not add the following augmentation:
 
 ```tsx
+// ./src/waku.server.tsx
 declare module 'waku/router' {
   interface CreatePagesConfig {
     pages: typeof pages;

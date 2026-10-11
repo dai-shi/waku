@@ -54,13 +54,11 @@ export type {
 
 export { buildMergePatch as unstable_buildMergePatch } from './client-core-utils/merge-patch.js';
 
+export { useParams_UNSTABLE } from './client-core-utils/route-hooks.js';
 export {
-  SearchCodecsProvider_UNSTABLE,
-  useParams_UNSTABLE,
-  useResolveSearchCodec as useResolveSearchCodec_UNSTABLE,
   useSearch_UNSTABLE,
   useSetSearch_UNSTABLE,
-} from './client-core-utils/route-hooks.js';
+} from './client-core-utils/search.js';
 
 export { useHmrRefetch as useHmrRefetch_UNSTABLE } from './client-core-utils/hmr.js';
 
@@ -84,12 +82,7 @@ export type {
   RouteSearch as Unstable_RouteSearch,
 } from './create-pages-utils/inferred-path-types.js';
 
-export { buildRouteHref as unstable_buildRouteHref } from './isomorphic-utils/build-route-href.js';
-export type {
-  BuildRouteHrefTarget as Unstable_BuildRouteHrefTarget,
-  RouteHref as Unstable_RouteHref,
-  RoutePath as Unstable_RoutePath,
-} from './isomorphic-utils/build-route-href.js';
+export type { RoutePath as Unstable_RoutePath } from './isomorphic-utils/build-route-href.js';
 
 export { matchRouteParams as unstable_matchRouteParams } from './isomorphic-utils/match-route-params.js';
 
@@ -99,11 +92,4 @@ export {
 } from './isomorphic-utils/route-path.js';
 export type { RouteProps as Unstable_RouteProps } from './isomorphic-utils/route-path.js';
 
-export {
-  getRouteSearchCodecId as unstable_getRouteSearchCodecId,
-  isCodec as unstable_isCodec,
-} from './isomorphic-utils/search-codec-registry.js';
-export type {
-  AnyCodec as Unstable_AnyCodec,
-  Unstable_SearchCodec,
-} from './isomorphic-utils/search-codec-registry.js';
+export type { Unstable_SearchCodec } from './isomorphic-utils/search-codec.js';

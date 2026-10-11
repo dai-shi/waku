@@ -56,10 +56,14 @@ export const DashboardButton = () => {
 };
 ```
 
-`router.prefetch()` accepts the same targets as `router.push()`: a typed route href (autocompleted from your routes), or a structured `{ to, params, search, hash }` target for prefetching a dynamic route. For a computed string that is not a known route, cast it with `as Unstable_RouteHref`.
+`router.prefetch()` accepts the same URL strings as `router.push()`. Use a local href factory for typed params and search:
 
 ```tsx
-router.prefetch({ to: '/posts/[slug]', params: { slug } });
+import { unstable_createRouteHref as createRouteHref } from 'waku/router';
+
+const post = createRouteHref({ path: '/posts/[slug]' });
+
+router.prefetch(post({ params: { slug } }));
 ```
 
 For navigating to dynamic routes with typed params, see [Typed Routes](/guides/typed-routes).
@@ -208,13 +212,9 @@ export const PendingIndicator = () => {
 
 import { Link as WakuLink } from 'waku';
 import type { LinkProps } from 'waku/router/client';
-import type { Unstable_RoutePath as RoutePath } from 'waku/router/client-core';
 import { PendingIndicator } from './pending-indicator';
 
-export const PendingLink = <Path extends RoutePath>({
-  children,
-  ...props
-}: LinkProps<Path>) => (
+export const PendingLink = ({ children, ...props }: LinkProps) => (
   <WakuLink {...props}>
     {children}
     <PendingIndicator />

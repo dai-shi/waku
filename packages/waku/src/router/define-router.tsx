@@ -5,13 +5,11 @@ import type {
   BuildElementId,
   BuildPath,
 } from './define-router-utils/build-handler.js';
-import { setupRouterSearchCodecs } from './define-router-utils/client-code.js';
 import { createRequestHandler } from './define-router-utils/request-handler.js';
 import {
   getHeaders,
   getRequest,
   getRerender,
-  getResolveSearchCodec,
   getRscParams,
   getRscPath,
   runWithRouterStore,
@@ -23,15 +21,9 @@ import type {
   Resolve,
   ResolveElement,
 } from './define-router-utils/route-entries.js';
-import { buildRouteHref } from './isomorphic-utils/build-route-href.js';
-import type {
-  BuildRouteHrefTarget,
-  RouteHref,
-  RoutePath,
-} from './isomorphic-utils/build-route-href.js';
+import type { NavigationHref } from './isomorphic-utils/build-route-href.js';
 import { pathnameToRoutePath } from './isomorphic-utils/route-path.js';
 import { encodeRoutePath } from './isomorphic-utils/router-protocol.js';
-import type { Unstable_SearchCodec } from './isomorphic-utils/search-codec-registry.js';
 
 export {
   getRequest as unstable_getRequest,
@@ -84,30 +76,18 @@ export function unstable_notFound(): never {
 
 /**
  * Redirect within the app, or away from it with an absolute http or https url.
- * A `URL` is the way to pass one that is not a literal. Where it points is not
- * validated, so check a target built from user input against your own
- * allowlist.
+ * Check destinations built from user input against your own allowlist.
  *
  * An absolute url navigates the document even when it names this origin, so
  * pass a path to stay within the app. A form submission without JavaScript is
  * followed by the browser, which resends the body on 307 and 308, so those
  * answer 303 instead.
  */
-export function unstable_redirect<Path extends RoutePath = RoutePath>(
-  to:
-    | RouteHref
-    | `http://${string}`
-    | `https://${string}`
-    | URL
-    | BuildRouteHrefTarget<Path>,
+export function unstable_redirect(
+  to: NavigationHref | `http://${string}` | `https://${string}` | URL,
   status: 303 | 307 | 308 = 307,
 ): never {
-  let location =
-    typeof to === 'string'
-      ? to
-      : to instanceof URL
-        ? to.href
-        : buildRouteHref(to, getResolveSearchCodec());
+  let location = to instanceof URL ? to.href : to;
   const leavesTheApp =
     location.startsWith('http://') || location.startsWith('https://');
   if (
@@ -145,7 +125,6 @@ type RouterOptions = {
   getBuildElementIds?: () => Promise<Iterable<BuildElementId>>;
   resolveElement?: ResolveElement;
   getHas404?: () => Promise<boolean>;
-  getSearchCodecs?: () => Promise<Record<string, Unstable_SearchCodec<any>>>;
   unstable_interceptors?: HandlerInterceptor[];
 };
 
@@ -169,8 +148,6 @@ type RouterOptions = {
  * slot IDs. Without a key, route content is reused only from build-preloaded
  * entries. Custom 404 availability is checked once per router instance, using
  * `getHas404` when provided or resolving `/404` otherwise.
- * `getSearchCodecs` maps route patterns to codecs for structured navigation on
- * the server and in the browser. It is loaded once per router instance.
  * Immutable sources must render the same content for the lifetime of their ID
  * or explicit cache key. Use a bounded set of keys, not arbitrary request paths.
  */
@@ -180,31 +157,12 @@ export function unstable_defineRouter(fns: RouterOptions): Handlers {
     fns.resolveElement,
     fns.getHas404,
   );
-  let searchCodecsPromise:
-    Promise<Record<string, Unstable_SearchCodec<any>>> | undefined;
-  const getSearchCodecs = (): Promise<
-    Record<string, Unstable_SearchCodec<any>>
-  > =>
-    (searchCodecsPromise ??= (
-      fns.getSearchCodecs?.() ?? Promise.resolve({})
-    ).catch((error) => {
-      searchCodecsPromise = undefined;
-      throw error;
-    }));
-  const getExtraScriptContent = async () =>
-    setupRouterSearchCodecs(await getSearchCodecs());
   const runHandled = async <T,>(
     req: Request,
     fn: () => Promise<T>,
   ): Promise<T> => {
-    const codecs = await getSearchCodecs();
     return runWithRouterStore(
-      {
-        req,
-        resolveSearchCodec: fns.getSearchCodecs
-          ? (path) => codecs[path]
-          : getResolveSearchCodec(),
-      },
+      { req },
       (fns.unstable_interceptors ?? []).reduceRight(
         (next, interceptor) => () => interceptor(next),
         fn,
@@ -216,7 +174,6 @@ export function unstable_defineRouter(fns: RouterOptions): Handlers {
       resolve: fns.resolve,
       routeEntries,
       runHandled,
-      getExtraScriptContent,
     }),
     handleBuild: createBuildHandler({
       resolve: fns.resolve,
@@ -224,7 +181,6 @@ export function unstable_defineRouter(fns: RouterOptions): Handlers {
       getBuildElementIds: fns.getBuildElementIds,
       routeEntries,
       runHandled,
-      getExtraScriptContent,
     }),
   };
 }

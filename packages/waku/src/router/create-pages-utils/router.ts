@@ -21,7 +21,6 @@ export const createConfiguredRouter = (fns: {
     resolve: resolver.resolve,
     resolveElement: resolver.resolveElement,
     getHas404: async () => registry.has404(),
-    getSearchCodecs: async () => registry.getSearchCodecs(),
     getBuildPaths: async () => {
       const targets = [];
       for (const config of registry.getAll()) {

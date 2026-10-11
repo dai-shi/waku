@@ -83,7 +83,7 @@ Additional IDs must not start with `_`, a capital letter, or `route:`; these nam
 
 Set `noSsr: true` on a route to return Waku's client-rendered document fallback; its RSC response remains available. Resolving `/404` supplies a custom not-found route. Its availability is checked once per router instance; the content is resolved on each visit. Supply `getHas404: async () => boolean` when your manifest can answer this without resolving a route, or when a catch-all also matches `/404`. See [Redirects and Not Found](/guides/redirects-and-not-found) for streaming behavior.
 
-`getSearchCodecs` optionally returns a map from route patterns to search codecs. Waku uses the map for structured server-side redirects and registers the same codec IDs in the browser for structured navigation, including runtime and static `noSsr` documents.
+For typed search, parse `query` with an application-owned codec inside `resolve`. Share that independent codec with a local `unstable_createRouteHref` factory and the client search hooks; `defineRouter` requires no codec map or browser registration. Navigation and redirects consume the resulting URL strings. See [Typed Routes](/guides/typed-routes) for examples and [migration steps](/guides/typed-routes#migration).
 
 ## Client Entry
 

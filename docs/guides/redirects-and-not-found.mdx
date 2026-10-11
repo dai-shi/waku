@@ -45,14 +45,18 @@ export default async function AccountPage() {
 
 The default is `307`.
 
-`redirect` also accepts the same typed target as `router.push` / `router.replace`: a structured `{ to, params, search, hash }`, so a dynamic route's params and a route's typed `search` are checked and serialized for you:
+Use a local href factory for typed params and search, then pass its string result to `redirect`:
 
 ```tsx
-redirect({ to: '/posts/[slug]', params: { slug: post.slug } });
-redirect({ to: '/products', search: { q: 'waku', page: 1 } }, 303);
+import { unstable_createRouteHref as createRouteHref } from 'waku/router';
+import { unstable_redirect as redirect } from 'waku/router/server';
+
+const postHref = createRouteHref({ path: '/posts/[slug]' });
+
+redirect(postHref({ params: { slug: post.slug } }), 303);
 ```
 
-`search` is serialized with that route's search codec (see the [Typed Routes](/guides/typed-routes) guide).
+The factory can bind a search codec directly; no server or browser registry is required. Its result excludes the application base path, which `redirect` applies. See [Typed Routes](/guides/typed-routes).
 
 ## Redirect After a Server Action
 
@@ -60,8 +64,11 @@ For form submissions and mutations, use `303` when the next page should be loade
 
 ```tsx
 // src/pages/posts/new.tsx
+import { unstable_createRouteHref as createRouteHref } from 'waku/router';
 import { unstable_redirect as redirect } from 'waku/router/server';
 import { createPost } from '../../lib/posts';
+
+const postHref = createRouteHref({ path: '/posts/[slug]' });
 
 export default function NewPostPage() {
   return (
@@ -73,7 +80,7 @@ export default function NewPostPage() {
           title: String(formData.get('title') || ''),
         });
 
-        redirect({ to: '/posts/[slug]', params: { slug: post.slug } }, 303);
+        redirect(postHref({ params: { slug: post.slug } }), 303);
       }}
     >
       <input name="title" />

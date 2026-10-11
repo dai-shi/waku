@@ -1,10 +1,6 @@
-import {
-  getPathMapping,
-  pathSpecAsString,
-} from '../isomorphic-utils/path-spec.js';
+import { getPathMapping } from '../isomorphic-utils/path-spec.js';
 import type { PathSpec } from '../isomorphic-utils/path-spec.js';
 import { pathnameToRoutePath } from '../isomorphic-utils/route-path.js';
-import type { Unstable_SearchCodec } from '../isomorphic-utils/search-codec-registry.js';
 import {
   CREATE_PAGES_CONFIGS_KEY,
   type RuntimeConfig,
@@ -81,17 +77,6 @@ export const createConfigRegistry = (
     return cachedHas404;
   };
 
-  const getSearchCodecs = () => {
-    const codecs: Record<string, Unstable_SearchCodec<any>> = {};
-    for (const config of getAll()) {
-      if (config.type === 'route' && config.searchCodec) {
-        codecs[pathSpecAsString(config.pathPattern ?? config.path)] =
-          config.searchCodec;
-      }
-    }
-    return codecs;
-  };
-
   const findPathConfig = (pathname: string) => {
     const routePath = pathnameToRoutePath(pathname);
     return getAll().find(
@@ -128,7 +113,6 @@ export const createConfigRegistry = (
     initialize,
     getAll,
     has404,
-    getSearchCodecs,
     findPathConfig,
     findSliceConfig,
   };

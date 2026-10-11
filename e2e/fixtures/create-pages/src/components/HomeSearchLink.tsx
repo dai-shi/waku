@@ -1,6 +1,7 @@
 'use client';
 
 import { Link, useRouter } from 'waku/router/client';
+import { searchRoute } from '../lib/routes';
 
 export function HomeSearchLink() {
   const router = useRouter();
@@ -9,13 +10,13 @@ export function HomeSearchLink() {
       <button
         data-testid="home-to-search"
         onClick={() =>
-          router.push({ to: '/search', search: { q: 'hello', page: 5 } })
+          router.push(searchRoute({ search: { q: 'hello', page: 5 } }))
         }
       >
         to search
       </button>
       <Link
-        to={{ to: '/search', search: { q: 'linked', page: 7 } }}
+        to={searchRoute({ search: { q: 'linked', page: 7 } })}
         data-testid="home-to-search-link"
       >
         to search (link)

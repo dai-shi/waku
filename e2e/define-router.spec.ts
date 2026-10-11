@@ -28,7 +28,43 @@ test.describe(`define-router`, () => {
     await expect(page.getByTestId('foo-title')).toHaveText('Foo');
   });
 
-  test('structured search navigation after a direct noSsr load', async ({
+  test('typed hrefs produce HTTP redirects without a codec registry', async ({
+    request,
+  }) => {
+    const response = await request.get(
+      `http://localhost:${port}/typed-redirect`,
+      {
+        maxRedirects: 0,
+      },
+    );
+    expect(response.status()).toBe(307);
+    expect(response.headers().location).toBe('/foo?q=redirected');
+  });
+
+  test('typed hrefs render and navigate from a Server Component', async ({
+    page,
+  }) => {
+    const response = await page.goto(`http://localhost:${port}/server-search`);
+    expect(await response!.text()).toContain('href="/foo?q=server"');
+    const link = page.getByRole('link', { name: 'Server search', exact: true });
+    await expect(link).toHaveAttribute('href', '/foo?q=server');
+    await link.click();
+    await expect(page.getByTestId('foo-title')).toHaveText('Foo');
+    expect(page.url()).toBe(`http://localhost:${port}/foo?q=server`);
+  });
+
+  test('Link remains a client reference passed through component props', async ({
+    page,
+  }) => {
+    await page.goto(`http://localhost:${port}/server-search`);
+    const link = page.getByRole('link', { name: 'Composed search' });
+    await expect(link).toHaveAttribute('href', '/foo?q=composed');
+    await link.click();
+    await expect(page.getByTestId('foo-title')).toHaveText('Foo');
+    expect(page.url()).toBe(`http://localhost:${port}/foo?q=composed`);
+  });
+
+  test('local search navigation after a direct noSsr load', async ({
     page,
   }) => {
     const response = await page.goto(`http://localhost:${port}/no-ssr-search`);
@@ -273,9 +309,7 @@ test.describe('define-router: static server', { tag: '@prd' }, () => {
     expect(payload.status()).toBe(200);
   });
 
-  test('structured search navigation from static noSsr HTML', async ({
-    page,
-  }) => {
+  test('local search navigation from static noSsr HTML', async ({ page }) => {
     const response = await page.goto(
       `http://localhost:${port}/no-ssr-search-static`,
     );
@@ -285,5 +319,20 @@ test.describe('define-router: static server', { tag: '@prd' }, () => {
     await link.click();
     await expect(page.getByTestId('foo-title')).toHaveText('Foo');
     expect(page.url()).toBe(`http://localhost:${port}/foo?q=after`);
+  });
+
+  test('typed hrefs work in static HTML without JavaScript', async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    try {
+      const page = await context.newPage();
+      await page.goto(`http://localhost:${port}/server-search-static`);
+      await page.getByRole('link', { name: 'Static server search' }).click();
+      await expect(page.getByTestId('foo-title')).toHaveText('Foo');
+      expect(page.url()).toBe(`http://localhost:${port}/foo?q=static`);
+    } finally {
+      await context.close();
+    }
   });
 });

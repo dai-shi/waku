@@ -767,7 +767,7 @@ This allows you to have a `dynamic` slice component while keeping the rest of th
 
 The `<Link />` component should be used for internal links. It accepts a `to` prop for the destination and handles client-side navigation through Waku's router.
 
-`to` is either a route string, or a structured `{ to, params, search, hash }` target for typed navigation (the same shape `router.push` accepts; see [Typed Routes](https://github.com/wakujs/waku/blob/main/docs/guides/typed-routes.mdx)).
+`to` is a URL string. For typed params and search, use `unstable_createRouteHref` from `waku/router` to construct the string (see [Typed Routes](https://github.com/wakujs/waku/blob/main/docs/guides/typed-routes.mdx)). The same strings work with `router.push`, `router.replace`, and `router.prefetch`.
 
 ```tsx
 // ./src/pages/index.tsx
@@ -778,7 +778,7 @@ export default async function HomePage() {
     <>
       <h1>Home</h1>
       <Link to="/about">About</Link>
-      <Link to={{ to: '/search', search: { q: 'waku' } }}>Search</Link>
+      <Link to="/search?q=waku">Search</Link>
     </>
   );
 }
@@ -813,7 +813,7 @@ export const Component = () => {
 
 The `router` object also contains several methods for programmatic navigation:
 
-- `router.push(to)` - navigate to the provided route. `to` is a route string, or a structured `{ to, params, search, hash }` target for typed navigation to dynamic routes (see [Typed Routes](https://github.com/wakujs/waku/blob/main/docs/guides/typed-routes.mdx))
+- `router.push(to)` - navigate to the provided URL string, including strings constructed with `unstable_createRouteHref` (see [Typed Routes](https://github.com/wakujs/waku/blob/main/docs/guides/typed-routes.mdx))
 
 - `router.prefetch(to: string)` - prefetch the provided route
 

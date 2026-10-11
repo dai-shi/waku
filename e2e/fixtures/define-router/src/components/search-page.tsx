@@ -1,12 +1,8 @@
 'use client';
 
-import { Link, SearchCodecsProvider_UNSTABLE } from 'waku/router/client';
-import { searchCodec } from '../lib/search.js';
+import { Link } from 'waku/router/client';
+import { fooRoute } from '../lib/routes.js';
 
 export function SearchPage() {
-  return (
-    <SearchCodecsProvider_UNSTABLE searchCodecs={[searchCodec]}>
-      <Link to={{ to: '/foo', search: { q: 'after' } }}>Search foo</Link>
-    </SearchCodecsProvider_UNSTABLE>
-  );
+  return <Link to={fooRoute({ search: { q: 'after' } })}>Search foo</Link>;
 }

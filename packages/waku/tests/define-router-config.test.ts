@@ -34,9 +34,10 @@ const makeRoute = (name: string): RouteConfig => ({
       sourceFile: `${name}/main.tsx`,
     },
   },
-  searchCodec: { id: `codec:${name}` } as NonNullable<
-    RouteConfig['searchCodec']
-  >,
+  searchCodec: {
+    parse: (query) => ({ name, query }),
+    serialize: ({ query }: { query: string }) => query,
+  },
 });
 
 const makeApi = (name: string): ApiConfig => ({

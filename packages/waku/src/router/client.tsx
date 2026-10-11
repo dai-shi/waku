@@ -11,7 +11,6 @@ import type { PrefetchOptions } from './client-core-utils/caches.js';
 import { RouterHostContext } from './client-core-utils/host.js';
 import type { RouterHost } from './client-core-utils/host.js';
 import { useInitialRscParams } from './client-core-utils/initial-route.js';
-import { useResolveSearchCodec } from './client-core-utils/route-hooks.js';
 import { parseRoute } from './client-core-utils/route-url.js';
 import {
   prefetchRouteUnlessReusable,
@@ -28,11 +27,7 @@ import {
   dispatchChangeRoute,
 } from './client-utils/router-context.js';
 import { shouldScrollByDefault } from './client-utils/scroll.js';
-import type {
-  BuildRouteHrefTarget,
-  RouteHref,
-  RoutePath,
-} from './isomorphic-utils/build-route-href.js';
+import type { NavigationHref } from './isomorphic-utils/build-route-href.js';
 import type { RouteProps } from './isomorphic-utils/route-path.js';
 import {
   encodeRoutePath,
@@ -40,12 +35,11 @@ import {
 } from './isomorphic-utils/router-protocol.js';
 
 export { ErrorBoundary } from './client-core-utils/error-boundary.js';
+export { useParams_UNSTABLE } from './client-core-utils/route-hooks.js';
 export {
-  SearchCodecsProvider_UNSTABLE,
-  useParams_UNSTABLE,
   useSearch_UNSTABLE,
   useSetSearch_UNSTABLE,
-} from './client-core-utils/route-hooks.js';
+} from './client-core-utils/search.js';
 export { Slice } from './client-core-utils/slice.js';
 export { Link, useNavigationStatus_UNSTABLE } from './client-utils/link.js';
 export type { LinkProps } from './client-utils/link.js';
@@ -81,26 +75,17 @@ type NavigateOptions = {
  * fetching is followed before this resolves. It does not wait for React to
  * render, so the address bar may still show the previous URL.
  */
-type Navigate = {
-  (to: RouteHref, options?: NavigateOptions): Promise<void>;
-  <Path extends RoutePath>(
-    target: BuildRouteHrefTarget<Path>,
-    options?: NavigateOptions,
-  ): Promise<void>;
-};
+type Navigate = (
+  to: NavigationHref,
+  options?: NavigateOptions,
+) => Promise<void>;
 
 /**
  * Fetches whatever it is given, including the route already on screen, so it
  * can warm the cache for a later reload. `<Link>` prefetching is automatic and
  * skips a target the router is already showing.
  */
-type Prefetch = {
-  (to: RouteHref, options?: PrefetchOptions): void;
-  <Path extends RoutePath>(
-    target: BuildRouteHrefTarget<Path>,
-    options?: PrefetchOptions,
-  ): void;
-};
+type Prefetch = (to: NavigationHref, options?: PrefetchOptions) => void;
 
 const useRouterOrThrow = () => {
   const router = useContext(RouterContext);
@@ -122,18 +107,14 @@ const useRouterOrThrow = () => {
 export function useRouter() {
   const router = useRouterOrThrow();
   const { route, changeRoute, getElements } = router;
-  const resolveCodec = useResolveSearchCodec();
   const cache = useRouterCache();
   const navigate = useCallback(
     (
       history: 'push' | 'replace',
-      to: RouteHref | BuildRouteHrefTarget<RoutePath>,
+      to: NavigationHref,
       options?: NavigateOptions,
     ) => {
-      const url = new URL(
-        resolveRouteHref(to, resolveCodec),
-        window.location.href,
-      );
+      const url = new URL(resolveRouteHref(to), window.location.href);
       return dispatchChangeRoute(changeRoute, parseRoute(url), {
         shouldScroll: options?.scroll ?? shouldScrollByDefault(url),
         history,
@@ -142,22 +123,16 @@ export function useRouter() {
         onSuperseded: options?.unstable_onSuperseded,
       });
     },
-    [changeRoute, resolveCodec],
+    [changeRoute],
   );
-  const push = useCallback(
-    (
-      to: RouteHref | BuildRouteHrefTarget<RoutePath>,
-      options?: NavigateOptions,
-    ) => navigate('push', to, options),
+  const push = useCallback<Navigate>(
+    (to, options) => navigate('push', to, options),
     [navigate],
-  ) as Navigate;
-  const replace = useCallback(
-    (
-      to: RouteHref | BuildRouteHrefTarget<RoutePath>,
-      options?: NavigateOptions,
-    ) => navigate('replace', to, options),
+  );
+  const replace = useCallback<Navigate>(
+    (to, options) => navigate('replace', to, options),
     [navigate],
-  ) as Navigate;
+  );
   const reload = useCallback(async () => {
     const url = new URL(window.location.href);
     await dispatchChangeRoute(changeRoute, parseRoute(url), {
@@ -173,21 +148,15 @@ export function useRouter() {
   const forward = useCallback(() => {
     window.history.forward();
   }, []);
-  const prefetch = useCallback(
-    (
-      to: RouteHref | BuildRouteHrefTarget<RoutePath>,
-      options?: PrefetchOptions,
-    ) => {
-      const url = new URL(
-        resolveRouteHref(to, resolveCodec),
-        window.location.href,
-      );
+  const prefetch = useCallback<Prefetch>(
+    (to, options) => {
+      const url = new URL(resolveRouteHref(to), window.location.href);
       const next = parseRoute(url);
       preloadRouteModules(next.path);
       prefetchRouteUnlessReusable(cache, next, options, getElements);
     },
-    [cache, resolveCodec, getElements],
-  ) as Prefetch;
+    [cache, getElements],
+  );
   return {
     ...route,
     push,

@@ -9,7 +9,6 @@ const schema = z.object({
 type ZodSearch = z.infer<typeof schema>;
 
 export const zodSearchCodec = {
-  id: 'zod',
   parse: (query: string): ZodSearch =>
     schema.parse(Object.fromEntries(new URLSearchParams(query))),
   serialize: (search: ZodSearch): string =>

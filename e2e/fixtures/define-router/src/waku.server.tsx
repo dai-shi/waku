@@ -6,15 +6,16 @@ import {
   Children_UNSTABLE as Children,
   Slot_UNSTABLE as Slot,
 } from 'waku/minimal/client';
-import { Slice } from 'waku/router/client';
+import { Link, Slice } from 'waku/router/client';
 import {
   unstable_defineRouter as defineRouter,
   unstable_redirect as redirect,
 } from 'waku/router/server';
+import { NavButton } from './components/nav-button.js';
 import { SearchPage } from './components/search-page.js';
 import { Slice001 } from './components/slice001.js';
 import { Slice002 } from './components/slice002.js';
-import { searchCodec } from './lib/search.js';
+import { fooRoute } from './lib/routes.js';
 import Bar1Page from './routes/bar1/page.js';
 import Bar2Page from './routes/bar2/page.js';
 import Baz1Page from './routes/baz1/page.js';
@@ -30,6 +31,7 @@ const STATIC_PAGES = [
   '/baz2',
   '/static-lazy',
   '/no-ssr-search-static',
+  '/server-search-static',
 ];
 const PATH_PAGE: Record<string, ReactNode> = {
   '/': <Page />,
@@ -40,6 +42,18 @@ const PATH_PAGE: Record<string, ReactNode> = {
   '/baz2': <Baz2Page />, // static page + lazy dynamic slice
   '/no-ssr-search': <SearchPage />,
   '/no-ssr-search-static': <SearchPage />,
+  '/server-search': (
+    <div>
+      <Link to={fooRoute({ search: { q: 'server' } })}>Server search</Link>
+      <NavButton
+        component={Link}
+        to={fooRoute({ search: { q: 'composed' } })}
+      />
+    </div>
+  ),
+  '/server-search-static': (
+    <Link to={fooRoute({ search: { q: 'static' } })}>Static server search</Link>
+  ),
   '/static-lazy': (
     <div>
       <h2 data-testid="static-lazy-title">Static lazy</h2>
@@ -71,6 +85,9 @@ const sliceSources = {
 
 const router = defineRouter({
   resolve: async (path) => {
+    if (path === '/typed-redirect') {
+      redirect(fooRoute({ search: { q: 'redirected' } }));
+    }
     if (path === '/api/hi') {
       return async (req) => {
         if (req.method === 'GET') {
@@ -136,7 +153,6 @@ const router = defineRouter({
   },
   getBuildPaths: async () => [...Object.keys(PATH_PAGE), '/api/empty'],
   getBuildElementIds: async () => ['slice:slice001'],
-  getSearchCodecs: async () => ({ '/foo': searchCodec }),
   resolveElement: async (id) =>
     sliceSources[id as keyof typeof sliceSources] || null,
 });

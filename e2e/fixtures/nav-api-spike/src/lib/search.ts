@@ -3,7 +3,6 @@ import type { Unstable_SearchCodec } from 'waku/router';
 export type SpikeSearch = { q: string };
 
 export const spikeSearchCodec = {
-  id: 'nav-api-spike',
   parse: (query: string): SpikeSearch => {
     const sp = new URLSearchParams(query);
     return { q: sp.get('q') ?? '' };

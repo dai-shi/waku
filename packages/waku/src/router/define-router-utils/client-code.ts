@@ -21,20 +21,3 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path, callback) => {
 };
 `;
 };
-import type { Unstable_SearchCodec } from '../isomorphic-utils/search-codec-registry.js';
-
-export const setupRouterSearchCodecs = (
-  codecs: Record<string, Unstable_SearchCodec<any>>,
-) => {
-  const ids = Object.fromEntries(
-    Object.entries(codecs).map(([path, codec]) => [path, codec.id]),
-  );
-  if (!Object.keys(ids).length) {
-    return '';
-  }
-  (
-    globalThis as { __WAKU_ROUTER_SEARCH_CODECS__?: Record<string, string> }
-  ).__WAKU_ROUTER_SEARCH_CODECS__ = ids;
-  const json = JSON.stringify(ids).replace(/</g, '\\u003c');
-  return `\nglobalThis.__WAKU_ROUTER_SEARCH_CODECS__ = ${json};\n`;
-};

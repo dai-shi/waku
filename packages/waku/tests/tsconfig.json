@@ -6,7 +6,13 @@
     "lib": ["esnext", "dom", "dom.iterable"]
   },
   "include": ["."],
-  "exclude": ["dist", "fixtures/create-pages-types"],
+  "exclude": [
+    "dist",
+    "fixtures/create-pages-types",
+    "fixtures/router-href-generated-types",
+    "fixtures/router-href-manual-types",
+    "fixtures/router-href-local-types"
+  ],
   "references": [
     {
       "path": ".."

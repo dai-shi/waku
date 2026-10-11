@@ -1,6 +1,9 @@
 'use client';
 
 import { Link, useRouter } from 'waku';
+import { unstable_createRouteHref } from 'waku/router';
+
+const staticRoute = unstable_createRouteHref({ path: '/static' });
 
 export default function TestRouter() {
   const router = useRouter();
@@ -77,18 +80,18 @@ export default function TestRouter() {
       </p>
       <p>
         <button
-          data-testid="router-prefetch-structured"
-          onClick={() => router.prefetch({ to: '/static', hash: '#77' })}
+          data-testid="router-prefetch-factory"
+          onClick={() => router.prefetch(staticRoute({ hash: '#77' }))}
         >
-          router.prefetch structured target
+          router.prefetch factory href
         </button>
       </p>
       <p>
         <button
-          data-testid="router-push-structured"
-          onClick={() => router.push({ to: '/static', hash: '#77' })}
+          data-testid="router-push-factory"
+          onClick={() => router.push(staticRoute({ hash: '#77' }))}
         >
-          router.push structured target
+          router.push factory href
         </button>
       </p>
       <p>

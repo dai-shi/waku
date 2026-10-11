@@ -15,14 +15,15 @@ export type {
   GetConfigResponse,
   SearchCodecsForPages,
 } from './create-pages-utils/inferred-path-types.js';
-export type { Unstable_SearchCodec } from './isomorphic-utils/search-codec-registry.js';
+export type { Unstable_SearchCodec } from './isomorphic-utils/search-codec.js';
+export { unstable_createRouteHref } from './href-factory.js';
 
 export interface RouteConfig {
   // routes to be overridden by users
 }
 
 /**
- * Route metadata used by page, layout, and structured navigation types.
+ * Route metadata used by page, layout, and constructed-href types.
  *
  * The file-system router augments this from generated metadata. Manual
  * augmentations must not refer to a `createPages` result because it includes

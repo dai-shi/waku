@@ -31,7 +31,7 @@ import {
   getGrouplessPath,
   pathnameToRoutePath,
 } from './isomorphic-utils/route-path.js';
-import type { Unstable_SearchCodec } from './isomorphic-utils/search-codec-registry.js';
+import type { Unstable_SearchCodec } from './isomorphic-utils/search-codec.js';
 
 type Method =
   | 'GET'
@@ -246,9 +246,9 @@ export type CreatePage = <
     /**
      * Bring-your-own search-params codec for this route. The server parses the
      * `query` with it (rejecting a malformed query as 400 and injecting a typed
-     * `search` prop); its `id` is sent to the client to resolve the same codec
-     * for `useSearch`/`push`. The route's `search` type is declared separately
-     * via the `SearchCodecsConfig` augmentation (or fs-router typegen).
+     * `search` prop). Share the codec with a local href factory or search hooks.
+     * The page's `search` type is declared via `SearchCodecsConfig` or generated
+     * by fs-router typegen.
      */
     unstable_searchCodec?: Unstable_SearchCodec<any>;
   },

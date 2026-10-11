@@ -3370,7 +3370,6 @@ describe('createPages search codec', () => {
   it('injects parsed props.search and 400s on a malformed query', async () => {
     type S = { page: number };
     const codec = {
-      id: 'search-test',
       parse: (query: string): S => {
         const v = new URLSearchParams(query).get('page');
         if (v === 'bad') {
@@ -3394,10 +3393,7 @@ describe('createPages search codec', () => {
       (config) =>
         config.type === 'route' && config.path?.[0]?.name === 'search-test',
     );
-    // the codec instance rides the route config; its id feeds the
-    // route -> codec id map (__WAKU_ROUTER_SEARCH_CODECS__) that the client uses
-    // for the search hooks and push/Link
-    expect(routeConfig.searchCodec?.id).toBe('search-test');
+    expect(routeConfig.searchCodec).toBe(codec);
     const pageEl = routeConfig.elements['page:/search-test'];
     // parsed search is injected from the query
     expect(
@@ -3423,7 +3419,6 @@ describe('createPages search codec', () => {
 
   it('rejects unstable_searchCodec on a static route', async () => {
     const codec = {
-      id: 'static-codec',
       parse: () => ({}),
       serialize: () => '',
     } as const;

@@ -443,9 +443,9 @@ describe('define-router handleBuild', () => {
     expect(generated.has('/foo/index.html')).toBe(true);
     expect(generated.has('404.html')).toBe(true);
     expect([...generated].some((f) => f.includes('skipme'))).toBe(false);
-    expect(generateDefaultHtml).toHaveBeenCalledWith('/nossr/index.html', {
-      unstable_extraScriptContent: '',
-    });
+    expect(generateDefaultHtml).toHaveBeenCalledExactlyOnceWith(
+      '/nossr/index.html',
+    );
     expect(generated.has('/data.txt')).toBe(true);
     expect(generated.has(`dist/${encodeSliceId('sb')}.txt`)).toBe(true);
 

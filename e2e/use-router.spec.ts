@@ -176,7 +176,7 @@ test.describe('useRouter', () => {
       expect(rscRequests).toHaveLength(prefetchedCount);
     });
 
-    test('router.prefetch accepts a structured target and push reuses it', async ({
+    test('router.prefetch accepts a factory href and push reuses it', async ({
       page,
     }) => {
       const rscRequests: string[] = [];
@@ -191,11 +191,11 @@ test.describe('useRouter', () => {
       await waitForHydration(page);
       const beforePrefetch = rscRequests.length;
 
-      await page.getByTestId('router-prefetch-structured').click();
+      await page.getByTestId('router-prefetch-factory').click();
       await expect.poll(() => rscRequests.length).toBe(beforePrefetch + 1);
       const prefetchedCount = rscRequests.length;
 
-      await page.getByTestId('router-push-structured').click();
+      await page.getByTestId('router-push-factory').click();
       await expect(page.getByRole('heading', { name: 'Static' })).toBeVisible();
       await expect(page.getByTestId('hash')).toHaveText('Hash: 77');
       expect(rscRequests).toHaveLength(prefetchedCount);

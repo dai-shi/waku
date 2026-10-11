@@ -34,4 +34,26 @@ test.describe('spa example coverage', () => {
       'Hello Waku from the server',
     );
   });
+
+  test('runs custom bootstrap code in request-time fallback HTML', async ({
+    page,
+  }) => {
+    await page.goto(`http://localhost:${port}/bootstrap`);
+    await expect(page.getByTestId('title')).toHaveText('Hello Client');
+    expect(await page.evaluate(() => sessionStorage.getItem('bootstrap'))).toBe(
+      'request',
+    );
+  });
+
+  test(
+    'runs custom bootstrap code in generated fallback HTML',
+    { tag: '@prd' },
+    async ({ page }) => {
+      await page.goto(`http://localhost:${port}/bootstrap.html`);
+      await expect(page.getByTestId('title')).toHaveText('Hello Client');
+      expect(
+        await page.evaluate(() => sessionStorage.getItem('bootstrap')),
+      ).toBe('build');
+    },
+  );
 });

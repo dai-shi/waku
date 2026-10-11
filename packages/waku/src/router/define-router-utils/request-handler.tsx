@@ -58,12 +58,10 @@ export const createRequestHandler = ({
   resolve,
   routeEntries,
   runHandled,
-  getExtraScriptContent,
 }: {
   resolve: Resolve;
   routeEntries: ReturnType<typeof createRouteEntries>;
   runHandled: <T>(req: Request, fn: () => Promise<T>) => Promise<T>;
-  getExtraScriptContent?: (() => Promise<string>) | undefined;
 }): HandleRequest => {
   const requestElementCache = createElementCache();
   let requestElementCacheInit: Promise<void> | undefined;
@@ -329,9 +327,9 @@ export const createRequestHandler = ({
               formState,
               status,
               ...(nonce ? { nonce } : {}),
-              unstable_extraScriptContent:
-                getRouterPrefetchCode(await getPath2moduleIds()) +
-                (getExtraScriptContent ? await getExtraScriptContent() : ''),
+              unstable_extraScriptContent: getRouterPrefetchCode(
+                await getPath2moduleIds(),
+              ),
               unstable_rethrowNotFound:
                 status !== 404 && (await routeEntries.has404()),
             },
@@ -340,9 +338,6 @@ export const createRequestHandler = ({
         if (resolved?.noSsr) {
           const nonce = getNonce();
           return renderHtmlFallback({
-            unstable_extraScriptContent: getExtraScriptContent
-              ? await getExtraScriptContent()
-              : '',
             ...(nonce ? { nonce } : {}),
           });
         }

@@ -1,12 +1,7 @@
 import type { CreatePagesConfig, RouteConfig } from '../base-types.js';
-import type {
-  PagePath,
-  RouteParams,
-  RouteSearch,
-} from '../create-pages-utils/inferred-path-types.js';
+import type { PagePath } from '../create-pages-utils/inferred-path-types.js';
 import { getPathMapping, parsePathWithSlug } from './path-spec.js';
 import { getGrouplessPath } from './route-path.js';
-import type { Unstable_SearchCodec } from './search-codec-registry.js';
 
 export type RoutePath = [PagePath<CreatePagesConfig>] extends [never]
   ? string
@@ -30,46 +25,46 @@ export type RouteHref = RouteConfig extends {
   ? AllowPathDecorators<UserPaths>
   : string;
 
-type RouteParamsInput<Path extends RoutePath> = {
-  [Key in keyof RouteParams<Path>]: RouteParams<Path>[Key] extends string[]
-    ? readonly string[]
-    : RouteParams<Path>[Key];
+declare const constructedHref: unique symbol;
+
+export type NormalizePath<
+  Path extends string,
+  Prefix extends string = '',
+> = string extends Path
+  ? string
+  : Path extends `${infer Segment}/${infer Rest}`
+    ? NormalizePath<
+        Rest,
+        Segment extends '' | `(${string}` ? Prefix : `${Prefix}/${Segment}`
+      >
+    : Path extends '' | `(${string}`
+      ? Prefix extends ''
+        ? '/'
+        : Prefix
+      : `${Prefix}/${Path}`;
+
+export type ConstructedHref<Path extends string> = string & {
+  readonly [constructedHref]: NormalizePath<Path>;
 };
 
-export type BuildRouteHrefTarget<Path extends RoutePath> = {
-  to: Path;
-  search?: RouteSearch<Path>;
-  hash?: string;
-} & (keyof RouteParamsInput<Path> extends never
-  ? { params?: never }
-  : { params: RouteParamsInput<Path> });
+export type NavigationHref = RouteHref | ConstructedHref<RoutePath>;
 
-/**
- * Build an href string from a route path, params, search, and hash.
- *
- * Route groups in the path are removed, path params are URL-encoded, and the
- * result is validated against the route matcher; building a pathname that the
- * path would not match (e.g. an empty array for a prefixed catch-all) throws.
- */
-export const buildRouteHref = <Path extends RoutePath>(
-  target: BuildRouteHrefTarget<Path>,
-  resolveCodec?: (routePath: string) => Unstable_SearchCodec<any> | undefined,
+export const buildRouteHref = (
+  path: string,
+  params?: Record<string, unknown>,
 ): string => {
-  const { to, search, hash, params } = target as {
-    to: string;
-    search?: Record<string, unknown>;
-    hash?: string;
-    params?: Record<string, string | readonly string[]>;
-  };
-  const pathSpec = parsePathWithSlug(getGrouplessPath(to));
+  const pathSpec = parsePathWithSlug(getGrouplessPath(path));
   const segments: string[] = [];
   for (const item of pathSpec) {
     if (item.type === 'literal') {
       segments.push(item.name);
     } else if (item.type === 'wildcard') {
       const value = item.name ? params?.[item.name] : undefined;
-      if (!Array.isArray(value)) {
-        throw new Error(`Missing catch-all param "${item.name}" for "${to}"`);
+      if (
+        !Array.isArray(value) ||
+        value.some((part) => typeof part !== 'string' || part === '')
+      ) {
+        throw new Error(`Missing catch-all param "${item.name}" for "${path}"`);
       }
       for (const part of value) {
         segments.push(encodeURIComponent(part));
@@ -77,30 +72,19 @@ export const buildRouteHref = <Path extends RoutePath>(
     } else {
       const value = item.name ? params?.[item.name] : undefined;
       if (typeof value !== 'string') {
-        throw new Error(`Missing param "${item.name}" for "${to}"`);
+        throw new Error(`Missing param "${item.name}" for "${path}"`);
       }
       const prefix = item.prefix ?? '';
       const suffix = item.suffix ?? '';
       segments.push(prefix + encodeURIComponent(value) + suffix);
     }
   }
+  if (segments.some((segment) => segment === '.' || segment === '..')) {
+    throw new Error(`Cannot build "${path}" with dot-segment params`);
+  }
   const pathname = '/' + segments.join('/');
   if (!getPathMapping(pathSpec, pathname)) {
-    throw new Error(`Cannot build "${to}" with the given params`);
+    throw new Error(`Cannot build "${path}" with the given params`);
   }
-  let query = '';
-  if (search !== undefined) {
-    const codec = resolveCodec?.(to);
-    if (!codec) {
-      throw new Error(
-        `Cannot serialize "search" for "${to}": no search codec resolved. Provide it via <SearchCodecsProvider_UNSTABLE> in a module rendered on every page (e.g. your root layout) so navigation can serialize it.`,
-      );
-    }
-    query = codec.serialize(search);
-  }
-  return (
-    pathname +
-    (query ? '?' + query : '') +
-    (hash ? '#' + (hash.startsWith('#') ? hash.slice(1) : hash) : '')
-  );
+  return pathname;
 };

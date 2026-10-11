@@ -1,7 +1,7 @@
 ---
 slug: typed-routes
 title: Typed Routes
-description: Type-safe navigation to dynamic routes with router.push and router.replace.
+description: Build route URLs with locally inferred params and search codecs.
 category: Routing and Navigation
 order: 11
 tags: [Experimental]
@@ -9,44 +9,81 @@ tags: [Experimental]
 
 ## Overview
 
-Waku's router provides type-safe routing helpers layered on top of the string-based APIs. The string APIs keep working; the typed helpers are additive.
+Waku navigation accepts URL strings. Use `unstable_createRouteHref` from `waku/router` to construct them with typed path params and optional search. Factories are optional: `<Link to="/about">` and `router.push('/about')` work without one.
 
-## Typed Navigation
+The APIs in this guide are unstable and may change. For upgrading existing typed navigation, see [Migration](#migration).
 
-`router.push()` and `router.replace()` accept a structured target, so you can navigate to a dynamic route without interpolating slugs by hand. The `params` are type-checked against the route pattern:
+## Build Route Hrefs
+
+Define a factory in a module that both Server and Client Components can import:
+
+```ts
+// ./src/lib/routes.ts
+import { unstable_createRouteHref as createRouteHref } from 'waku/router';
+
+export const post = createRouteHref({ path: '/posts/[slug]' });
+export const docs = createRouteHref({ path: '/docs/[...path]' });
+export const home = createRouteHref({ path: '/' });
+```
+
+Call it to encode params and optionally append a fragment:
+
+```tsx
+import { Link } from 'waku';
+import { docs, home, post } from '../lib/routes';
+
+export default function Navigation() {
+  return (
+    <nav>
+      <Link to={home()}>Home</Link>
+      <Link to={post({ params: { slug: 'hello world' }, hash: 'top' })}>
+        Post
+      </Link>
+      <Link to={docs({ params: { path: ['guides', 'routing'] } })}>Docs</Link>
+    </nav>
+  );
+}
+```
+
+- `params` is required for patterns with slugs. Named params are strings; catch-alls accept readonly arrays of nonempty strings. An empty array is allowed when the pattern matches the resulting path.
+- A factory without params allows a call such as `home()`.
+- Route groups are stripped from the URL. `hash` accepts a fragment with or without the leading `#`.
+- Completed `.` and `..` path segments are rejected because URL normalization would change the path.
+- The result is a primitive string, so it can cross a Server/Client Component boundary. Import factories and codecs where they are used; their functions cannot be passed as ordinary Client Component props.
+- Hrefs exclude the application's base path. Waku's `Link`, navigation methods, and `unstable_redirect` apply the base. A native `<a href>` needs a URL that includes the base.
+
+Client navigation uses the same result:
 
 ```tsx
 'use client';
 
 import { useRouter } from 'waku';
+import { post } from '../lib/routes';
 
 export const PostButton = ({ slug }: { slug: string }) => {
   const router = useRouter();
-
-  return (
-    <button
-      onClick={() =>
-        router.push({
-          to: '/posts/[slug]',
-          params: { slug },
-          hash: 'top',
-        })
-      }
-    >
-      Open post
-    </button>
-  );
+  const href = post({ params: { slug } });
+  return <button onClick={() => router.push(href)}>Open post</button>;
 };
 ```
 
-- `to` is a route pattern (e.g. `/posts/[slug]`, `/docs/[...path]`). `params` is required when the pattern has slugs and is typed from it; a catch-all takes a `string[]`.
-- `hash` is optional. `search` is typed per route by a search codec (see [Search Params](#search-params)).
-- The plain string form (`router.push('/posts/hello')`) keeps working.
-- For same-page navigation, a bare `#hash` or `?query` (e.g. `router.push('#section')` or `router.push('?tab=2')`) is resolved against the current URL; a `#hash` also scrolls to that element.
+`router.replace(href)`, `router.prefetch(href)`, and server-side `unstable_redirect(href)` also accept factory results. For same-page navigation, bare `?query` and `#hash` strings are resolved against the current URL.
+
+### What the types check
+
+Generated routes distinguish raw hrefs from constructed hrefs. Raw strings are checked against the configured concrete href types. A factory result carries a type-only brand recording its normalized route pattern; navigation checks that pattern against the generated route patterns.
+
+Bind factories to registered patterns, not concrete build URLs: for `/articles/[slug]`, use that pattern with `{ params: { slug: 'intro' } }`, or pass the raw string `'/articles/intro'` directly to navigation. Navigation rejects a factory result for `/articles/intro` unless that exact pattern is registered. Factory results are assignable to `string`, but do not have literal URL types.
+
+Parameter names are part of the pattern: `/articles/[id]` does not match a registered `/articles/[slug]`.
+
+For a static `/posts/[slug]` route, a factory checks the parameter shape, not whether a slug is among the generated static paths. Constructing an unbuilt slug can therefore succeed and navigate to not found. The brand has no runtime representation and does not register a route.
+
+Without generated route patterns, factory arguments are inferred locally but the pattern's existence is unchecked. A manual `RouteConfig.paths` augmentation constrains raw hrefs only; see [createPages type safety](/create-pages#router-paths-type-safety). Widening a factory result to `string` loses its type evidence, so it may be rejected by navigation in a strictly typed app.
 
 ## Reading Route Params
 
-`useParams()` reads the current route's params, typed from the route pattern you pass. It returns `null` when the current path does not match that pattern, so it is safe to call from a component rendered under more than one route.
+`useParams_UNSTABLE` reads decoded params from the current route. It returns `null` when the pathname does not match:
 
 ```tsx
 'use client';
@@ -62,18 +99,11 @@ export const PostTitle = () => {
 };
 ```
 
-- The result is typed from the pattern: `/posts/[slug]` gives `{ slug: string }`, and a catch-all like `/docs/[...path]` gives `{ path: string[] }`.
-- Values are URL-decoded, mirroring how `router.push` encodes them.
-- It re-renders when the current route path changes.
-- Page components already receive their params through props; `useParams()` is for client and shared components that do not.
+Named params are strings and catch-alls are string arrays. Page components already receive params through props; this hook is useful for shared Client Components.
 
 ## Search Params
 
-Waku types the URL search params (the query string) per route with a **search codec** you provide. The codec converts the query string to a typed object and back, so server components, client hooks, and navigation share one typed shape. Waku ships the contract; you bring the implementation (hand-written, or wrapping a library).
-
-### Define a codec
-
-A codec is a plain object with a stable `id`, a `parse`, and a `serialize`:
+A search codec is a plain object with `parse` and `serialize`. Keep it in a module shared by the page and its href factory:
 
 ```ts
 // ./src/lib/search.ts
@@ -81,191 +111,127 @@ import type { Unstable_SearchCodec } from 'waku/router';
 
 type ProductsSearch = { q: string; page: number };
 
-export const searchCodec = {
-  id: 'search',
+export const productSearchCodec = {
   parse: (query: string): ProductsSearch => {
     const params = new URLSearchParams(query);
-    return { q: params.get('q') ?? '', page: Number(params.get('page')) || 1 };
+    const page = Number(params.get('page') ?? '1');
+    if (!Number.isInteger(page) || page < 1) {
+      throw new Error('Invalid page');
+    }
+    return { q: params.get('q') ?? '', page };
   },
-  serialize: ({ q, page }: ProductsSearch) =>
-    new URLSearchParams({ q, page: String(page) }).toString(),
+  serialize: ({ q, page }: ProductsSearch): string => {
+    if (!Number.isInteger(page) || page < 1) {
+      throw new Error('Invalid page');
+    }
+    return new URLSearchParams({ q, page: String(page) }).toString();
+  },
 } satisfies Unstable_SearchCodec<ProductsSearch>;
 ```
 
-`parse` may throw to reject a malformed query; Waku turns that into a 400.
+`parse` receives the incoming query without `?`, applies defaults and validation, and returns the typed search value. The server turns a parsing failure into a 400. Client hooks also parse the current query; their errors propagate to the caller or render boundary.
 
-`satisfies Unstable_SearchCodec<ProductsSearch>` validates the codec where you define it. You can drop it (and the import) if you annotate `parse`/`serialize` with your `ProductsSearch` type yourself; the route still type-checks the codec when you attach it.
+`serialize` owns outbound validation and returns an encoded query without `?`. Its errors propagate when constructing an href or updating search; calling a factory during render can therefore fail the component that renders the link. In development and production, Waku does not parse the serialized output to validate it. If a codec accepts invalid input during serialization, the destination may reject the resulting query.
 
-### Wrapping a validation library
-
-A codec is just `{ id, parse, serialize }`, so you can back it with a schema or query-state library instead of hand-writing the logic. Use the library for `parse` (validation and coercion) and let it (or `URLSearchParams`) build the query string in `serialize`.
-
-With [Zod](https://zod.dev):
+### Construct URLs with search
 
 ```ts
-// ./src/lib/search.ts
-import { z } from 'zod';
-import type { Unstable_SearchCodec } from 'waku/router';
+// ./src/lib/routes.ts
+import { unstable_createRouteHref as createRouteHref } from 'waku/router';
+import { productSearchCodec } from './search';
 
-const schema = z.object({
-  q: z.string().default(''),
-  // `.default` only fills a missing value; a bad value throws (-> 400).
-  // swap it for `.catch(1)` to fall back to 1 instead
-  page: z.coerce.number().int().min(1).default(1),
-});
-
-type ProductsSearch = z.infer<typeof schema>;
-
-export const searchCodec = {
-  id: 'search',
-  parse: (query: string): ProductsSearch =>
-    schema.parse(Object.fromEntries(new URLSearchParams(query))),
-  serialize: (search: ProductsSearch): string =>
-    new URLSearchParams({
-      q: search.q,
-      page: String(search.page),
-    }).toString(),
-} satisfies Unstable_SearchCodec<ProductsSearch>;
-```
-
-With [nuqs](https://nuqs.dev) (its `nuqs/server` entry has no `'use client'`, so the codec stays isomorphic):
-
-```ts
-// ./src/lib/search.ts
-import {
-  createLoader,
-  createSerializer,
-  parseAsInteger,
-  parseAsString,
-} from 'nuqs/server';
-import type { Unstable_SearchCodec } from 'waku/router';
-
-const parsers = {
-  q: parseAsString.withDefault(''),
-  page: parseAsInteger.withDefault(1),
-};
-
-const loadSearch = createLoader(parsers);
-const serializeSearch = createSerializer(parsers);
-
-type ProductsSearch = { q: string; page: number };
-
-export const searchCodec = {
-  id: 'search',
-  // nuqs loaders don't validate by default; `{ strict: true }` throws on a
-  // bad value (-> 400). drop it to fall back to the parser defaults instead
-  parse: (query: string): ProductsSearch =>
-    loadSearch(new URLSearchParams(query), { strict: true }),
-  // createSerializer prepends "?"; the codec returns the query without it
-  serialize: (search: ProductsSearch): string =>
-    serializeSearch(search).replace(/^\?/, ''),
-} satisfies Unstable_SearchCodec<ProductsSearch>;
-```
-
-> **Using nuqs here differs from its own [server-side approach](https://nuqs.dev/docs/server-side).** With Waku, nuqs is only the parser/serializer (`nuqs/server`); the codec is registered with the router by `id`, so Waku runs `parse` as part of the request (typed `props.search`, same codec on the client). You don't wire up nuqs's own server pieces like `createSearchParamsCache` or `NuqsAdapter` / `useQueryState`.
-
-### Attach the codec to a route
-
-Set it on the route's config, and map the route to the codec for typing.
-
-With `createPages`, pass `unstable_searchCodec` and declare the mapping:
-
-```tsx
-import { searchCodec } from './lib/search';
-
-declare module 'waku/router' {
-  interface SearchCodecsConfig {
-    '/products': typeof searchCodec;
-  }
-}
-
-// inside createPages(...)
-createPage({
-  render: 'dynamic',
-  path: '/products',
-  component: ProductsPage,
-  unstable_searchCodec: searchCodec,
+export const product = createRouteHref({
+  path: '/products/[id]',
+  search: productSearchCodec,
 });
 ```
 
-With the file-system router, export it from `getConfig` and the types are generated for you:
-
 ```tsx
-// ./src/pages/products.tsx
-import { searchCodec } from '../lib/search';
+import { Link } from 'waku';
+import { product } from '../lib/routes';
 
-export const getConfig = async () => ({
-  render: 'dynamic',
-  unstable_searchCodec: searchCodec,
-});
-```
-
-### Read search on the server
-
-The page component receives a typed `search` prop:
-
-```tsx
-import type { PageProps } from 'waku/router';
-
-export default function ProductsPage({ search }: PageProps<'/products'>) {
+export default function ProductLink() {
   return (
-    <p>
-      {search.q} (page {search.page})
-    </p>
+    <Link
+      to={product({
+        params: { id: '42' },
+        search: { q: 'waku', page: 2 },
+      })}
+    >
+      Product
+    </Link>
   );
 }
 ```
 
-### Provide codecs on the client
+The factory infers search from its codec without a provider, codec ID, or runtime registry. It exposes `.path` and `.searchCodec` for the search hooks. A factory without a codec accepts no typed `search` argument; use a URL string for ad-hoc queries.
 
-To read, update, or navigate with search on the client, the codec has to be available there. Wrap your app with `SearchCodecsProvider_UNSTABLE`. Because codecs hold functions, the provider must be rendered from a `'use client'` module that imports them:
+`search` is optional. Omitting it emits no query and calls neither codec function. The destination still parses the incoming empty query and can reject it if its codec requires search values.
 
-```tsx
-// ./src/components/search-codecs.tsx
-'use client';
+### Attach the codec to a page
 
-import type { ReactNode } from 'react';
-import { SearchCodecsProvider_UNSTABLE } from 'waku/router/client';
-import * as searchCodecs from '../lib/search';
-
-export const SearchCodecs = ({ children }: { children: ReactNode }) => (
-  <SearchCodecsProvider_UNSTABLE searchCodecs={searchCodecs}>
-    {children}
-  </SearchCodecsProvider_UNSTABLE>
-);
-```
-
-Pass only codecs. `import * as` works when the module exports just codecs (types are erased); if the module also has non-codec exports, list the codecs explicitly instead, e.g. `searchCodecs={[searchCodec]}`. Non-codec values are ignored with a warning.
-
-Render it in your root layout so it wraps every page:
+With the file-system router, import the independent codec in `getConfig`. The generated `SearchCodecsConfig` supplies the type of `PageProps.search`; navigation infers types from the factory itself.
 
 ```tsx
-// ./src/pages/_layout.tsx (fs-router root layout)
-import type { ReactNode } from 'react';
-import { SearchCodecs } from '../components/search-codecs';
+// ./src/pages/products/[id].tsx
+import type { PageProps } from 'waku/router';
+import { productSearchCodec } from '../../lib/search';
 
-export default function RootLayout({ children }: { children: ReactNode }) {
-  return <SearchCodecs>{children}</SearchCodecs>;
+export default function ProductPage({
+  id,
+  search,
+}: PageProps<'/products/[id]'>) {
+  return (
+    <p>
+      Product {id}: {search.q} (page {search.page})
+    </p>
+  );
 }
+
+export const getConfig = async () =>
+  ({
+    render: 'dynamic',
+    unstable_searchCodec: productSearchCodec,
+  }) as const;
 ```
 
-With `createPages`, wrap your root layout (or root) component's children the same way.
+With `createPages`, attach the same codec and declare its page-prop mapping:
 
-> **Provide codecs app-wide, not per route.** A codec must be available on the page you navigate **from**. If a link on your home page does `push({ to: '/products', search })`, the home page needs `/products`'s codec to serialize the URL, so a provider only around `/products` is not enough. Wrapping your root layout covers every page.
+```tsx
+// ./src/waku.server.tsx
+import { productSearchCodec } from './lib/search';
+
+declare module 'waku/router' {
+  interface SearchCodecsConfig {
+    '/products/[id]': typeof productSearchCodec;
+  }
+}
+
+createPage({
+  render: 'dynamic',
+  path: '/products/[id]',
+  component: ProductPage,
+  unstable_searchCodec: productSearchCodec,
+});
+```
+
+The factory does not compare its codec with the page configuration; share one independent export to keep them consistent and keep server configuration independent of URL construction. A custom `defineRouter` resolver can parse its query with this same codec directly; it needs no codec registration.
 
 ### Read and update search on the client
 
 ```tsx
+// ./src/components/pager.tsx
 'use client';
 
 import {
   useSearch_UNSTABLE as useSearch,
   useSetSearch_UNSTABLE as useSetSearch,
 } from 'waku/router/client';
+import { product } from '../lib/routes';
 
 export const Pager = () => {
-  const search = useSearch({ from: '/products' });
-  const setSearch = useSetSearch({ from: '/products' });
+  const search = useSearch(product);
+  const setSearch = useSetSearch(product);
   if (!search) {
     return null;
   }
@@ -277,17 +243,63 @@ export const Pager = () => {
 };
 ```
 
-- `useSearch` returns the typed `search`, or `null` when the current path does not match `from`.
-- `setSearch` takes a partial or an updater, serializes with the codec, and navigates (push by default, or `{ history: 'replace' }`). Like `useSearch`, it's a no-op when the current path does not match `from` (or that route has no codec).
+Both hooks also accept a `{ path, searchCodec }` descriptor. They infer search from the supplied codec, not from `SearchCodecsConfig`. Generated route types reject unknown patterns, ignoring route groups. Pass descriptors inline or preserve a named descriptor's literal path with `as const`.
 
-### Navigate with search
+- `useSearch` returns the parsed search, or `null` for a different pathname.
+- The setter is a no-op for a different pathname. Otherwise, it parses the current query, shallow-merges a partial value or updater result, serializes, and navigates.
+- Updates preserve the pathname and fragment, default to push and no scrolling, and accept `{ history: 'replace', scroll: true }` as the second argument.
+- Parsing, serialization, and navigation errors reject the setter's promise. There is no parse check of its newly serialized output.
+- Parser defaults participate in the merge. Have the serializer omit defaults if you do not want them written into the URL.
 
-`push`, `replace`, and `Link` accept a typed `search` for the target route:
+### Using a validation library
 
-```tsx
-router.push({ to: '/products', search: { q: 'waku', page: 1 } });
+A schema library can implement both codec operations. For example, with [Zod](https://zod.dev):
 
-<Link to={{ to: '/products', search: { q: 'waku', page: 1 } }}>Products</Link>;
+```ts
+// ./src/lib/search.ts
+import { z } from 'zod';
+import type { Unstable_SearchCodec } from 'waku/router';
+
+const schema = z.object({
+  q: z.string().default(''),
+  page: z.coerce.number().int().min(1).default(1),
+});
+
+type ProductsSearch = z.infer<typeof schema>;
+
+export const productSearchCodec = {
+  parse: (query: string): ProductsSearch =>
+    schema.parse(Object.fromEntries(new URLSearchParams(query))),
+  serialize: (search: ProductsSearch): string => {
+    const { q, page } = schema.parse(search);
+    return new URLSearchParams({ q, page: String(page) }).toString();
+  },
+} satisfies Unstable_SearchCodec<ProductsSearch>;
 ```
 
-A route without a codec takes no `search` (its `search` is `never`); use the plain string form (`push('/foo?ref=home')`) for ad-hoc queries.
+The schema validates inbound queries and outbound values independently. Query-state libraries such as [nuqs](https://nuqs.dev) can also supply parsers and serializers through an isomorphic module such as `nuqs/server`; return a query without its leading `?` and implement any required outbound validation in `serialize`. Waku's hooks do not require the library's client provider.
+
+## Migration
+
+The typed-navigation API changes are breaking, including for unstable exports.
+
+1. Replace structured `to` targets with a local factory call. Pass its string result to `Link`, `push`, `replace`, `prefetch`, or `unstable_redirect`:
+
+   ```tsx
+   import { unstable_createRouteHref as createRouteHref } from 'waku/router';
+
+   const post = createRouteHref({ path: '/posts/[slug]' });
+
+   <Link to={post({ params: { slug } })}>Post</Link>;
+   router.push(post({ params: { slug } }));
+   ```
+
+   This replaces `to={{ to: '/posts/[slug]', params: { slug } }}` and `router.push({ to: '/posts/[slug]', params: { slug } })`. Plain string targets do not change. For link wrappers, use `LinkProps` without a route-pattern type argument.
+
+2. Remove `SearchCodecsProvider_UNSTABLE` and codec `id` fields. Import the codec into the factory via `search: codec`, and into the page configuration via `unstable_searchCodec: codec`.
+
+3. Replace `useSearch({ from: '/products/[id]' })` and `useSetSearch({ from: '/products/[id]' })` with `useSearch(product)` and `useSetSearch(product)`, or pass `{ path: '/products/[id]', searchCodec }`. `useParams({ from })` is unchanged.
+
+4. Remove `getSearchCodecs` from `unstable_defineRouter`. Keep the shared codec wherever the resolver parses incoming queries. Generated or manual `SearchCodecsConfig` mappings remain for `PageProps.search`, not client navigation.
+
+5. Replace `unstable_buildRouteHref` from `waku/router/client-core` with `unstable_createRouteHref` from `waku/router`. The factory takes the codec directly and needs no resolver callback. The provider helpers `unstable_isCodec` and `Unstable_AnyCodec` are removed; use the `Unstable_SearchCodec<Search>` contract for a known search type.

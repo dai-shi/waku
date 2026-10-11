@@ -4,7 +4,7 @@ import {
   type PathSpec,
   pathSpecAsString,
 } from '../isomorphic-utils/path-spec.js';
-import type { Unstable_SearchCodec } from '../isomorphic-utils/search-codec-registry.js';
+import type { Unstable_SearchCodec } from '../isomorphic-utils/search-codec.js';
 
 export type ApiHandler = (
   req: Request,
