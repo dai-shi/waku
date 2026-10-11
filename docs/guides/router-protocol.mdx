@@ -229,8 +229,10 @@ Minimal's merge callback to retain pinned slots, wait on the response for other
 slots, and include cached immutable slots and client navigation intent. The
 callback starts from the latest queued elements, so it cannot overwrite an
 earlier queued update with a rendered snapshot. Settlement adds new slots and
-updates response-owned overlay keys only while that instant merge still owns
-the queued promise. Minimal owns updater replay safety, not SWR policy.
+updates unchanged overlay keys while the navigation's abort signal remains
+active. Unrelated action or slice merges do not cancel settlement, and their
+slot values and validators are retained. Settlement runs in a transition to
+keep the pinned shell visible. Minimal owns updater replay safety, not SWR policy.
 
 Cached and same-RSC-route commits queue before the first `await`, retaining the
 caller's React priority. Transition callbacks run immediately, so wrapping an

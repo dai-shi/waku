@@ -1,12 +1,16 @@
 // @vitest-environment happy-dom
 
-import { Suspense, act, lazy, useEffect } from 'react';
+import { Suspense, act, lazy, use, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterAll, beforeAll, expect, test, vi } from 'vitest';
 import { ETAGS_ID, IMMUTABLE_ETAG } from '../src/lib/utils-isomorphic/etags.js';
+import { unstable_callServerRsc as callServerRsc } from '../src/minimal/client-runtime.js';
+import { getDefaultRootStore } from '../src/minimal/client-utils/root-store.js';
 import {
   Children_UNSTABLE as Children,
   Slot_UNSTABLE as Slot,
+  useElementsPromise_UNSTABLE as useElementsPromise,
+  useMergeElements_UNSTABLE as useMergeElements,
 } from '../src/minimal/client.js';
 import { Router, useRouter } from '../src/router/client.js';
 import {
@@ -278,4 +282,194 @@ test('an instant shell painted from a prefetch stays while the response copy is 
     shellReady.resolve();
   });
   act(() => root.unmount());
+});
+
+test('an instant response adds required slots after an unrelated action merge', async () => {
+  const clientState = Symbol('client-state');
+  let elements: Readonly<Record<string | symbol, unknown>> = {};
+  let mergeElements: ReturnType<typeof useMergeElements> | undefined;
+  const Counter = () => {
+    const current = use(useElementsPromise());
+    const merge = useMergeElements();
+    useEffect(() => {
+      elements = current;
+      mergeElements = merge;
+    });
+    return (
+      <Suspense fallback="counter-waiting">
+        <Slot id="counter" />
+      </Suspense>
+    );
+  };
+  const shell = nextPage();
+  const initial = routePayload('/next', shell, {
+    root: (
+      <>
+        <CaptureRouter />
+        <Counter />
+        <Children />
+      </>
+    ),
+    clock: 'before',
+    counter: 'counter-before',
+  });
+  window.history.replaceState({}, '', '/next');
+  respond('/next', {
+    ...initial,
+    [ETAGS_ID]: {
+      ...(initial[ETAGS_ID] as Record<string, unknown>),
+      counter: 'counter-v1',
+    },
+  });
+  respond('/start', startPayload());
+  const next = Promise.withResolvers<Payload>();
+  respond('/next', next.promise);
+  testHoisted.responses.set('/RSC/F/action/update.txt', [
+    {
+      counter: 'counter-action',
+      [ETAGS_ID]: { counter: 'counter-v2' },
+      _value: 'updated',
+    },
+  ]);
+
+  const container = document.createElement('div');
+  const errors = vi.fn();
+  const Fallback = vi.fn(() => 'outer fallback');
+  const root = createRoot(container, { onCaughtError: errors });
+  try {
+    await act(async () =>
+      root.render(
+        <Suspense fallback={<Fallback />}>
+          <Router />
+        </Suspense>,
+      ),
+    );
+    expect(container.textContent).toBe('counter-beforenextbefore');
+    await act(async () => {
+      await router!.push('/start');
+    });
+
+    let navigated: Promise<void> | undefined;
+    await act(async () => {
+      navigated = router!.push('/next', { unstable_instant: true });
+    });
+    expect(container.textContent).toBe('counter-waitingnextwaiting');
+    await act(async () => {
+      expect(await callServerRsc('action#update', [])).toBe('updated');
+    });
+    expect(container.textContent).toBe('counter-actionnextwaiting');
+    await act(async () => {
+      await mergeElements!({ [clientState]: 'client-update' });
+    });
+    Fallback.mockClear();
+
+    await act(async () => {
+      next.resolve({
+        ...routePayload('/next', shell, {
+          clock: (
+            <>
+              after
+              <Slot id="details" />
+            </>
+          ),
+          counter: 'counter-response',
+          details: 'details',
+          [clientState]: 'response-state',
+        }),
+        [ETAGS_ID]: {
+          'route:/next': IMMUTABLE_ETAG,
+          counter: 'counter-response',
+          details: IMMUTABLE_ETAG,
+        },
+      });
+      await navigated;
+    });
+
+    expect(errors).not.toHaveBeenCalled();
+    expect(Fallback).not.toHaveBeenCalled();
+    expect(container.textContent).toBe('counter-actionnextafterdetails');
+    expect(window.location.pathname).toBe('/next');
+    expect(elements.details).toBe('details');
+    expect(elements[clientState]).toBe('client-update');
+    expect(getDefaultRootStore()?.etags).toMatchObject({
+      counter: 'counter-v2',
+      details: IMMUTABLE_ETAG,
+    });
+  } finally {
+    act(() => root.unmount());
+    next.resolve({});
+  }
+});
+
+test('a superseded instant response cannot add slots while its replacement is pending', async () => {
+  let elements: Readonly<Record<string | symbol, unknown>> = {};
+  const CaptureElements = () => {
+    const current = use(useElementsPromise());
+    useEffect(() => {
+      elements = current;
+    });
+    return null;
+  };
+  const initial = routePayload('/next', nextPage(), {
+    root: (
+      <>
+        <CaptureRouter />
+        <CaptureElements />
+        <Children />
+      </>
+    ),
+    clock: 'before',
+  });
+  window.history.replaceState({}, '', '/next');
+  respond('/next', initial);
+  respond('/start', startPayload());
+  const next = Promise.withResolvers<Payload>();
+  const replacement = Promise.withResolvers<Payload>();
+  respond('/next', next.promise);
+  respond('/replacement', replacement.promise);
+
+  const container = document.createElement('div');
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(<Router />));
+    await act(async () => {
+      await router!.push('/start');
+    });
+    let instantNavigation: Promise<void> | undefined;
+    await act(async () => {
+      instantNavigation = router!.push('/next', { unstable_instant: true });
+    });
+    expect(container.textContent).toBe('nextwaiting');
+
+    let navigated: Promise<void> | undefined;
+    await act(async () => {
+      navigated = router!.push('/replacement');
+      await instantNavigation;
+    });
+    const pending = elements;
+    await act(async () => {
+      next.resolve(
+        routePayload('/next', nextPage(), {
+          clock: 'stale-clock',
+          stale: 'stale-slot',
+        }),
+      );
+      await next.promise;
+    });
+    expect(elements).toBe(pending);
+    expect('stale' in elements).toBe(false);
+    expect(container.textContent).not.toContain('stale');
+
+    await act(async () => {
+      replacement.resolve(routePayload('/replacement', 'replacement'));
+      await navigated;
+    });
+    expect(container.textContent).toBe('replacement');
+    expect(window.location.pathname).toBe('/replacement');
+    expect('stale' in elements).toBe(false);
+  } finally {
+    act(() => root.unmount());
+    next.resolve({});
+    replacement.resolve({});
+  }
 });

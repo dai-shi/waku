@@ -410,7 +410,7 @@ vi.mock('../src/minimal/client-runtime.js', async () => {
   testHoisted.useMergeInstantElements = function useMockMergeInstantElements() {
     const store = React.use(StoreContext);
     return React.useCallback(
-      (response, pin, base, overlay) => {
+      (response, _signal, pin, base, overlay) => {
         testHoisted.instantMerges.push({
           pin,
           ...(base ? { base } : {}),

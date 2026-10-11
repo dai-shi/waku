@@ -54,6 +54,7 @@ const useRefetch = () => {
   ) =>
     mergeInstantElements(
       fetchRsc(rscPath, rscParams, base ? { unstable_base: base } : undefined),
+      new AbortController().signal,
       pin,
       base,
       overlay,

@@ -66,7 +66,7 @@ export const useStartInstantPaint = (
         [IS_STATIC_ID]: isStaticFromElements(getElements()),
       };
       const response = cached
-        ? abortable(cached.promise, signal)
+        ? cached.promise
         : cache.fetchRsc(
             encodeRoutePath(attempt.route.path),
             createRscParams(attempt.route.query),
@@ -79,7 +79,8 @@ export const useStartInstantPaint = (
             },
           );
       return mergeInstantElements(
-        response,
+        abortable(response, signal),
+        signal,
         pinForSwr(getElements),
         prefetchedElements,
         overlay,

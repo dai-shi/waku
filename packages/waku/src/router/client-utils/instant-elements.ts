@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { startTransition, useCallback } from 'react';
 import {
   unstable_combineElements as combineElements,
   unstable_isImmutableElement as isImmutableElement,
@@ -12,16 +12,20 @@ export const useMergeInstantElements = () => {
   return useCallback(
     (
       response: Promise<Elements>,
+      signal: AbortSignal,
       pin: (key: string | symbol) => boolean,
       base?: Elements,
       overlay?: Elements,
     ) => {
-      const mergeResults = new WeakMap<
-        Promise<Elements>,
-        Elements | undefined
-      >();
-      const incoming = mergeElements(response, (previous, recovered) => {
-        const merged = Promise.resolve(previous).then((current) => {
+      const mergeResults = new WeakMap<Promise<Elements>, Elements>();
+      const incoming = mergeElements(response, (prev, recovered) => {
+        if (signal.aborted) {
+          return prev;
+        }
+        const merged = Promise.resolve(prev).then((current) => {
+          if (signal.aborted) {
+            return current;
+          }
           const available = base
             ? combineElements(current, base, {
                 filter: (key) => typeof key === 'string' && !(key in current),
@@ -50,29 +54,37 @@ export const useMergeInstantElements = () => {
           mergeResults.set(merged, elements);
           return elements;
         });
-        mergeResults.set(merged, undefined);
         return merged;
       });
       return incoming.then((resolved) => {
-        void mergeElements(resolved, (previous) => {
-          if (!mergeResults.has(previous)) {
-            return previous;
-          }
-          const shouldMerge = (current: Elements, key: string) =>
-            !(key in current) || !!(overlay && Object.hasOwn(overlay, key));
-          const current = mergeResults.get(previous);
-          if (
-            current &&
-            !Object.keys(resolved).some((key) => shouldMerge(current, key))
-          ) {
-            return previous;
-          }
-          return previous.then((current) =>
-            combineElements(current, resolved, {
-              filter: (key) =>
-                typeof key === 'string' && shouldMerge(current, key),
-            }),
-          );
+        startTransition(() => {
+          void mergeElements(resolved, (prev) => {
+            if (signal.aborted) {
+              return prev;
+            }
+            const shouldMerge = (current: Elements, key: string) =>
+              !(key in current) ||
+              !!(
+                overlay &&
+                Object.hasOwn(overlay, key) &&
+                current[key] === overlay[key]
+              );
+            const current = mergeResults.get(prev);
+            if (
+              current &&
+              !Object.keys(resolved).some((key) => shouldMerge(current, key))
+            ) {
+              return prev;
+            }
+            return prev.then((current) =>
+              signal.aborted
+                ? current
+                : combineElements(current, resolved, {
+                    filter: (key) =>
+                      typeof key === 'string' && shouldMerge(current, key),
+                  }),
+            );
+          });
         });
         return resolved;
       });
