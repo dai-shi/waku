@@ -8,7 +8,7 @@ order: 20
 
 ## What Waku provides
 
-Waku does not ship an authentication system; that is a deliberate boundary (see [Use Cases](/guides/use-cases)). What it provides is enough to plug one in: request headers in server code, server actions for signing in and out, middleware that owns the response, and layouts that run for every route beneath them. This guide shows where each part of an auth flow goes, and the two places where the obvious approach does not work.
+Waku does not ship an authentication system; that is a deliberate boundary (see [Use Cases](/guides/use-cases)). What it provides is enough to plug one in: request headers in server code, server actions for signing in and out, and middleware that sees every request and owns the response. This guide shows where each part of an auth flow goes, and the two places where the obvious approach does not work.
 
 The session itself can come from a library or, as in the code below, from a few lines over a signed cookie. Everything here is condensed from the [`nextjs-dashboard`](https://github.com/wakujs/waku-examples/tree/main/fs-router/nextjs-dashboard) example in the waku-examples repository, which runs the full flow end to end.
 
@@ -133,45 +133,59 @@ slots and nothing else. A server action is an endpoint of its own and an API
 route is outside every layout, so neither is covered by anything but its own
 check either.
 
-**The redirect is for people.** Put it in the layout that wraps the protected
-routes, which runs for every route beneath it on both a full page load and a
-client-side navigation, so a signed-out visitor lands on the login page instead
-of an error:
+**The redirect is for people.** Put it in middleware, so that a signed-out
+visitor lands on the login page before anything renders. Match the route rather
+than the url, and build the redirect in the same shape as the request:
 
-```tsx
-// ./src/pages/dashboard/_layout.tsx
-import type { ReactNode } from 'react';
+```ts
+// ./src/middleware/auth.ts
+import * as cookie from 'cookie';
+import type { MiddlewareHandler } from 'hono';
 import {
-  getRequest,
+  unstable_formatRouterRequest as formatRouterRequest,
   unstable_parseRouterRequest as parseRouterRequest,
-  unstable_redirect as redirect,
 } from 'waku/router/server';
-import { auth } from '../../lib/session';
+import { verifySessionToken } from '../lib/session';
 
-export default async function DashboardLayout({
-  children,
-}: {
-  children: ReactNode;
-}) {
-  const session = await auth();
-  if (!session) {
-    redirect(loginUrl());
+const auth = (): MiddlewareHandler => async (c, next) => {
+  const route = parseRouterRequest(c.req.raw);
+  if (
+    route?.type === 'route' &&
+    (route.path === '/dashboard' || route.path.startsWith('/dashboard/'))
+  ) {
+    // Middleware runs before the router, so it reads the cookie from Hono.
+    const cookies = cookie.parseCookie(c.req.header('cookie') ?? '');
+    const session = await verifySessionToken(cookies.session);
+    // Pass the requested route along so that signing in can return to it.
+    const callbackUrl = route.query
+      ? `${route.path}?${route.query}`
+      : route.path;
+    const location =
+      !session &&
+      formatRouterRequest(
+        c.req.raw,
+        '/login',
+        new URLSearchParams({ callbackUrl }).toString(),
+      );
+    if (location) {
+      // 303, so a form posted without JavaScript is not resent to /login
+      return c.redirect(location.pathname + location.search, 303);
+    }
   }
-
-  return <>{children}</>;
-}
-
-// Pass the requested route along as callbackUrl so that signing in can return
-// to it. An action's request addresses no route, so it falls back to /login.
-const loginUrl = () => {
-  const route = parseRouterRequest(getRequest());
-  if (route?.type !== 'route') {
-    return '/login';
-  }
-  const callbackUrl = route.query ? `${route.path}?${route.query}` : route.path;
-  return `/login?${new URLSearchParams({ callbackUrl })}` as const;
+  await next();
 };
 
+export default auth;
+```
+
+Both ends of the redirect render dynamically. In production, a route prerendered
+as `static` is served before middleware runs, so every page under `/dashboard`
+must be `render: 'dynamic'`, as anything that reads the session must be anyway.
+So must the login page: a client-side navigation redirected to a static `/login`
+receives its prerendered payload, which carries no `callbackUrl`.
+
+```tsx
+// ./src/pages/login.tsx, and each page under ./src/pages/dashboard
 export const getConfig = async () => {
   return {
     render: 'dynamic',
@@ -193,7 +207,7 @@ export async function GET() {
 }
 ```
 
-### Why not middleware
+### Why the middleware matches routes
 
 If you are coming from a framework where route protection lives in middleware, the natural port is a Hono middleware that matches the path:
 
@@ -213,32 +227,14 @@ GET /RSC/R/dashboard.txt?query=   -> 200  the rendered dashboard
 
 A visitor with no session who clicks a `<Link to="/dashboard">` gets the page. The check passes the obvious manual test (loading the URL redirects) and fails on the path users actually take.
 
-That much is fixable. `unstable_parseRouterRequest` reads either url as the route it addresses, and `unstable_formatRouterRequest` builds the destination in the shape the caller asked for — a document for a document request, an RSC payload for an RSC one. The [redirect maps](/guides/redirect-maps) guide builds a middleware on the pair:
+`unstable_parseRouterRequest` reads either url as the route it addresses, which is why the middleware above matches `route.path`. Redirecting the RSC request to `/login` would then send the fetch a document, which the client fails to decode as a Flight payload, so `unstable_formatRouterRequest` builds the destination in the shape the caller asked for:
 
-```ts
-import {
-  unstable_formatRouterRequest as formatRouterRequest,
-  unstable_parseRouterRequest as parseRouterRequest,
-} from 'waku/router/server';
-
-const parsed = parseRouterRequest(c.req.raw);
-const path = parsed?.type === 'route' ? parsed.path : null;
-const inDashboard = path === '/dashboard' || path?.startsWith('/dashboard/');
-if (inDashboard && !session) {
-  const location = formatRouterRequest(c.req.raw, '/login');
-  if (location) {
-    c.res = new Response(null, {
-      status: 302,
-      headers: { location: location.toString() },
-    });
-    return;
-  }
-}
+```
+GET /dashboard             -> 303  Location: /login?callbackUrl=%2Fdashboard
+GET /RSC/R/dashboard.txt   -> 303  Location: /RSC/R/login.txt?query=callbackUrl%3D%252Fdashboard
 ```
 
-Redirecting an RSC request to `/login` with `c.redirect()` would send the fetch a document, which the client then fails to decode as a Flight payload; the formatter is what keeps the shapes matched.
-
-What it does not fix is the reason to keep authorization out of middleware. A server action dispatched from the client carries no route — it reports `{ type: 'action' }` — so no path rule covers it, and a component that reads protected data inside an action is reachable whatever the middleware decides. A route match is an optimistic redirect, not a boundary. Middleware is the right place for response-level concerns such as headers, logging and cookies; authorization belongs in the data layer, with the redirect in the layout.
+A route match is still an optimistic redirect, not a boundary. A server action dispatched from the client carries no route — it reports `{ type: 'action' }` — so no path rule covers it, which is why the data layer checks for itself.
 
 ## Signing in: setting a cookie from a server action
 
@@ -368,7 +364,7 @@ export async function authenticate(
 }
 
 // Anyone can write a callbackUrl into the login page's query string, so follow
-// it only to a same-origin path under /dashboard, which is all the layout
+// it only to a same-origin path under /dashboard, which is all the middleware
 // sends. The cast is needed because redirect() is typed against the app's
 // routes.
 const dashboardPath = (url: string) => {
@@ -388,7 +384,7 @@ The login form reads `callbackUrl` from `useRouter().query` and posts it back in
 
 ### The read-through
 
-`redirect()` resolves on the server: the destination renders inside the same request that ran the action. At that point `getRequest().headers` still reports the cookies the browser sent, which do not include the one just queued, so a protected destination would bounce the user straight back to the login page. The cookie is set, the login worked, and it looks like it did not.
+`redirect()` resolves on the server: the destination renders inside the same request that ran the action. At that point `getRequest().headers` still reports the cookies the browser sent, which do not include the one just queued, so a protected destination would render as signed out. The cookie is set, the login worked, and it looks like it did not.
 
 That is what `readPendingCookie` is for. Make `auth()` prefer a cookie queued in this request over the one from the headers:
 
