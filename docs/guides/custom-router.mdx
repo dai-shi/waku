@@ -111,9 +111,9 @@ if ((globalThis as any).__WAKU_HYDRATE__) {
 
 Return an async function from `resolve` for an API endpoint. The function receives the real request, including its method, headers, and body, with the pathname relative to Waku's base path. It runs only for HTTP requests, not when the client tries to fetch a route payload.
 
-Route params are caller-owned: match and capture them in `resolve`, then close over them in the handler or element source. Use `unstable_getRequest` or `unstable_getHeaders` from `waku/router/server` to inspect request information during resolution or rendering.
+Route params are caller-owned: match and capture them in `resolve`, then close over them in the handler or element source. Use `getRequest` from `waku/router/server` to inspect the request during resolution or rendering.
 
-The request body can be read only once. If resolution needs to inspect it before returning an HTTP handler, read `unstable_getRequest().clone()` so the handler can still read the original body.
+The request body can be read only once. If resolution needs to inspect it before returning an HTTP handler, read `getRequest().clone()` so the handler can still read the original body.
 
 ## Build Paths
 

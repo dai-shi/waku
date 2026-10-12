@@ -13,7 +13,7 @@ import {
   encodeSliceId,
 } from '../src/router/isomorphic-utils/router-protocol.js';
 import {
-  unstable_getRequest,
+  getRequest,
   unstable_notFound,
   unstable_redirect,
   unstable_rerenderRoute,
@@ -120,6 +120,18 @@ describe('request dispatch', () => {
       expect.objectContaining({ [ROUTE_ID]: ['/', ''] }),
       { value: 'fn-value', etags: {} },
     );
+  });
+
+  it('exposes the call request to a server function', async () => {
+    const { handleRequest } = createConfiguredRouter({
+      getConfigs: async () => [],
+    });
+    let seen: Request | undefined;
+    const input = callInput(async () => {
+      seen = getRequest();
+    });
+    await handleRequest(input, makeUtils());
+    expect(seen).toBe(input.req);
   });
 
   it('rerenders the route an action came from when asked with no arguments', async () => {
@@ -528,7 +540,7 @@ describe('request dispatch', () => {
       getConfigs: async () => [moved, dynamicRoute('/dest')],
       unstable_interceptors: [
         async (next) => {
-          seen.push(new URL(unstable_getRequest().url).pathname);
+          seen.push(new URL(getRequest().url).pathname);
           return next();
         },
       ],
@@ -555,7 +567,7 @@ describe('request dispatch', () => {
       getConfigs: async () => [moved, dynamicRoute('/dest')],
       unstable_interceptors: [
         async (next) => {
-          seen.push(new URL(unstable_getRequest().url).pathname);
+          seen.push(new URL(getRequest().url).pathname);
           return next();
         },
       ],
@@ -814,9 +826,7 @@ describe('request dispatch', () => {
       getConfigs: async () => [dynamicRoute('/')],
       unstable_interceptors: [
         async (next) => {
-          unstable_setNonce(
-            `n-${unstable_getRequest().headers.get('x-n') ?? ''}`,
-          );
+          unstable_setNonce(`n-${getRequest().headers.get('x-n') ?? ''}`);
           return next();
         },
       ],

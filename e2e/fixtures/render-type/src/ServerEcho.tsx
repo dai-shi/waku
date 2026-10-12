@@ -1,4 +1,4 @@
-import { unstable_getRequest as getRequest } from 'waku/router/server';
+import { getRequest } from 'waku/router/server';
 import { Echo } from './Echo.js';
 
 export function ServerEcho({ echo }: { echo: string }) {

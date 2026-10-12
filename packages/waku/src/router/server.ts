@@ -1,5 +1,6 @@
 export {
   unstable_defineRouter,
+  getRequest,
   unstable_getRequest,
   unstable_getHeaders,
   unstable_getRscPath,

@@ -121,7 +121,7 @@ export default createServerEntryAdapter(
 );
 ```
 
-`middlewareRunner(...)` runs middleware modules discovered from `src/middleware`, passing each the `{ app }` Hono instance. `rscMiddleware(...)` delegates the final request handling to Waku. Request context such as `unstable_getRequest` is established by the app's handlers around each render, so the adapter does not install it.
+`middlewareRunner(...)` runs middleware modules discovered from `src/middleware`, passing each the `{ app }` Hono instance. `rscMiddleware(...)` delegates the final request handling to Waku. Request context such as `getRequest` is established by the app's handlers around each render, so the adapter does not install it.
 
 `waku/internals` is intentionally internal. It is useful for adapter authors, but it is not a stable application API.
 

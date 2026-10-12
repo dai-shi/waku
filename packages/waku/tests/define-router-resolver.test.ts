@@ -6,8 +6,8 @@ import {
 } from '../src/minimal/server.js';
 import { unstable_createRouteHref } from '../src/router/base-types.js';
 import {
+  getRequest,
   unstable_defineRouter,
-  unstable_getRequest,
   unstable_notFound,
   unstable_redirect,
   unstable_rerenderRoute,
@@ -429,7 +429,7 @@ describe('defineRouter route resolver', () => {
   it('preserves the handler body when resolution reads a request clone', async () => {
     const router = unstable_defineRouter({
       resolve: async () => {
-        expect(await unstable_getRequest().clone().text()).toBe('body');
+        expect(await getRequest().clone().text()).toBe('body');
         return async (req) => new Response(await req.text());
       },
     });
@@ -611,7 +611,7 @@ describe('defineRouter route resolver', () => {
     const order: string[] = [];
     const router = unstable_defineRouter({
       resolve: async (path) => {
-        order.push(unstable_getRequest().headers.get('marker')!);
+        order.push(getRequest().headers.get('marker')!);
         return path === '/' ? makeRoute('route') : null;
       },
       unstable_interceptors: [
