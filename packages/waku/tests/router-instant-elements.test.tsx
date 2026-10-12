@@ -969,6 +969,47 @@ describe('instant element settlement', () => {
     second.unmount();
   });
 
+  test('settlement preserves an overlay value whose validator changed', async () => {
+    const view = await renderRoot({ page: 'before' }, <Slot id="page" />);
+    const payload = Promise.withResolvers<Elements>();
+    try {
+      await act(async () => {
+        void view.merge(
+          payload.promise,
+          () => true,
+          () => true,
+          undefined,
+          adoptElements({
+            page: 'loading',
+            [ETAGS_ID]: { page: 'overlay-v1' },
+          }),
+        );
+      });
+      await act(async () => {
+        await view.update(
+          adoptElements({
+            page: 'loading',
+            [ETAGS_ID]: { page: 'action-v2' },
+          }),
+        );
+      });
+      await act(async () => {
+        payload.resolve(
+          adoptElements({
+            page: 'after',
+            [ETAGS_ID]: { page: 'response-v1' },
+          }),
+        );
+        await payload.promise;
+      });
+      expect(view.container.textContent).toBe('loading');
+      expect(getDefaultRootStore()?.etags.page).toBe('action-v2');
+    } finally {
+      view.unmount();
+      payload.resolve({});
+    }
+  });
+
   test('the paint keeps the etags of an overlay made by Minimal', async () => {
     const view = await renderRoot({ page: 'P1' }, <Keys />);
     const payload = Promise.withResolvers<Record<string, unknown>>();

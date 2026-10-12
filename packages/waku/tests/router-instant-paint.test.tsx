@@ -495,6 +495,105 @@ test('a superseded instant response cannot add slots while its replacement is pe
   }
 });
 
+test('a batched replacement overwrites the superseded instant holes', async () => {
+  window.history.replaceState({}, '', '/next');
+  respond('/next', routePayload('/next', nextPage(), { clock: 'before' }));
+  respond('/start', startPayload());
+  const next = Promise.withResolvers<Payload>();
+  const replacement = Promise.withResolvers<Payload>();
+  respond('/next', next.promise);
+  respond('/replacement', replacement.promise);
+  const container = document.createElement('div');
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(<Router />));
+    await act(async () => {
+      await router!.push('/start');
+    });
+    let second: Promise<void> | undefined;
+    await act(async () => {
+      const first = router!.push('/next', { unstable_instant: true });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(container.textContent).toBe('start');
+      second = router!.push('/replacement');
+      await first;
+    });
+    await act(async () => {
+      replacement.resolve(
+        routePayload('/replacement', <Slot id="clock" />, {
+          clock: 'replacement-clock',
+        }),
+      );
+      await second;
+    });
+    expect(container.textContent).toBe('replacement-clock');
+    expect(window.location.pathname).toBe('/replacement');
+  } finally {
+    await act(async () => {
+      root.unmount();
+      next.resolve({});
+      replacement.resolve({});
+    });
+  }
+});
+
+test('a batched replacement discards an uncommitted prefetched immutable slot', async () => {
+  window.history.replaceState({}, '', '/start');
+  respond('/start', routePayload('/start', 'start'));
+  const next = Promise.withResolvers<Payload>();
+  const replacement = Promise.withResolvers<Payload>();
+  respond('/next', next.promise, 'q=1');
+  respond(
+    '/next',
+    routePayload(
+      '/next',
+      <Slot id="clock" />,
+      {
+        clock: 'prefetched-clock',
+        [ETAGS_ID]: { clock: IMMUTABLE_ETAG },
+      },
+      'q=2',
+    ),
+    'q=2',
+  );
+  respond('/replacement', replacement.promise);
+  const container = document.createElement('div');
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(<Router />));
+    await act(async () => {
+      router!.prefetch('/next?q=1');
+      router!.prefetch('/next?q=2');
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    let second: Promise<void> | undefined;
+    await act(async () => {
+      const first = router!.push('/next?q=1', { unstable_instant: true });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(container.textContent).toBe('start');
+      second = router!.push('/replacement');
+      await first;
+    });
+    await act(async () => {
+      replacement.resolve(
+        routePayload('/replacement', <Slot id="clock" />, {
+          clock: 'replacement-clock',
+        }),
+      );
+      await second;
+    });
+    expect(container.textContent).toBe('replacement-clock');
+    expect(window.location.pathname).toBe('/replacement');
+    expect(getDefaultRootStore()?.etags.clock).toBeUndefined();
+  } finally {
+    await act(async () => {
+      root.unmount();
+      next.resolve({});
+      replacement.resolve({});
+    });
+  }
+});
+
 test.each([false, true])(
   'a replacement wins after an instant response resolves (painted: %s)',
   async (painted) => {
@@ -553,13 +652,19 @@ test.each([false, true])(
   },
 );
 
-test.each(['counter-action', 'counter-response', 'before-response'])(
+test.each([
+  'counter-action',
+  'counter-response',
+  'before-response',
+  'identical-action',
+])(
   'starting a replacement preserves an action queued around the instant response (%s)',
   async (order) => {
-    const counter = order === 'before-response' ? 'counter-response' : order;
-    const actionEtag =
-      order === 'before-response' ? 'counter-v1' : 'counter-v2';
-    const extraEtag = order === 'before-response' ? 'extra-v1' : 'extra-v2';
+    const identical =
+      order === 'before-response' || order === 'identical-action';
+    const counter = identical ? 'counter-response' : order;
+    const actionEtag = identical ? 'counter-v1' : 'counter-v2';
+    const extraEtag = identical ? 'extra-v1' : 'extra-v2';
     window.history.replaceState({}, '', '/next');
     const shell = nextPage();
     const rootElement = (

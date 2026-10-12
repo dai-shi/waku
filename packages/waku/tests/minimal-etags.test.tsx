@@ -123,13 +123,26 @@ describe('minimal per-slot cache-validator (carry + replay)', () => {
     );
     expect(isSameElement(first, second, 'count')).toBe(false);
     expect(isSameElement(second, cleared, 'count')).toBe(false);
-    expect(isSameElement(cleared, { count: 0 }, 'count')).toBe(true);
+    expect(isSameElement(cleared, { count: 0 }, 'count')).toBe(false);
     expect(
       isSameElement(first, combineElements(first, { count: 1 }), 'count'),
     ).toBe(false);
   });
 
-  it('compares own slot presence and shallow values, including client symbols', () => {
+  it('distinguishes sources with equal values and validators', async () => {
+    testHoisted.elements = { count: 0, [ETAGS_ID]: { count: 'v1' } };
+    const first = await fetchRsc('R/foo');
+    const second = await fetchRsc('R/foo');
+    expect(isSameElement(first, second, 'count')).toBe(false);
+    expect(isSameElement(first, combineElements({}, first), 'count')).toBe(
+      true,
+    );
+    expect(isSameElement(first, combineElements(first, second), 'count')).toBe(
+      false,
+    );
+  });
+
+  it('compares own slot presence and sources, including client symbols', () => {
     const state = Symbol('state');
     const value = {};
     const elements = {
@@ -141,9 +154,18 @@ describe('minimal per-slot cache-validator (carry + replay)', () => {
     expect(isSameElement({}, {}, 'constructor')).toBe(true);
     expect(isSameElement(elements, {}, 'constructor')).toBe(false);
     expect(isSameElement(elements, {}, 'missing')).toBe(false);
-    expect(isSameElement(elements, { [state]: value }, state)).toBe(true);
+    expect(isSameElement(elements, { [state]: value }, state)).toBe(false);
+    expect(isSameElement(elements, combineElements({}, elements), state)).toBe(
+      true,
+    );
     expect(isSameElement(elements, { [state]: {} }, state)).toBe(false);
-    expect(isSameElement(elements, { nan: NaN }, 'nan')).toBe(true);
+    expect(isSameElement(elements, { nan: NaN }, 'nan')).toBe(false);
+    expect(isSameElement(elements, combineElements({}, elements), 'nan')).toBe(
+      true,
+    );
+    const copied = combineElements({}, elements);
+    elements.nan = 0;
+    expect(isSameElement(elements, copied, 'nan')).toBe(false);
   });
 
   it('caches header-safe tags from a response and drops the clear/non-Latin1 ones', async () => {

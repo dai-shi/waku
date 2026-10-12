@@ -164,7 +164,7 @@ export const useNavigation = (
     (next?: NavigationRequest) => {
       const superseded = requestRef.current;
       requestRef.current = next;
-      if (superseded?.queuedState) {
+      if (superseded?.getPatch) {
         const committed = getElements();
         void mergeElements({}, (prev) =>
           prev.then((current) => {
@@ -329,6 +329,9 @@ export const useNavigation = (
           )
         : undefined;
       const instantResponse = instant?.response;
+      if (instant) {
+        request.getPatch = instant.getPatch;
+      }
       const outcome = await cache.load(nextRoute, {
         signal: controller.signal,
         refetch: shouldRefetch,

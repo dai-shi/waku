@@ -2,6 +2,7 @@ import { startTransition, useCallback } from 'react';
 import {
   unstable_combineElements as combineElements,
   unstable_isImmutableElement as isImmutableElement,
+  unstable_isSameElement as isSameElement,
   useMergeElements_UNSTABLE as useMergeElements,
 } from 'waku/minimal/client';
 
@@ -52,6 +53,9 @@ export const useMergeInstantElements = () => {
           const elements = overlay
             ? combineElements(waiting, overlay)
             : waiting;
+          patch = combineElements(patch, elements, {
+            filter: (key) => !isSameElement(current, elements, key),
+          });
           mergeResults.set(merged, elements);
           return elements;
         });
@@ -68,7 +72,7 @@ export const useMergeInstantElements = () => {
               !!(
                 overlay &&
                 Object.hasOwn(overlay, key) &&
-                current[key] === overlay[key]
+                isSameElement(current, overlay, key)
               );
             const current = mergeResults.get(prev);
             if (

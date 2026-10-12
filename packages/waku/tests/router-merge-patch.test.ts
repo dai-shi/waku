@@ -4,6 +4,7 @@ import {
   adoptElements,
   collectEtags,
 } from '../src/minimal/client-utils/element-etags.js';
+import { unstable_combineElements as combineElements } from '../src/minimal/client.js';
 import { buildMergePatch } from '../src/router/client-core-utils/merge-patch.js';
 import { ROUTER_STATE_ID } from '../src/router/client-utils/router-state.js';
 import {
@@ -21,8 +22,8 @@ const loaded = (path: string, elements: Record<string, unknown>) => ({
 });
 
 describe('buildMergePatch', () => {
-  it.each(['v2', undefined])(
-    'preserves an action validator change with an unchanged value (%s)',
+  it.each(['v1', 'v2', undefined])(
+    'preserves an action write with an unchanged value (%s)',
     (etag) => {
       const base = adoptElements({ counter: 0, [ETAGS_ID]: { counter: 'v1' } });
       const current = adoptElements({
@@ -40,7 +41,7 @@ describe('buildMergePatch', () => {
   it('copies a key still identical in current and base', () => {
     const slot = getRouteSlotId('/next');
     const base = { shared: 'old', [slot]: 'start' };
-    const current = { ...base };
+    const current = combineElements({}, base);
     const patch = buildMergePatch(
       loaded('/next', { shared: 'new', [slot]: 'next' }),
       current,

@@ -82,9 +82,9 @@ example, a dynamic page whose etag matches is omitted, but `IS_STATIC` remains
 false. Looking only at the returned slots would give the wrong reuse decision.
 
 Use Minimal's `unstable_combineElements` when combining element maps. Object
-spreads discard the validators associated with their values. Router's merge patch
-uses `unstable_isSameElement` to protect slots whose values or validators changed
-in an action while a navigation was pending.
+spreads discard the validators and sources associated with their values. Router's
+merge patch uses `unstable_isSameElement` to protect slots written by an action
+while a navigation was pending, even with identical values and validators.
 
 ## Requested, Rendered, and Browser URLs
 
@@ -247,9 +247,10 @@ uncached navigation does not postpone superseding the previous request.
 
 Aborting a request does not remove an already queued React update. Superseding
 an uncommitted destination appends a compensating merge to Root's queue. It
-restores slots still owned by that destination without discarding newer action
-values or validators. A same-route reuse transfers any required response slots
-to the replacement navigation. The state symbol is restored even when its value
+restores that destination's holes, prefetched slots, overlays, and settled writes
+without discarding newer action values or validators. A same-route reuse transfers
+any required response slots to the replacement navigation. The state symbol is
+restored even when its value
 is `undefined`: an initial snapshot has no navigation intent to retain. Ordinary
 response conflicts are checked against the latest queued elements, not only the
 last rendered snapshot.
