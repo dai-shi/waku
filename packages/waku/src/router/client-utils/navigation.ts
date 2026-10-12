@@ -9,6 +9,7 @@ import {
 } from 'react';
 import {
   unstable_combineElements as combineElements,
+  unstable_isSameElement as isSameElement,
   useMergeElements_UNSTABLE as useMergeElements,
   useRegisterRscReloadListener_UNSTABLE as useRegisterRscReloadListener,
 } from 'waku/minimal/client';
@@ -59,9 +60,11 @@ type NavigationAttempt = {
 type NavigationError = { error: unknown };
 
 type NavigationRequest = {
-  controller: AbortController;
+  controller: AbortController | undefined;
+  onSuperseded: (() => void) | undefined;
   target: Pick<RouteProps, 'path' | 'query'>;
   queuedState?: RouterState;
+  getPatch?: (current: Elements) => Elements;
 };
 
 type Navigation = {
@@ -126,7 +129,9 @@ export const useNavigation = (
   );
   const route = destination ? destination.route : routeFallback;
   const requestRef = useRef<NavigationRequest>(undefined);
-  const appliedRef = useRef<{ state: RouterState; href: string }>(undefined);
+  const appliedRef = useRef<{ intent: RouterState['requested']; href: string }>(
+    undefined,
+  );
   const destinationHref = destination?.url.href;
   const currentHash = route.hash;
   useLayoutEffect(() => {
@@ -137,14 +142,17 @@ export const useNavigation = (
     if (!routerState || !destinationHref) {
       return;
     }
-    const applied = appliedRef.current?.state === routerState;
+    const applied = appliedRef.current?.intent === routerState.requested;
     if (!applied || appliedRef.current?.href !== destinationHref) {
       commitHistory(
         new URL(destinationHref),
         applied ? 'replace' : routerState.history,
       );
     }
-    appliedRef.current = { state: routerState, href: destinationHref };
+    appliedRef.current = {
+      intent: routerState.requested,
+      href: destinationHref,
+    };
     if (applied || !routerState.scroll) {
       return;
     }
@@ -158,13 +166,24 @@ export const useNavigation = (
       requestRef.current = next;
       if (superseded?.queuedState) {
         const committed = getElements();
-        void mergeElements(
-          combineElements(committed, {
-            [ROUTER_STATE_ID]: getRouterState(committed),
+        void mergeElements({}, (prev) =>
+          prev.then((current) => {
+            const patch = superseded.getPatch?.(committed) ?? {};
+            return combineElements(
+              combineElements(committed, current, {
+                filter: (key) =>
+                  !isSameElement(current, patch, key) ||
+                  isSameElement(current, committed, key),
+              }),
+              { [ROUTER_STATE_ID]: getRouterState(committed) },
+            );
           }),
         );
       }
-      superseded?.controller.abort();
+      superseded?.controller?.abort();
+      if (next) {
+        superseded?.onSuperseded?.();
+      }
     },
     [getElements, mergeElements],
   );
@@ -212,13 +231,11 @@ export const useNavigation = (
       const controller = new AbortController();
       const request: NavigationRequest = {
         controller,
+        onSuperseded: options.onSuperseded,
         target: nextRoute,
       };
-      controller.signal.addEventListener('abort', () => {
-        if (requestRef.current) {
-          options.onSuperseded?.();
-        }
-      });
+      const isCurrent = () => requestRef.current === request;
+      const superseded = requestRef.current;
       replaceRequest(request);
       if (requestRef.current !== request) {
         return;
@@ -252,8 +269,11 @@ export const useNavigation = (
             requestedPathChanged || attempt.route.path !== settledRoute.path,
           follows: attempt.follows,
         });
-      const queueCommit = (state: RouterState, patch: Elements) => {
-        if (requestRef.current !== request) {
+      const queueCommit = (
+        state: RouterState,
+        getPatch: (current: Elements) => Elements,
+      ) => {
+        if (!isCurrent()) {
           return;
         }
         request.target = {
@@ -261,28 +281,54 @@ export const useNavigation = (
           query: state.requested[1],
         };
         request.queuedState = state;
-        void mergeElements(
-          combineElements(patch, { [ROUTER_STATE_ID]: state }),
+        request.getPatch = getPatch;
+        void mergeElements({}, (prev) =>
+          prev.then((current) =>
+            !isCurrent()
+              ? current
+              : combineElements(
+                  current,
+                  combineElements(getPatch(current), {
+                    [ROUTER_STATE_ID]: state,
+                  }),
+                ),
+          ),
         );
       };
       if (
         cache.canReuseStaticRoute(nextRoute, getElements()) ||
         !shouldRefetch
       ) {
-        queueCommit(makeStateForAttempt(initialAttempt, options.history), {
-          [ROUTE_ID]: [nextRoute.path, nextRoute.query],
-        });
+        queueCommit(
+          makeStateForAttempt(initialAttempt, options.history),
+          (current) => {
+            const patch =
+              superseded && isSameRscRoute(superseded.target, nextRoute)
+                ? (superseded.getPatch?.(current) ?? {})
+                : {};
+            return combineElements(
+              combineElements({}, patch, {
+                filter: (key) =>
+                  typeof key === 'string' && !Object.hasOwn(current, key),
+              }),
+              { [ROUTE_ID]: [nextRoute.path, nextRoute.query] },
+            );
+          },
+        );
         return;
       }
       const base = getElements();
       const initialFollows = options.follows ?? 0;
-      const instantResponse = options.instant
+      const instantState = makeStateForAttempt(initialAttempt, options.history);
+      const instant = options.instant
         ? startInstantPaint(
             initialAttempt,
-            makeStateForAttempt(initialAttempt, options.history),
+            instantState,
             controller.signal,
+            isCurrent,
           )
         : undefined;
+      const instantResponse = instant?.response;
       const outcome = await cache.load(nextRoute, {
         signal: controller.signal,
         refetch: shouldRefetch,
@@ -302,6 +348,7 @@ export const useNavigation = (
       if (outcome.type === 'aborted' || requestRef.current !== request) {
         return;
       }
+      request.controller = undefined;
       const historyIntent =
         instantResponse &&
         outcome.follows > initialFollows &&
@@ -310,9 +357,9 @@ export const useNavigation = (
           : options.history;
       if (outcome.type === 'reused') {
         startTransition(() => {
-          queueCommit(makeStateForAttempt(outcome, historyIntent), {
+          queueCommit(makeStateForAttempt(outcome, historyIntent), () => ({
             [ROUTE_ID]: [outcome.route.path, outcome.route.query],
-          });
+          }));
         });
         return;
       }
@@ -349,7 +396,8 @@ export const useNavigation = (
       }
       if (instantResponse && outcome.follows === initialFollows) {
         cache.learnStaticFromElements(outcome.elements);
-        finishRequest();
+        startTransition(() => queueCommit({ ...instantState }, () => ({})));
+        request.getPatch = instant!.getPatch;
         return;
       }
       const destination = resolveServerRedirect(
@@ -362,9 +410,8 @@ export const useNavigation = (
         historyIntent,
       );
       startTransition(() => {
-        queueCommit(
-          finalState,
-          buildMergePatch(outcome, getElements(), base, {
+        queueCommit(finalState, (current) =>
+          buildMergePatch(outcome, current, base, {
             settled: settledRoute,
           }),
         );

@@ -45,7 +45,12 @@ const FollowError = ({
   caughtAtRef.current ??= [routePath, routeQuery, routeHash];
   const leftRef = useRef<string>(undefined);
   const dispatchedRef = useRef<
-    | { route: RouteProps; url: string; from: RouterState | undefined }
+    | {
+        error: unknown;
+        route: RouteProps;
+        url: string;
+        from: RouterState | undefined;
+      }
     | undefined
   >(undefined);
   useEffect(() => {
@@ -60,7 +65,11 @@ const FollowError = ({
       return;
     }
     const dispatched = dispatchedRef.current;
-    if (dispatched && routerState && routerState !== dispatched.from) {
+    if (
+      dispatched &&
+      routerState &&
+      routerState.requested !== dispatched.from?.requested
+    ) {
       const sameRequest =
         routerState.requested[0] === dispatched.route.path &&
         routerState.requested[1] === dispatched.route.query;
@@ -75,6 +84,9 @@ const FollowError = ({
     }
   }, [routePath, routeQuery, routeHash, routerState, reset, fail, error]);
   const followCaughtError = useEffectEvent(() => {
+    if (dispatchedRef.current?.error === error) {
+      return;
+    }
     // the requested url may not have reached the address bar yet
     const stateUrl = routerState
       ? new URL(routerState.url, window.location.href)
@@ -114,6 +126,7 @@ const FollowError = ({
     const { target, url } = decision;
     const nextFollows = follows + 1;
     dispatchedRef.current = {
+      error,
       route: target,
       url: url.pathname + url.search + url.hash,
       from: routerState,

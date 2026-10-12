@@ -30,6 +30,7 @@ import {
   Root_UNSTABLE as Root,
   unstable_combineElements as combineElements,
   unstable_isImmutableElement as isImmutableElement,
+  unstable_isSameElement as isSameElement,
   useFetchRsc_UNSTABLE,
 } from '../src/minimal/client.js';
 import { unstable_buildElements as buildElements } from '../src/minimal/server.js';
@@ -109,6 +110,42 @@ const sentEtags = () => {
 };
 
 describe('minimal per-slot cache-validator (carry + replay)', () => {
+  it('compares slot values with their validators after fetching and combining', async () => {
+    testHoisted.elements = { count: 0, [ETAGS_ID]: { count: 'v1' } };
+    const first = await fetchRsc('R/foo');
+    testHoisted.elements = { count: 0, [ETAGS_ID]: { count: 'v2' } };
+    const second = await fetchRsc('R/foo');
+    testHoisted.elements = { count: 0 };
+    const cleared = await fetchRsc('R/foo');
+
+    expect(isSameElement(first, combineElements({}, first), 'count')).toBe(
+      true,
+    );
+    expect(isSameElement(first, second, 'count')).toBe(false);
+    expect(isSameElement(second, cleared, 'count')).toBe(false);
+    expect(isSameElement(cleared, { count: 0 }, 'count')).toBe(true);
+    expect(
+      isSameElement(first, combineElements(first, { count: 1 }), 'count'),
+    ).toBe(false);
+  });
+
+  it('compares own slot presence and shallow values, including client symbols', () => {
+    const state = Symbol('state');
+    const value = {};
+    const elements = {
+      [state]: value,
+      missing: undefined,
+      nan: NaN,
+      constructor: value,
+    };
+    expect(isSameElement({}, {}, 'constructor')).toBe(true);
+    expect(isSameElement(elements, {}, 'constructor')).toBe(false);
+    expect(isSameElement(elements, {}, 'missing')).toBe(false);
+    expect(isSameElement(elements, { [state]: value }, state)).toBe(true);
+    expect(isSameElement(elements, { [state]: {} }, state)).toBe(false);
+    expect(isSameElement(elements, { nan: NaN }, 'nan')).toBe(true);
+  });
+
   it('caches header-safe tags from a response and drops the clear/non-Latin1 ones', async () => {
     testHoisted.elements = {
       page: <div>page</div>,

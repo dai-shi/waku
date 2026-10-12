@@ -171,6 +171,9 @@ const withRouteMeta = (
 // Per-root elements state, wired to each mocked Root through context so a
 // refetch or merge targets the Root that made it (see the factory).
 type RootStore = {
+  applyCustom: (
+    update: (prev: Promise<ElementsMap>) => Promise<ElementsMap>,
+  ) => void;
   applySync: (data: Record<string, unknown>) => void;
   applyAsync: (data: Promise<Record<string, unknown>>) => void;
   applySwr: (
@@ -344,6 +347,22 @@ vi.mock('../src/minimal/client-runtime.js', async () => {
     const storeRef = React.useRef<RootStore>(undefined);
     if (!storeRef.current) {
       storeRef.current = {
+        applyCustom: (update) => {
+          testHoisted.onMerge?.();
+          testHoisted.mergeTypes.push('sync');
+          const results = new WeakMap<
+            Promise<ElementsMap>,
+            Promise<ElementsMap>
+          >();
+          setElements((prev) => {
+            let result = results.get(prev);
+            if (!result) {
+              result = update(prev);
+              results.set(prev, result);
+            }
+            return result;
+          });
+        },
         applySync: (data) => {
           testHoisted.onMerge?.();
           testHoisted.mergeTypes.push('sync');
@@ -383,17 +402,22 @@ vi.mock('../src/minimal/client-runtime.js', async () => {
   ) => data;
   const mergeByStore = new WeakMap<
     object,
-    (
-      data: Record<string, unknown> | Promise<Record<string, unknown>>,
-    ) => Promise<Record<string, unknown>>
+    ReturnType<typeof actual.useMergeElements_UNSTABLE>
   >();
   const useMockMergeElements = () => {
     const store = React.use(StoreContext);
     let fn = store && mergeByStore.get(store);
     if (!fn) {
-      fn = (data) => {
+      fn = (data, merge) => {
         const dataPromise = Promise.resolve(data);
-        if (data instanceof Promise || 'then' in data) {
+        if (merge) {
+          store?.applyCustom((prev) =>
+            merge(
+              prev,
+              dataPromise.catch(() => ({})),
+            ),
+          );
+        } else if (data instanceof Promise || 'then' in data) {
           store?.applyAsync(dataPromise.catch(() => ({})));
         } else {
           store?.applySync(data);
@@ -410,7 +434,7 @@ vi.mock('../src/minimal/client-runtime.js', async () => {
   testHoisted.useMergeInstantElements = function useMockMergeInstantElements() {
     const store = React.use(StoreContext);
     return React.useCallback(
-      (response, _signal, pin, base, overlay) => {
+      (response, _isCurrent, pin, base, overlay) => {
         testHoisted.instantMerges.push({
           pin,
           ...(base ? { base } : {}),
@@ -423,7 +447,7 @@ vi.mock('../src/minimal/client-runtime.js', async () => {
           (result) => store?.applySwr(result, overlay, pin),
           () => {},
         );
-        return response;
+        return { response, getPatch: () => overlay ?? {} };
       },
       [store],
     );
@@ -4528,7 +4552,7 @@ describe('Router integration', () => {
     }
   });
 
-  test('an adopted instant landing does not merge a settle patch', async () => {
+  test('an adopted instant landing does not repeat scrolling or history', async () => {
     const pending = createDeferred<Record<string, unknown>>();
     const refetch = vi.fn<RefetchInner>(() => pending.promise);
     installRefetch(refetch);
@@ -4554,7 +4578,7 @@ describe('Router integration', () => {
       expect(window.location.pathname).toBe('/next');
       expect(scrollToSpy).toHaveBeenCalled();
       scrollToSpy.mockClear();
-      testHoisted.mergeTypes.length = 0;
+      const lengthBefore = window.history.length;
 
       await act(async () => {
         pending.resolve({ [ROUTE_ID]: ['/next', ''], [IS_STATIC_ID]: true });
@@ -4562,7 +4586,8 @@ describe('Router integration', () => {
         await flush();
       });
 
-      expect(testHoisted.mergeTypes).toEqual(['swr']);
+      expect(window.history.length).toBe(lengthBefore);
+      expect(capture.router?.path).toBe('/next');
       expect(scrollToSpy).not.toHaveBeenCalled();
     } finally {
       scrollToSpy.mockRestore();
@@ -8076,8 +8101,7 @@ describe('Router integration', () => {
       expect.anything(),
       expect.anything(),
     );
-    // one per router, doubled by the strict mode replay we accept
-    expect(getRefetchMock()).toHaveBeenCalledTimes(4);
+    expect(getRefetchMock()).toHaveBeenCalledTimes(2);
 
     view.unmount();
   });
@@ -8146,8 +8170,7 @@ describe('Router integration', () => {
 
     await flush();
     try {
-      // doubled by the strict mode replay we accept, and no more than that
-      expect(getRefetchMock()).toHaveBeenCalledTimes(2);
+      expect(getRefetchMock()).toHaveBeenCalledTimes(1);
       expect(getRefetchMock()).toHaveBeenCalledWith(
         unstable_encodeRoutePath('/404'),
         expect.any(URLSearchParams),

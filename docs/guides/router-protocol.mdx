@@ -83,7 +83,8 @@ false. Looking only at the returned slots would give the wrong reuse decision.
 
 Use Minimal's `unstable_combineElements` when combining element maps. Object
 spreads discard the validators associated with their values. Router's merge patch
-also protects slots changed by an action while a navigation was pending.
+uses `unstable_isSameElement` to protect slots whose values or validators changed
+in an action while a navigation was pending.
 
 ## Requested, Rendered, and Browser URLs
 
@@ -229,23 +230,31 @@ Minimal's merge callback to retain pinned slots, wait on the response for other
 slots, and include cached immutable slots and client navigation intent. The
 callback starts from the latest queued elements, so it cannot overwrite an
 earlier queued update with a rendered snapshot. Settlement adds new slots and
-updates unchanged overlay keys while the navigation's abort signal remains
-active. Unrelated action or slice merges do not cancel settlement, and their
+updates unchanged overlay keys while the navigation owns its queued commit.
+Unrelated action or slice merges do not cancel settlement, and their
 slot values and validators are retained. Settlement runs in a transition to
 keep the pinned shell visible. Minimal owns updater replay safety, not SWR policy.
+
+An instant request remains cancellable until its settlement commits, even after
+its navigation promise resolves. Completion queues a distinct snapshot carrying
+the same intent, so a render of the eager shell cannot release that ownership.
+After loading, cancellation invalidates queued work without aborting the
+response's remaining streamed values.
 
 Cached and same-RSC-route commits queue before the first `await`, retaining the
 caller's React priority. Transition callbacks run immediately, so wrapping an
 uncached navigation does not postpone superseding the previous request.
 
-Aborting a request does not remove an already queued React update. For an
-ordinary destination snapshot that has not committed, superseding it appends
-the last committed elements and their Router state to Root's queue. Include the
-state symbol even when its value is `undefined`: an initial snapshot has no
-navigation intent to retain. Restoring
-only intent could let the superseded response replace a shared layout.
+Aborting a request does not remove an already queued React update. Superseding
+an uncommitted destination appends a compensating merge to Root's queue. It
+restores slots still owned by that destination without discarding newer action
+values or validators. A same-route reuse transfers any required response slots
+to the replacement navigation. The state symbol is restored even when its value
+is `undefined`: an initial snapshot has no navigation intent to retain. Ordinary
+response conflicts are checked against the latest queued elements, not only the
+last rendered snapshot.
 
-Ordinary element merges retain the attached state object by reference. The
+Snapshots of one intent retain their requested-route tuple by reference. The
 layout effect recognizes that identity and does not repeat its scroll or history
 intent. An external `history.replaceState` query/hash change is consequently not
 undone by an unrelated element merge. A server redirect can change the destination

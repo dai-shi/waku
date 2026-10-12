@@ -1,24 +1,41 @@
 // @vitest-environment happy-dom
 
-import { Suspense, act, lazy, use, useEffect } from 'react';
+import {
+  StrictMode,
+  Suspense,
+  act,
+  lazy,
+  use,
+  useEffect,
+  useLayoutEffect,
+} from 'react';
+import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import { afterAll, beforeAll, expect, test, vi } from 'vitest';
+import { createCustomError } from '../src/lib/utils-isomorphic/custom-errors.js';
 import { ETAGS_ID, IMMUTABLE_ETAG } from '../src/lib/utils-isomorphic/etags.js';
 import { unstable_callServerRsc as callServerRsc } from '../src/minimal/client-runtime.js';
 import { getDefaultRootStore } from '../src/minimal/client-utils/root-store.js';
 import {
   Children_UNSTABLE as Children,
   Slot_UNSTABLE as Slot,
+  unstable_combineElements as combineElements,
   useElementsPromise_UNSTABLE as useElementsPromise,
   useMergeElements_UNSTABLE as useMergeElements,
 } from '../src/minimal/client.js';
+import {
+  ROUTER_STATE_ID,
+  getRouterState,
+} from '../src/router/client-utils/router-state.js';
 import { Router, useRouter } from '../src/router/client.js';
 import {
   IS_STATIC_ID,
   ROUTE_ID,
 } from '../src/router/isomorphic-utils/router-protocol.js';
 
-type Payload = Record<string, unknown>;
+type Payload = Record<string, unknown> & {
+  [ETAGS_ID]?: Record<string, unknown>;
+};
 
 const testHoisted = vi.hoisted(() => ({
   responses: new Map<string, Array<Payload | Promise<Payload>>>(),
@@ -79,7 +96,11 @@ const routePayload = (
   ...extra,
   [ROUTE_ID]: [path, query],
   [IS_STATIC_ID]: false,
-  [ETAGS_ID]: { root: IMMUTABLE_ETAG, [`route:${path}`]: IMMUTABLE_ETAG },
+  [ETAGS_ID]: {
+    root: IMMUTABLE_ETAG,
+    [`route:${path}`]: IMMUTABLE_ETAG,
+    ...extra[ETAGS_ID],
+  },
 });
 
 const startPayload = (): Payload => ({
@@ -471,5 +492,393 @@ test('a superseded instant response cannot add slots while its replacement is pe
     act(() => root.unmount());
     next.resolve({});
     replacement.resolve({});
+  }
+});
+
+test.each([false, true])(
+  'a replacement wins after an instant response resolves (painted: %s)',
+  async (painted) => {
+    window.history.replaceState({}, '', '/next');
+    const shell = nextPage();
+    respond('/next', routePayload('/next', shell, { clock: 'before' }));
+    respond('/start', startPayload());
+    const next = Promise.withResolvers<Payload>();
+    const replacement = Promise.withResolvers<Payload>();
+    respond('/next', next.promise);
+    respond('/replacement', replacement.promise);
+
+    const container = document.createElement('div');
+    const root = createRoot(container);
+    try {
+      await act(async () => root.render(<Router />));
+      await act(async () => {
+        await router!.push('/start');
+      });
+      let instantNavigation: Promise<void> | undefined;
+      if (painted) {
+        await act(async () => {
+          instantNavigation = router!.push('/next', { unstable_instant: true });
+        });
+        expect(container.textContent).toBe('nextwaiting');
+      }
+      let navigated: Promise<void> | undefined;
+      await act(async () => {
+        instantNavigation ??= router!.push('/next', { unstable_instant: true });
+        next.resolve(
+          routePayload('/next', shell, {
+            clock: 'after',
+            shared: 'from-instant',
+          }),
+        );
+        await instantNavigation;
+        navigated = router!.push('/replacement');
+      });
+      await act(async () => {
+        replacement.resolve(
+          routePayload('/replacement', <Slot id="shared" />, {
+            shared: 'from-replacement',
+          }),
+        );
+        await navigated;
+      });
+      expect(window.location.pathname).toBe('/replacement');
+      expect(container.textContent).toBe('from-replacement');
+    } finally {
+      await act(async () => {
+        root.unmount();
+        next.resolve({});
+        replacement.resolve({});
+      });
+    }
+  },
+);
+
+test.each(['counter-action', 'counter-response', 'before-response'])(
+  'starting a replacement preserves an action queued around the instant response (%s)',
+  async (order) => {
+    const counter = order === 'before-response' ? 'counter-response' : order;
+    const actionEtag =
+      order === 'before-response' ? 'counter-v1' : 'counter-v2';
+    const extraEtag = order === 'before-response' ? 'extra-v1' : 'extra-v2';
+    window.history.replaceState({}, '', '/next');
+    const shell = nextPage();
+    const rootElement = (
+      <>
+        <CaptureRouter />
+        <Suspense fallback="counter-waiting">
+          <Slot id="counter" />
+        </Suspense>
+        <Children />
+      </>
+    );
+    respond(
+      '/next',
+      routePayload('/next', shell, {
+        root: rootElement,
+        counter: 'counter-before',
+        clock: 'before',
+        [ETAGS_ID]: {
+          root: IMMUTABLE_ETAG,
+          'route:/next': IMMUTABLE_ETAG,
+          counter: 'counter-v0',
+        },
+      }),
+    );
+    respond('/start', startPayload());
+    const next = Promise.withResolvers<Payload>();
+    const replacement = Promise.withResolvers<Payload>();
+    respond('/next', next.promise);
+    respond('/replacement', replacement.promise);
+    testHoisted.responses.set('/RSC/F/action/update.txt', [
+      {
+        counter,
+        extra: 'extra',
+        [ETAGS_ID]: { counter: actionEtag, extra: extraEtag },
+        _value: 'updated',
+      },
+    ]);
+    const container = document.createElement('div');
+    const root = createRoot(container);
+    try {
+      await act(async () => root.render(<Router />));
+      await act(async () => {
+        await router!.push('/start');
+      });
+      let first: Promise<void> | undefined;
+      await act(async () => {
+        first = router!.push('/next', { unstable_instant: true });
+      });
+      let second: Promise<void> | undefined;
+      await act(async () => {
+        if (order === 'before-response') {
+          expect(await callServerRsc('action#update', [])).toBe('updated');
+        }
+        next.resolve(
+          routePayload('/next', shell, {
+            root: rootElement,
+            counter: 'counter-response',
+            clock: 'after',
+            extra: 'extra',
+            [ETAGS_ID]: { counter: 'counter-v1', extra: 'extra-v1' },
+          }),
+        );
+        await first;
+        if (order !== 'before-response') {
+          expect(await callServerRsc('action#update', [])).toBe('updated');
+        }
+        second = router!.push('/replacement');
+      });
+      await act(async () => {
+        replacement.resolve(
+          routePayload('/replacement', 'replacement', { root: rootElement }),
+        );
+        await second;
+      });
+      expect(container.textContent).toBe(counter + 'replacement');
+      expect(getDefaultRootStore()?.etags.counter).toBe(actionEtag);
+      expect(getDefaultRootStore()?.etags.extra).toBe(extraEtag);
+    } finally {
+      await act(async () => {
+        root.unmount();
+        next.resolve({});
+        replacement.resolve({});
+      });
+    }
+  },
+);
+
+test('a same-route navigation retains the instant response slots before settlement commits', async () => {
+  window.history.replaceState({}, '', '/next');
+  const shell = nextPage();
+  respond('/next', routePayload('/next', shell, { clock: 'before' }));
+  respond('/start', startPayload());
+  const next = Promise.withResolvers<Payload>();
+  respond('/next', next.promise);
+  const container = document.createElement('div');
+  const errors = vi.fn();
+  const root = createRoot(container, { onCaughtError: errors });
+  try {
+    await act(async () => root.render(<Router />));
+    await act(async () => {
+      await router!.push('/start');
+    });
+    let first: Promise<void> | undefined;
+    await act(async () => {
+      first = router!.push('/next', { unstable_instant: true });
+    });
+    await act(async () => {
+      next.resolve(
+        routePayload('/next', shell, {
+          clock: <Slot id="details" />,
+          details: 'details',
+        }),
+      );
+      await first;
+      await router!.push('/next#section');
+    });
+    expect(errors).not.toHaveBeenCalled();
+    expect(container.textContent).toBe('nextdetails');
+    expect(window.location.hash).toBe('#section');
+  } finally {
+    await act(async () => {
+      root.unmount();
+      next.resolve({});
+    });
+  }
+});
+
+test('an instant response can introduce a slot named constructor', async () => {
+  window.history.replaceState({}, '', '/next');
+  const shell = nextPage();
+  respond('/next', routePayload('/next', shell, { clock: 'before' }));
+  respond('/start', startPayload());
+  const next = Promise.withResolvers<Payload>();
+  respond('/next', next.promise);
+  const container = document.createElement('div');
+  const errors = vi.fn();
+  const root = createRoot(container, { onCaughtError: errors });
+  try {
+    await act(async () => root.render(<Router />));
+    await act(async () => {
+      await router!.push('/start');
+    });
+    let navigated: Promise<void> | undefined;
+    await act(async () => {
+      navigated = router!.push('/next', { unstable_instant: true });
+    });
+    await act(async () => {
+      next.resolve(
+        routePayload('/next', shell, {
+          clock: <Slot id="constructor" />,
+          constructor: 'details',
+        }),
+      );
+      await navigated;
+    });
+    expect(errors).not.toHaveBeenCalled();
+    expect(container.textContent).toBe('nextdetails');
+  } finally {
+    await act(async () => {
+      root.unmount();
+      next.resolve({});
+    });
+  }
+});
+
+test('an urgent render of the instant shell cannot release a queued settlement', async () => {
+  const onSuperseded = vi.fn();
+  let elements: Payload = {};
+  let merge: ReturnType<typeof useMergeElements> | undefined;
+  const Capture = () => {
+    const current = use(useElementsPromise());
+    const mergeElements = useMergeElements();
+    useLayoutEffect(() => {
+      elements = current;
+      merge = mergeElements;
+    });
+    return layout();
+  };
+  window.history.replaceState({}, '', '/next');
+  const shell = nextPage();
+  respond(
+    '/next',
+    routePayload('/next', shell, { root: <Capture />, clock: 'before' }),
+  );
+  respond('/start', startPayload());
+  const next = Promise.withResolvers<Payload>();
+  const replacement = Promise.withResolvers<Payload>();
+  respond('/next', next.promise);
+  respond('/replacement', replacement.promise);
+  const container = document.createElement('div');
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(<Router />));
+    await act(async () => {
+      await router!.push('/start');
+    });
+    let first: Promise<void> | undefined;
+    await act(async () => {
+      first = router!.push('/next', {
+        unstable_instant: true,
+        unstable_onSuperseded: onSuperseded,
+      });
+    });
+    const signal = vi.mocked(fetch).mock.calls.at(-1)?.[1]?.signal;
+    expect(signal).toBeDefined();
+    let second: Promise<void> | undefined;
+    await act(async () => {
+      next.resolve(
+        routePayload('/next', shell, {
+          clock: 'after',
+          shared: 'from-instant',
+        }),
+      );
+      await first;
+      const updated = combineElements(elements, { unrelated: 'urgent' });
+      flushSync(() => {
+        void merge!({}, () =>
+          Object.assign(Promise.resolve(updated), {
+            status: 'fulfilled',
+            value: updated,
+          }),
+        );
+      });
+      second = router!.push('/replacement');
+      expect(onSuperseded).toHaveBeenCalledTimes(1);
+      expect(signal?.aborted).toBe(false);
+    });
+    await act(async () => {
+      replacement.resolve(
+        routePayload('/replacement', <Slot id="shared" />, {
+          shared: 'from-replacement',
+        }),
+      );
+      await second;
+    });
+    expect(container.textContent).toBe('from-replacement');
+    expect(elements.unrelated).toBe('urgent');
+  } finally {
+    await act(async () => {
+      root.unmount();
+      next.resolve({});
+      replacement.resolve({});
+    });
+  }
+});
+
+test('a repeated snapshot and effect replay do not restart an instant redirect follow', async () => {
+  let elements: Payload = {};
+  let merge: ReturnType<typeof useMergeElements> | undefined;
+  const Capture = () => {
+    const current = use(useElementsPromise());
+    const mergeElements = useMergeElements();
+    useLayoutEffect(() => {
+      elements = current;
+      merge = mergeElements;
+    });
+    return layout();
+  };
+  const redirect = createCustomError('redirect', {
+    status: 307,
+    location: '/replacement',
+  });
+  const Redirect = () => {
+    throw redirect;
+  };
+  window.history.replaceState({}, '', '/next');
+  const shell = nextPage();
+  respond(
+    '/next',
+    routePayload('/next', shell, { root: <Capture />, clock: 'before' }),
+  );
+  respond('/start', startPayload());
+  const next = Promise.withResolvers<Payload>();
+  const replacement = Promise.withResolvers<Payload>();
+  respond('/next', next.promise);
+  respond('/replacement', replacement.promise);
+  const container = document.createElement('div');
+  const root = createRoot(container, { onCaughtError: () => {} });
+  try {
+    await act(async () =>
+      root.render(
+        <StrictMode>
+          <Router />
+        </StrictMode>,
+      ),
+    );
+    await act(async () => {
+      await router!.push('/start');
+    });
+    let first: Promise<void> | undefined;
+    await act(async () => {
+      first = router!.push('/next', { unstable_instant: true });
+    });
+    await act(async () => {
+      next.resolve(routePayload('/next', shell, { clock: <Redirect /> }));
+      await first;
+    });
+    const state = getRouterState(elements);
+    expect(state).toBeDefined();
+    await act(async () => {
+      await merge!({ [ROUTER_STATE_ID]: { ...state } });
+    });
+    await act(async () => {
+      replacement.resolve(routePayload('/replacement', 'replacement'));
+    });
+    expect(container.textContent).toBe('replacement');
+    expect(window.location.pathname).toBe('/replacement');
+    expect(
+      vi
+        .mocked(fetch)
+        .mock.calls.filter(([input]) =>
+          String(input).includes('R/replacement'),
+        ),
+    ).toHaveLength(1);
+  } finally {
+    await act(async () => {
+      root.unmount();
+      next.resolve({});
+      replacement.resolve({});
+    });
   }
 });

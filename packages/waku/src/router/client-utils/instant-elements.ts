@@ -11,37 +11,38 @@ export const useMergeInstantElements = () => {
   const mergeElements = useMergeElements();
   return useCallback(
     (
-      response: Promise<Elements>,
-      signal: AbortSignal,
+      data: Promise<Elements>,
+      isCurrent: () => boolean,
       pin: (key: string | symbol) => boolean,
       base?: Elements,
       overlay?: Elements,
     ) => {
+      let patch = overlay ?? {};
       const mergeResults = new WeakMap<Promise<Elements>, Elements>();
-      const incoming = mergeElements(response, (prev, recovered) => {
-        if (signal.aborted) {
+      const incoming = mergeElements(data, (prev, recovered) => {
+        if (!isCurrent()) {
           return prev;
         }
         const merged = Promise.resolve(prev).then((current) => {
-          if (signal.aborted) {
+          if (!isCurrent()) {
             return current;
           }
           const available = base
             ? combineElements(current, base, {
-                filter: (key) => typeof key === 'string' && !(key in current),
+                filter: (key) =>
+                  typeof key === 'string' && !Object.hasOwn(current, key),
               })
             : current;
           const holes: Record<string | symbol, unknown> = {};
           for (const key of Reflect.ownKeys(available)) {
-            const pinned =
-              key in current
-                ? pin(key)
-                : isImmutableElement(available, String(key));
+            const pinned = Object.hasOwn(current, key)
+              ? pin(key)
+              : isImmutableElement(available, String(key));
             if (!pinned) {
               holes[key] = recovered.then((elements) =>
-                key in elements
+                Object.hasOwn(elements, key)
                   ? elements[key]
-                  : base && key in base
+                  : base && Object.hasOwn(base, key)
                     ? base[key]
                     : current[key],
               );
@@ -56,14 +57,14 @@ export const useMergeInstantElements = () => {
         });
         return merged;
       });
-      return incoming.then((resolved) => {
+      const response = incoming.then((resolved) => {
         startTransition(() => {
           void mergeElements(resolved, (prev) => {
-            if (signal.aborted) {
+            if (!isCurrent()) {
               return prev;
             }
             const shouldMerge = (current: Elements, key: string) =>
-              !(key in current) ||
+              !Object.hasOwn(current, key) ||
               !!(
                 overlay &&
                 Object.hasOwn(overlay, key) &&
@@ -76,18 +77,22 @@ export const useMergeInstantElements = () => {
             ) {
               return prev;
             }
-            return prev.then((current) =>
-              signal.aborted
-                ? current
-                : combineElements(current, resolved, {
-                    filter: (key) =>
-                      typeof key === 'string' && shouldMerge(current, key),
-                  }),
-            );
+            return prev.then((current) => {
+              if (!isCurrent()) {
+                return current;
+              }
+              const added = combineElements({}, resolved, {
+                filter: (key) =>
+                  typeof key === 'string' && shouldMerge(current, key),
+              });
+              patch = combineElements(patch, added);
+              return combineElements(current, added);
+            });
           });
         });
         return resolved;
       });
+      return { response, getPatch: () => patch };
     },
     [mergeElements],
   );

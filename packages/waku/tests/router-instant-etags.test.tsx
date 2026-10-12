@@ -54,11 +54,11 @@ const useRefetch = () => {
   ) =>
     mergeInstantElements(
       fetchRsc(rscPath, rscParams, base ? { unstable_base: base } : undefined),
-      new AbortController().signal,
+      () => true,
       pin,
       base,
       overlay,
-    );
+    ).response;
 };
 
 type Refetch = ReturnType<typeof useRefetch>;

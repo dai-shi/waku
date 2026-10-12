@@ -47,7 +47,12 @@ export const useStartInstantPaint = (
   const mergeInstantElements = useMergeInstantElements();
   const cache = useRouterCache();
   return useCallback(
-    (attempt: InstantAttempt, state: RouterState, signal: AbortSignal) => {
+    (
+      attempt: InstantAttempt,
+      state: RouterState,
+      signal: AbortSignal,
+      isCurrent: () => boolean,
+    ) => {
       if (
         !canPaintInstantOverlay(
           cache,
@@ -80,7 +85,7 @@ export const useStartInstantPaint = (
           );
       return mergeInstantElements(
         abortable(response, signal),
-        signal,
+        isCurrent,
         pinForSwr(getElements),
         prefetchedElements,
         overlay,

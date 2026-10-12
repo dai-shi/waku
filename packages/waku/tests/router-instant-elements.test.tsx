@@ -66,11 +66,11 @@ const useRefetch = () => {
     controllerRef.current = controller;
     return mergeInstantElements(
       fetchRsc(rscPath, rscParams, base ? { unstable_base: base } : undefined),
-      controller.signal,
+      () => !controller.signal.aborted,
       pin,
       base,
       overlay,
-    );
+    ).response;
   };
 };
 
@@ -815,7 +815,7 @@ describe('instant element settlement', () => {
     await act(async () => {
       void view.merge(
         payload.promise,
-        new AbortController().signal,
+        () => true,
         (key) => key === 'shell',
         adoptElements({
           side: 'B',
@@ -856,7 +856,7 @@ describe('instant element settlement', () => {
     await act(async () => {
       void view.merge(
         payload.promise,
-        new AbortController().signal,
+        () => true,
         (key) => key === 'shell',
       );
     });
@@ -887,7 +887,7 @@ describe('instant element settlement', () => {
     await act(async () => {
       void view.merge(
         payload.promise,
-        new AbortController().signal,
+        () => true,
         () => true,
         undefined,
         { page: 'loading', meta: 'loading-meta' },
@@ -947,12 +947,12 @@ describe('instant element settlement', () => {
     await act(async () => {
       void first.merge(
         payload.promise,
-        new AbortController().signal,
+        () => true,
         () => false,
       );
       void second.merge(
         payload.promise,
-        new AbortController().signal,
+        () => true,
         () => false,
       );
     });
@@ -976,7 +976,7 @@ describe('instant element settlement', () => {
     await act(async () => {
       void view.merge(
         payload.promise,
-        new AbortController().signal,
+        () => true,
         () => true,
         undefined,
         adoptElements({
@@ -1012,7 +1012,7 @@ describe('instant element settlement', () => {
     await act(async () => {
       void view.merge(
         payload.promise,
-        new AbortController().signal,
+        () => true,
         (key) => key === 'toString',
         undefined,
         {
@@ -1050,7 +1050,7 @@ describe('instant element settlement', () => {
     await act(async () => {
       void view.merge(
         payload.promise,
-        new AbortController().signal,
+        () => true,
         () => true,
         undefined,
         {
@@ -1079,7 +1079,7 @@ describe('instant element settlement', () => {
     await act(async () => {
       void view.merge(
         payload.promise,
-        new AbortController().signal,
+        () => true,
         () => true,
       );
     });
@@ -1111,11 +1111,11 @@ describe('instant element settlement', () => {
     await act(async () => {
       merged = view.merge(
         payload.promise,
-        new AbortController().signal,
+        () => true,
         (key) => key === 'shell',
         undefined,
         { meta: 'M' },
-      );
+      ).response;
     });
     expect(view.container.textContent).toBe('S1…M');
     await act(async () => {
@@ -1158,7 +1158,11 @@ describe('instant element settlement', () => {
 
     await act(async () => {
       for (const merge of merges) {
-        void merge(payload.promise, new AbortController().signal, () => true);
+        void merge(
+          payload.promise,
+          () => true,
+          () => true,
+        );
       }
     });
     await act(async () => {
@@ -1226,22 +1230,22 @@ test('a shared response retains each Root merge configuration', async () => {
   await act(async () => {
     first = controls.get('a')!(
       response.promise,
-      new AbortController().signal,
+      () => true,
       (key) => key === 'shell',
       undefined,
       {
         page: 'overlay a',
       },
-    );
+    ).response;
     second = controls.get('b')!(
       response.promise,
-      new AbortController().signal,
+      () => true,
       (key) => key === 'page',
       undefined,
       {
         shell: 'overlay b',
       },
-    );
+    ).response;
     await wait();
   });
   expect(view.textContent).toContain('old shelloverlay a');
@@ -1288,9 +1292,9 @@ test('settling a tagged hole keeps its pinned shell visible', async () => {
   await act(async () => {
     result = controls.get('a')!(
       response.promise,
-      new AbortController().signal,
+      () => true,
       (key) => key === 'shell',
-    );
+    ).response;
     await wait();
   });
   expect(view.textContent).toContain('old shellwaiting');

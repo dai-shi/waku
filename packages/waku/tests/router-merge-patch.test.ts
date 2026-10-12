@@ -21,6 +21,22 @@ const loaded = (path: string, elements: Record<string, unknown>) => ({
 });
 
 describe('buildMergePatch', () => {
+  it.each(['v2', undefined])(
+    'preserves an action validator change with an unchanged value (%s)',
+    (etag) => {
+      const base = adoptElements({ counter: 0, [ETAGS_ID]: { counter: 'v1' } });
+      const current = adoptElements({
+        counter: 0,
+        [ETAGS_ID]: { counter: etag },
+      });
+      const patch = buildMergePatch(loaded('/next', base), current, base, {
+        settled: route('/start'),
+      });
+      expect(Object.hasOwn(patch, 'counter')).toBe(false);
+      expect(collectEtags(current)).toEqual(etag ? { counter: etag } : {});
+    },
+  );
+
   it('copies a key still identical in current and base', () => {
     const slot = getRouteSlotId('/next');
     const base = { shared: 'old', [slot]: 'start' };

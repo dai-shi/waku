@@ -60,6 +60,9 @@ Advanced composition APIs remain available to any Minimal-based framework:
   while preserving their validators.
 - `unstable_isImmutableElement(elements, slotId)` inspects a slot's immutable
   status without exposing its validator.
+- `unstable_isSameElement(a, b, slotId)` compares a slot's own presence, value
+  (using `Object.is`), and validator. Use it for merge conflicts: equal values
+  can carry different validators.
 - `useMergeElements_UNSTABLE` accepts a merge callback for custom updates to
   the Root's queued element promise.
 - `unstable_buildElements`, `Unstable_ElementSource`, and
