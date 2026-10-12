@@ -676,6 +676,164 @@ test('an instant follow replaces an uncommitted prefetched immutable slot', asyn
   }
 });
 
+test('a replacement wins after an instant follow resolves before committing', async () => {
+  window.history.replaceState({}, '', '/next');
+  respond(
+    '/next',
+    routePayload('/next', nextPage(), {
+      clock: 'before',
+      [ETAGS_ID]: { clock: 'before-v1' },
+    }),
+  );
+  respond('/start', startPayload());
+  const next = Promise.withResolvers<Payload>();
+  const replacement = Promise.withResolvers<Payload>();
+  respond('/next', next.promise);
+  respond(
+    '/target',
+    routePayload('/target', <Slot id="clock" />, {
+      clock: 'followed-clock',
+      [ETAGS_ID]: { clock: 'followed-v2' },
+    }),
+  );
+  respond('/replacement', replacement.promise);
+  const container = document.createElement('div');
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(<Router />));
+    await act(async () => {
+      await router!.push('/start');
+    });
+    let second: Promise<void> | undefined;
+    await act(async () => {
+      const first = router!.push('/next', { unstable_instant: true });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      next.reject(
+        createCustomError('redirect', { status: 307, location: '/target' }),
+      );
+      await first;
+      expect(container.textContent).toBe('start');
+      second = router!.push('/replacement');
+    });
+    await act(async () => {
+      replacement.resolve(
+        routePayload('/replacement', <Slot id="clock" />, {
+          clock: 'replacement-clock',
+          [ETAGS_ID]: { clock: 'replacement-v3' },
+        }),
+      );
+      await second;
+    });
+    expect(container.textContent).toBe('replacement-clock');
+    expect(window.location.pathname).toBe('/replacement');
+    expect(getDefaultRootStore()?.etags.clock).toBe('replacement-v3');
+  } finally {
+    await act(async () => {
+      root.unmount();
+      next.resolve({});
+      replacement.resolve({});
+    });
+  }
+});
+
+test('superseding an instant follow restores prefetched slots but retains identical action writes', async () => {
+  const rootElement = (
+    <>
+      <CaptureRouter />
+      <Suspense fallback="counter-waiting">
+        <Slot id="counter" />
+      </Suspense>
+      <Children />
+    </>
+  );
+  window.history.replaceState({}, '', '/start');
+  respond(
+    '/start',
+    routePayload('/start', 'start', {
+      root: rootElement,
+      counter: 'counter-before',
+      [ETAGS_ID]: { counter: 'counter-v1' },
+    }),
+  );
+  const next = Promise.withResolvers<Payload>();
+  const replacement = Promise.withResolvers<Payload>();
+  respond('/next', next.promise, 'q=1');
+  respond(
+    '/next',
+    routePayload(
+      '/next',
+      <Slot id="clock" />,
+      {
+        root: rootElement,
+        clock: 'prefetched-clock',
+        [ETAGS_ID]: { clock: IMMUTABLE_ETAG },
+      },
+      'q=2',
+    ),
+    'q=2',
+  );
+  respond(
+    '/target',
+    routePayload('/target', <Slot id="clock" />, {
+      root: rootElement,
+      counter: 'counter-followed',
+      clock: 'followed-clock',
+      [ETAGS_ID]: { counter: 'counter-v2', clock: 'followed-v2' },
+    }),
+  );
+  respond('/replacement', replacement.promise);
+  testHoisted.responses.set('/RSC/F/action/update.txt', [
+    {
+      counter: 'counter-followed',
+      [ETAGS_ID]: { counter: 'counter-v2' },
+      _value: 'updated',
+    },
+  ]);
+  const container = document.createElement('div');
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(<Router />));
+    await act(async () => {
+      router!.prefetch('/next?q=1');
+      router!.prefetch('/next?q=2');
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    let second: Promise<void> | undefined;
+    await act(async () => {
+      const first = router!.push('/next?q=1', { unstable_instant: true });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      next.reject(
+        createCustomError('redirect', { status: 307, location: '/target' }),
+      );
+      await first;
+      expect(await callServerRsc('action#update', [])).toBe('updated');
+      second = router!.push('/replacement');
+    });
+    await act(async () => {
+      replacement.resolve(
+        routePayload('/replacement', <Slot id="clock" />, {
+          root: rootElement,
+          clock: 'replacement-clock',
+          [ETAGS_ID]: { clock: 'replacement-v3' },
+        }),
+      );
+      await second;
+    });
+    expect(container.textContent).toBe('counter-followedreplacement-clock');
+    expect(window.location.pathname).toBe('/replacement');
+    expect(getDefaultRootStore()?.etags).toMatchObject({
+      counter: 'counter-v2',
+      clock: 'replacement-v3',
+    });
+  } finally {
+    await act(async () => {
+      root.unmount();
+      next.resolve({});
+      replacement.resolve({});
+    });
+  }
+});
+
 test('a batched replacement overwrites the superseded instant holes', async () => {
   window.history.replaceState({}, '', '/next');
   respond('/next', routePayload('/next', nextPage(), { clock: 'before' }));

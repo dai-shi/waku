@@ -64,7 +64,7 @@ type NavigationRequest = {
   onSuperseded: (() => void) | undefined;
   target: Pick<RouteProps, 'path' | 'query'>;
   queuedState?: RouterState;
-  getPatch?: (current: Elements) => Elements;
+  getPatches?: (current: Elements) => Elements[];
   committed?: boolean;
 };
 
@@ -78,10 +78,11 @@ type Navigation = {
 const restoreOwnedElements = (
   base: Elements,
   current: Elements,
-  patch: Elements,
+  patches: Elements[],
 ) =>
   combineElements(base, current, {
-    filter: (key) => !isSameElement(current, patch, key),
+    filter: (key) =>
+      !patches.some((patch) => isSameElement(current, patch, key)),
   });
 
 const commitHistory = (url: URL, mode: HistoryIntent): void => {
@@ -175,13 +176,13 @@ export const useNavigation = (
     (next?: NavigationRequest) => {
       const superseded = requestRef.current;
       requestRef.current = next;
-      if (superseded?.getPatch) {
+      if (superseded?.getPatches) {
         const committed = getElements();
         void mergeElements({}, (prev) =>
           prev.then((current) => {
-            const patch = superseded.getPatch?.(committed) ?? {};
+            const patches = superseded.getPatches?.(committed) ?? [];
             return combineElements(
-              restoreOwnedElements(committed, current, patch),
+              restoreOwnedElements(committed, current, patches),
               { [ROUTER_STATE_ID]: getRouterState(committed) },
             );
           }),
@@ -289,7 +290,11 @@ export const useNavigation = (
           query: state.requested[1],
         };
         request.queuedState = state;
-        request.getPatch = getPatch;
+        const getPreviousPatches = request.getPatches;
+        request.getPatches = (current) => [
+          ...(getPreviousPatches?.(current) ?? []),
+          getPatch(current),
+        ];
         void mergeElements({}, (prev) =>
           prev.then((current) =>
             !canCommit()
@@ -310,10 +315,14 @@ export const useNavigation = (
         queueCommit(
           makeStateForAttempt(initialAttempt, options.history),
           (current) => {
-            const patch =
+            const patches =
               superseded && isSameRscRoute(superseded.target, nextRoute)
-                ? (superseded.getPatch?.(current) ?? {})
-                : {};
+                ? (superseded.getPatches?.(current) ?? [])
+                : [];
+            const patch = patches.reduce(
+              (combined, patch) => combineElements(combined, patch),
+              {},
+            );
             return combineElements(
               combineElements({}, patch, {
                 filter: (key) =>
@@ -338,7 +347,7 @@ export const useNavigation = (
         : undefined;
       const instantResponse = instant?.response;
       if (instant) {
-        request.getPatch = instant.getPatch;
+        request.getPatches = () => [instant.getPatch()];
       }
       const outcome = await cache.load(nextRoute, {
         signal: controller.signal,
@@ -408,7 +417,6 @@ export const useNavigation = (
       if (instantResponse && outcome.follows === initialFollows) {
         cache.learnStaticFromElements(outcome.elements);
         startTransition(() => queueCommit({ ...instantState }, () => ({})));
-        request.getPatch = instant!.getPatch;
         return;
       }
       const destination = resolveServerRedirect(
@@ -425,7 +433,7 @@ export const useNavigation = (
           buildMergePatch(
             outcome,
             instant
-              ? restoreOwnedElements(base, current, instant.getPatch())
+              ? restoreOwnedElements(base, current, [instant.getPatch()])
               : current,
             base,
             { settled: settledRoute },

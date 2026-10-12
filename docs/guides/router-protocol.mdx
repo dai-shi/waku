@@ -250,8 +250,10 @@ uncached navigation does not postpone superseding the previous request.
 Aborting a request does not remove an already queued React update. Superseding
 an uncommitted destination appends a compensating merge to Root's queue. It
 restores that destination's holes, prefetched slots, overlays, and settled writes
-without discarding newer action values or validators. A same-route reuse transfers
-any required response slots to the replacement navigation. The state symbol is
+without discarding newer action values or validators. A followed destination
+retains both its eager and response patches until it commits, so rollback can
+recognize either source. A same-route reuse transfers any required response slots
+to the replacement navigation. The state symbol is
 restored even when its value
 is `undefined`: an initial snapshot has no navigation intent to retain. Ordinary
 response conflicts are checked against the latest queued elements, not only the
