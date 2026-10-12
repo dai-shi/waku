@@ -1206,6 +1206,66 @@ test('a cached navigation to a metadata redirect destination retains required re
   }
 });
 
+test.each([false, true])(
+  'a no-refetch replacement takes over updated instant slots without replacing action writes (action: %s)',
+  async (action) => {
+    window.history.replaceState({}, '', '/new');
+    const shell = nextPage();
+    respond(
+      '/new',
+      routePayload('/new', shell, {
+        clock: 'before',
+        'route:/old': shell,
+        [ETAGS_ID]: { clock: 'clock-v1', 'route:/old': IMMUTABLE_ETAG },
+      }),
+    );
+    const next = Promise.withResolvers<Payload>();
+    respond('/old', next.promise);
+    if (action) {
+      testHoisted.responses.set('/RSC/F/action/update.txt', [
+        {
+          clock: 'before',
+          [ETAGS_ID]: { clock: 'clock-v1' },
+          _value: 'updated',
+        },
+      ]);
+    }
+    const container = document.createElement('div');
+    const root = createRoot(container);
+    try {
+      await act(async () => root.render(<Router />));
+      await act(async () => {
+        const first = router!.push('/old', { unstable_instant: true });
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        next.resolve(
+          routePayload('/new', shell, {
+            clock: 'after',
+            [ETAGS_ID]: { clock: 'clock-v2' },
+          }),
+        );
+        await first;
+        if (action) {
+          expect(await callServerRsc('action#update', [])).toBe('updated');
+        }
+        expect(container.textContent).toBe('nextbefore');
+        await router!.push('/new#section');
+      });
+      expect(container.textContent).toBe(action ? 'nextbefore' : 'nextafter');
+      expect(window.location.pathname + window.location.hash).toBe(
+        '/new#section',
+      );
+      if (action) {
+        expect(getDefaultRootStore()?.etags.clock).toBe('clock-v1');
+      }
+    } finally {
+      await act(async () => {
+        root.unmount();
+        next.resolve({});
+      });
+    }
+  },
+);
+
 test('an instant response can introduce a slot named constructor', async () => {
   window.history.replaceState({}, '', '/next');
   const shell = nextPage();

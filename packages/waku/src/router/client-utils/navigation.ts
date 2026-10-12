@@ -62,6 +62,7 @@ type NavigationError = { error: unknown };
 type NavigationRequest = {
   controller: AbortController | undefined;
   onSuperseded: (() => void) | undefined;
+  base: Elements;
   target: Pick<RouteProps, 'path' | 'query'>;
   queuedState?: RouterState;
   getPatches?: (current: Elements) => Elements[];
@@ -236,10 +237,12 @@ export const useNavigation = (
           });
         });
       }
+      const base = getElements();
       const controller = new AbortController();
       const request: NavigationRequest = {
         controller,
         onSuperseded: options.onSuperseded,
+        base,
         target: nextRoute,
       };
       const canCommit = () =>
@@ -322,7 +325,10 @@ export const useNavigation = (
             return combineElements(
               combineElements({}, patch, {
                 filter: (key) =>
-                  typeof key === 'string' && !Object.hasOwn(current, key),
+                  typeof key === 'string' &&
+                  (!Object.hasOwn(current, key) ||
+                    (!!superseded &&
+                      isSameElement(current, superseded.base, key))),
               }),
               { [ROUTE_ID]: [nextRoute.path, nextRoute.query] },
             );
@@ -330,7 +336,6 @@ export const useNavigation = (
         );
         return;
       }
-      const base = getElements();
       const initialFollows = options.follows ?? 0;
       const instantState = makeStateForAttempt(initialAttempt, options.history);
       const instant = options.instant
