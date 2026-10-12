@@ -191,7 +191,11 @@ export const useNavigation = (
       }
       superseded?.controller?.abort();
       if (next) {
-        superseded?.onSuperseded?.();
+        try {
+          superseded?.onSuperseded?.();
+        } catch (error) {
+          console.error('Error in unstable_onSuperseded:', error);
+        }
       }
     },
     [getElements, mergeElements],
@@ -311,6 +315,7 @@ export const useNavigation = (
         cache.canReuseStaticRoute(nextRoute, getElements()) ||
         !shouldRefetch
       ) {
+        const routePatch = { [ROUTE_ID]: [nextRoute.path, nextRoute.query] };
         queueCommit(
           makeStateForAttempt(initialAttempt, options.history),
           (current) => {
@@ -330,7 +335,7 @@ export const useNavigation = (
                     (!!superseded &&
                       isSameElement(current, superseded.base, key))),
               }),
-              { [ROUTE_ID]: [nextRoute.path, nextRoute.query] },
+              routePatch,
             );
           },
         );
@@ -378,10 +383,14 @@ export const useNavigation = (
           : options.history;
       if (outcome.type === 'reused') {
         request.target = outcome.route;
+        const routePatch = {
+          [ROUTE_ID]: [outcome.route.path, outcome.route.query],
+        };
         startTransition(() => {
-          queueCommit(makeStateForAttempt(outcome, historyIntent), () => ({
-            [ROUTE_ID]: [outcome.route.path, outcome.route.query],
-          }));
+          queueCommit(
+            makeStateForAttempt(outcome, historyIntent),
+            () => routePatch,
+          );
         });
         return;
       }

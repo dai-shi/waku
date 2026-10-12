@@ -247,6 +247,125 @@ test('a same-route navigation cancels an already queued suspended destination', 
   expect(window.location.pathname + window.location.hash).toBe('/one#anchor');
 });
 
+test.each([false, true])(
+  'a superseded cached navigation cannot change the route while its replacement waits (redirect: %s)',
+  async (redirect) => {
+    const ready = defer<void>();
+    let suspended = false;
+    const renderSuspended = vi.fn();
+    const Page = () => {
+      if (suspended) {
+        renderSuspended();
+        use(ready.promise);
+      }
+      return <p>cached page two</p>;
+    };
+    mocks.queue.push(payload('/one', <p>page one</p>));
+    const view = await mount(
+      <Router initialRoute={{ path: '/one', query: '', hash: '' }} />,
+    );
+    mocks.queue.push({ ...payload('/two', <Page />), [IS_STATIC_ID]: true });
+    await act(async () => {
+      await controls.get('a')!.router.push('/two');
+      await flush();
+    });
+    mocks.queue.push(payload('/one', <p>page one</p>));
+    await act(async () => {
+      await controls.get('a')!.router.push('/one');
+      await flush();
+    });
+    const push = vi.spyOn(window.history, 'pushState');
+    const replace = vi.spyOn(window.history, 'replaceState');
+    const onSuperseded = vi.fn();
+    suspended = true;
+    if (redirect) {
+      const moved = defer<Elements>();
+      moved.reject(createCustomError('moved', { location: '/two' }));
+      mocks.queue.push(moved.promise);
+    }
+    await act(async () => {
+      await controls.get('a')!.router.push(redirect ? '/moved' : '/two', {
+        unstable_onSuperseded: onSuperseded,
+      });
+      await flush();
+    });
+    expect(renderSuspended).toHaveBeenCalled();
+    expect(view.querySelector('[data-route]')?.textContent).toBe('/one');
+    const response = defer<Elements>();
+    mocks.queue.push(response.promise);
+    await act(async () => {
+      window.history.replaceState({}, '', '/three');
+      replace.mockClear();
+      window.dispatchEvent(new PopStateEvent('popstate'));
+      await flush();
+    });
+    expect(onSuperseded).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      ready.resolve();
+      await flush();
+    });
+    expect(view.textContent).toContain('page one');
+    expect(view.textContent).not.toContain('cached page two');
+    expect(view.querySelector('[data-route]')?.textContent).toBe('/one');
+    expect(window.location.pathname).toBe('/three');
+    expect(push).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalled();
+    await act(async () => {
+      response.resolve(payload('/three', <p>replacement page</p>));
+      await flush();
+    });
+    expect(view.textContent).toContain('replacement page');
+    expect(view.querySelector('[data-route]')?.textContent).toBe('/three');
+    expect(window.location.pathname).toBe('/three');
+    expect(push).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalled();
+    expect(mocks.queue).toEqual([]);
+  },
+);
+
+test('a throwing supersession callback does not stop the replacement navigation', async () => {
+  const error = new Error('supersession callback failed');
+  const report = vi.spyOn(console, 'error').mockImplementation(() => {});
+  const onSuperseded = vi.fn(() => {
+    throw error;
+  });
+  mocks.queue.push(payload('/one', <p>page one</p>));
+  const view = await mount(
+    <Router initialRoute={{ path: '/one', query: '', hash: '' }} />,
+  );
+  const response = defer<Elements>();
+  mocks.queue.push(response.promise);
+  let cancelled!: Promise<void>;
+  await act(async () => {
+    cancelled = controls.get('a')!.router.push('/two', {
+      unstable_onSuperseded: onSuperseded,
+    });
+    await flush();
+  });
+  mocks.queue.push(payload('/three', <p>replacement page</p>));
+  let result: unknown;
+  await act(async () => {
+    result = await controls
+      .get('a')!
+      .router.push('/three')
+      .then(
+        () => 'fulfilled',
+        (error: unknown) => error,
+      );
+    response.resolve(payload('/two', <p>cancelled page</p>));
+    await cancelled;
+    await flush();
+  });
+  expect(result).toBe('fulfilled');
+  expect(onSuperseded).toHaveBeenCalledTimes(1);
+  expect(report).toHaveBeenCalledWith('Error in unstable_onSuperseded:', error);
+  expect(view.textContent).toContain('replacement page');
+  expect(view.textContent).not.toContain('cancelled page');
+  expect(view.querySelector('[data-route]')?.textContent).toBe('/three');
+  expect(window.location.pathname).toBe('/three');
+  expect(mocks.queue).toEqual([]);
+});
+
 test('an unrelated element update does not overwrite external history', async () => {
   mocks.queue.push(payload('/one', <p>page one</p>));
   const view = await mount(
