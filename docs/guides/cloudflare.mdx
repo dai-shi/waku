@@ -135,10 +135,8 @@ For general Waku request context usage, see [Request Context](/guides/request-co
 
 ```ts
 import { env, waitUntil } from 'cloudflare:workers'; // eslint-disable-line import/no-unresolved
-import { unstable_getRequest as getRequest } from 'waku/router/server';
 
-const getData = async () => {
-  const req = getRequest();
+const getData = async (userId: string) => {
   waitUntil(
     new Promise<void>((resolve) => {
       console.log('Waiting for 5 seconds');
@@ -148,11 +146,6 @@ const getData = async () => {
       }, 5000);
     }),
   );
-  const url = new URL(req.url);
-  const userId = url.searchParams.get('userId');
-  if (!userId) {
-    return null;
-  }
   const { results } = await env.DB.prepare('SELECT * FROM user WHERE id = ?')
     .bind(userId)
     .all();

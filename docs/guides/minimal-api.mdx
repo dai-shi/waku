@@ -243,7 +243,7 @@ Every input also includes:
 - `req`: the original `Request` object
 
 `input.req` is the request for this handler. The Minimal API does not provide an
-ambient `unstable_getRequest()` (that is a router feature); pass `input.req`
+ambient `getRequest()` (that is a router feature); pass `input.req`
 where you need it, or wrap the body in your own `AsyncLocalStorage` to reach it
 from deeper components and server functions.
 

@@ -772,7 +772,7 @@ Multiple dynamic segments are also supported (e.g., `items/[category]/[id]`), an
 
 ### Handler interceptors
 
-A handler interceptor wraps each render, in both the request and build phases, so it runs inside the request scope where `unstable_getRequest` is available. It also wraps API route handlers. Use it to install an `AsyncLocalStorage` for the render or to set the inline-script nonce.
+A handler interceptor wraps each render, in both the request and build phases, so it runs inside the request scope where `getRequest` is available. It also wraps API route handlers. Use it to install an `AsyncLocalStorage` for the render or to set the inline-script nonce.
 
 ```ts
 type HandlerInterceptor = <T>(next: () => Promise<T>) => Promise<T>;

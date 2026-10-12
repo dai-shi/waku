@@ -25,14 +25,14 @@ npm install cookie jose
 npm install --save-dev @types/node
 ```
 
-Server code reads request cookies from `unstable_getHeaders()`. Wrap that in one function and use it everywhere:
+Server code reads request cookies from `getRequest().headers`. Wrap that in one function and use it everywhere:
 
 ```ts
 // ./src/lib/session.ts
 import * as cookie from 'cookie';
 import { jwtVerify } from 'jose';
 import { getEnv } from 'waku';
-import { unstable_getHeaders as getHeaders } from 'waku/router/server';
+import { getRequest } from 'waku/router/server';
 
 export type Session = { userId: string };
 
@@ -73,7 +73,7 @@ export const verifySessionToken = async (
 };
 
 export const auth = async (): Promise<Session | null> => {
-  const cookies = cookie.parseCookie(getHeaders()['cookie'] ?? '');
+  const cookies = cookie.parseCookie(getRequest().headers.get('cookie') ?? '');
   return verifySessionToken(cookies.session);
 };
 ```
@@ -142,7 +142,7 @@ of an error:
 // ./src/pages/dashboard/_layout.tsx
 import type { ReactNode } from 'react';
 import {
-  unstable_getRequest as getRequest,
+  getRequest,
   unstable_parseRouterRequest as parseRouterRequest,
   unstable_redirect as redirect,
 } from 'waku/router/server';
@@ -388,7 +388,7 @@ The login form reads `callbackUrl` from `useRouter().query` and posts it back in
 
 ### The read-through
 
-`redirect()` resolves on the server: the destination renders inside the same request that ran the action. At that point `unstable_getHeaders()` still reports the cookies the browser sent, which do not include the one just queued, so a protected destination would bounce the user straight back to the login page. The cookie is set, the login worked, and it looks like it did not.
+`redirect()` resolves on the server: the destination renders inside the same request that ran the action. At that point `getRequest().headers` still reports the cookies the browser sent, which do not include the one just queued, so a protected destination would bounce the user straight back to the login page. The cookie is set, the login worked, and it looks like it did not.
 
 That is what `readPendingCookie` is for. Make `auth()` prefer a cookie queued in this request over the one from the headers:
 
@@ -400,7 +400,7 @@ export const auth = async (): Promise<Session | null> => {
   if (pending !== undefined) {
     return verifySessionToken(pending || undefined);
   }
-  const cookies = cookie.parseCookie(getHeaders()['cookie'] ?? '');
+  const cookies = cookie.parseCookie(getRequest().headers.get('cookie') ?? '');
   return verifySessionToken(cookies.session);
 };
 ```

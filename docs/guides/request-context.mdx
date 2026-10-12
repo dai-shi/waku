@@ -10,55 +10,37 @@ order: 10
 
 Waku provides request-scoped context for server code. Use it when a server component or server function needs information from the current request. Middleware runs before the render scope is established, so middleware reads the request from its Hono context instead.
 
-The APIs in this guide currently use `unstable_` names and may change.
-
 ## Read the Current Request
 
-Use `unstable_getRequest` in server-only code to access the current `Request`:
+Use `getRequest` in server-only code to access the current `Request`:
 
 ```tsx
-import { unstable_getRequest as getRequest } from 'waku/router/server';
-
-const getCurrentPath = () => {
-  const req = getRequest();
-  return new URL(req.url).pathname;
-};
+import { getRequest } from 'waku/router/server';
 
 export default function Page() {
-  const path = getCurrentPath();
-
-  return <p>Current path: {path}</p>;
-}
-```
-
-`getRequest()` throws if request context is not available. Call it during request handling, not in module scope.
-
-`unstable_getRequest()` returns the original incoming request. Inside an API route handler, the handler's own `req` argument may have a rewritten URL (the route path with any prefix stripped), so `req.url` and `unstable_getRequest().url` can differ. Use the handler argument for routing-specific values and `unstable_getRequest()` for the original request.
-
-`unstable_getRequest` and `unstable_getHeaders` are exported from `waku/router/server` and are available wherever the router runs your code: renders (request and build), API route handlers, and interceptors. In the Minimal API, use `input.req` from `handleRequest` instead, and bring your own `AsyncLocalStorage` if you need it deeper in the tree.
-
-Components rendered as `static` are prerendered at build time, so do not read `unstable_getRequest`, headers, or interceptor-seeded state in a static page, layout, or slice; those values would be baked into the prerendered output. Read request-scoped data only in `dynamic` rendering. (During a static route build `unstable_getRequest().url` is the route's path, but a static slice build uses a placeholder root request that does not identify the slice.)
-
-## Read Request Headers
-
-For headers, use `unstable_getHeaders`:
-
-```tsx
-import { unstable_getHeaders as getHeaders } from 'waku/router/server';
-
-export default function Page() {
-  const headers = getHeaders();
-  const userAgent = headers['user-agent'] || 'unknown';
+  const userAgent = getRequest().headers.get('user-agent') ?? 'unknown';
 
   return <p>User agent: {userAgent}</p>;
 }
+
+export const getConfig = async () => ({ render: 'dynamic' }) as const;
 ```
 
-The returned object is a snapshot of the request headers for the current request.
+Header names are case-insensitive, and `headers.get()` returns `null` for a header the request does not have.
+
+`getRequest()` throws if request context is not available. Call it during request handling, not in module scope.
+
+`getRequest().url` is the URL the request was sent to. After a client navigation, that is Waku's RSC URL (such as `/RSC/R/about.txt`), not the page URL. A page receives its params and `query` as props; elsewhere, read the route with `unstable_parseRouterRequest(getRequest())`. A server function called from the client sends its own request, which `unstable_parseRouterRequest` reports only as `{ type: 'action' }`, so pass the function any route data it needs as arguments.
+
+`getRequest()` returns the original incoming request. Inside an API route handler, the handler's own `req` argument may have a rewritten URL (the route path with any prefix stripped), so `req.url` and `getRequest().url` can differ. Use the handler argument for routing-specific values and for the body, which it shares with `getRequest()`.
+
+`getRequest` is exported from `waku/router/server` and is available wherever the router runs your code: renders (request and build), server functions, API route handlers, interceptors, and a custom router's `resolve`. In the Minimal API, use `input.req` from `handleRequest` instead, and bring your own `AsyncLocalStorage` if you need it deeper in the tree.
+
+Components rendered as `static` are prerendered at build time, so do not read `getRequest`, headers, or interceptor-seeded state in a static page, layout, or slice; those values would be baked into the prerendered output. Read request-scoped data only in `dynamic` rendering. File-system pages, layouts, and slices are static by default, so the page examples in this guide export `getConfig` with `render: 'dynamic'`. Only the file-system router reads `getConfig`; with `createPages`, pass `render: 'dynamic'` to `createPage` instead. (During a static route build `getRequest().url` is the route's path, but a static slice build uses a placeholder root request that does not identify the slice.)
 
 ## Pass Data with an Interceptor
 
-Waku's context is request-only. To share derived, request-scoped data with server components and server functions, bring your own `AsyncLocalStorage` and seed it from a handler interceptor. An interceptor wraps each render in both the request and build phases, so `unstable_getRequest` is available inside it.
+Waku's context is request-only. To share derived, request-scoped data with server components and server functions, bring your own `AsyncLocalStorage` and seed it from a handler interceptor. An interceptor wraps each render in both the request and build phases, so `getRequest` is available inside it.
 
 Define your own store:
 
@@ -84,11 +66,11 @@ In managed mode (no `waku.server.tsx`), seed the store from an interceptor in `s
 
 ```ts
 import type { HandlerInterceptor } from 'waku/router/server';
-import { unstable_getHeaders as getHeaders } from 'waku/router/server';
+import { getRequest } from 'waku/router/server';
 import { runWithRequestData } from '../../lib/request-data.js';
 
 const requestDataInterceptor: HandlerInterceptor = (next) => {
-  const country = getHeaders()['cf-ipcountry'] ?? 'unknown';
+  const country = getRequest().headers.get('cf-ipcountry') ?? 'unknown';
   return runWithRequestData({ country }, next);
 };
 
@@ -98,12 +80,12 @@ export default requestDataInterceptor;
 With a custom `waku.server.tsx` using `createPages`, register the same logic through `createInterceptor`:
 
 ```ts
-import { unstable_getHeaders as getHeaders } from 'waku/router/server';
+import { getRequest } from 'waku/router/server';
 import { runWithRequestData } from './lib/request-data.js';
 
 createPages(async ({ createPage, createInterceptor }) => {
   createInterceptor((next) => {
-    const country = getHeaders()['cf-ipcountry'] ?? 'unknown';
+    const country = getRequest().headers.get('cf-ipcountry') ?? 'unknown';
     return runWithRequestData({ country }, next);
   });
   return [
@@ -122,25 +104,29 @@ export default function Page() {
 
   return <p>Country: {country ?? 'unknown'}</p>;
 }
+
+export const getConfig = async () => ({ render: 'dynamic' }) as const;
 ```
 
-If the value is just a request header, you can also read it from `unstable_getHeaders()` in the component without a store. Reach for an interceptor when you want to compute the value once per request and share it across the render.
+If the value is just a request header, you can also read it from `getRequest().headers` in the component without a store. Reach for an interceptor when you want to compute the value once per request and share it across the render.
 
 ## Cookies
 
-Waku does not currently provide a dedicated cookie API. Read request cookies from `unstable_getHeaders()` in server code, and use middleware to set response cookies after rendering.
+Waku does not currently provide a dedicated cookie API. Read request cookies from `getRequest().headers` in server code, and use middleware to set response cookies after rendering.
 
 Read a request cookie from server code with the `cookie` package:
 
 ```tsx
 import * as cookie from 'cookie';
-import { unstable_getHeaders as getHeaders } from 'waku/router/server';
+import { getRequest } from 'waku/router/server';
 
 export default function Page() {
-  const cookies = cookie.parseCookie(getHeaders()['cookie'] ?? '');
+  const cookies = cookie.parseCookie(getRequest().headers.get('cookie') ?? '');
 
   return <p>Session: {cookies.sessionId ?? 'none'}</p>;
 }
+
+export const getConfig = async () => ({ render: 'dynamic' }) as const;
 ```
 
 Set a response cookie from middleware, which owns the response:
@@ -190,18 +176,20 @@ On Cloudflare Workers, import bindings from `cloudflare:workers`. Use Waku reque
 
 ```tsx
 import { env } from 'cloudflare:workers'; // eslint-disable-line import/no-unresolved
-import { unstable_getRequest as getRequest } from 'waku/router/server';
+import { getRequest } from 'waku/router/server';
 
 export default async function Page() {
-  const req = getRequest();
-  const url = new URL(req.url);
-  const id = url.searchParams.get('id');
-  const item = id
-    ? await env.DB.prepare('SELECT * FROM item WHERE id = ?').bind(id).first()
+  const country = getRequest().headers.get('cf-ipcountry');
+  const store = country
+    ? await env.DB.prepare('SELECT * FROM store WHERE country = ?')
+        .bind(country)
+        .first()
     : null;
 
-  return <pre>{JSON.stringify(item, null, 2)}</pre>;
+  return <pre>{JSON.stringify(store, null, 2)}</pre>;
 }
+
+export const getConfig = async () => ({ render: 'dynamic' }) as const;
 ```
 
 See [Run Waku on Cloudflare](/guides/cloudflare) for the full Cloudflare setup.

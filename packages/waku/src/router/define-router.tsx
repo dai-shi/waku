@@ -26,13 +26,16 @@ import { pathnameToRoutePath } from './isomorphic-utils/route-path.js';
 import { encodeRoutePath } from './isomorphic-utils/router-protocol.js';
 
 export {
-  getRequest as unstable_getRequest,
+  getRequest,
   getHeaders as unstable_getHeaders,
   getRscPath as unstable_getRscPath,
   getRscParams as unstable_getRscParams,
   setNonce as unstable_setNonce,
 };
 export type { HandlerInterceptor };
+
+/** @deprecated Renamed to `getRequest`. */
+export const unstable_getRequest = getRequest;
 
 const encodePathname = (pathname: string) => {
   if (!pathname.startsWith('/')) {

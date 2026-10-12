@@ -6,7 +6,7 @@ import { createConfiguredRouter } from '../src/router/create-pages-utils/router.
 import { createPages } from '../src/router/create-pages.js';
 import {
   type HandlerInterceptor,
-  unstable_getRequest as getRequest,
+  getRequest,
 } from '../src/router/define-router.js';
 import { fsRouter } from '../src/router/fs-router.js';
 
