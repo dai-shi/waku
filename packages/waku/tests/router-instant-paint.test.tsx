@@ -1131,6 +1131,81 @@ test('a same-route navigation retains the instant response slots before settleme
   }
 });
 
+test('a cached navigation to a metadata redirect destination retains required response slots', async () => {
+  window.history.replaceState({}, '', '/old');
+  const shell = (
+    <>
+      <h1>old</h1>
+      <Suspense fallback="waiting">
+        <Slot id="clock" />
+      </Suspense>
+    </>
+  );
+  const destination = (
+    <>
+      <h1>new</h1>
+      <Suspense fallback="waiting">
+        <Slot id="clock" />
+      </Suspense>
+    </>
+  );
+  respond(
+    '/old',
+    routePayload('/old', shell, {
+      clock: 'before',
+      'route:/new': destination,
+      [ETAGS_ID]: { 'route:/new': IMMUTABLE_ETAG },
+    }),
+  );
+  respond('/start', startPayload());
+  const next = Promise.withResolvers<Payload>();
+  respond('/old', next.promise);
+  const container = document.createElement('div');
+  const errors = vi.fn();
+  const root = createRoot(container, { onCaughtError: errors });
+  try {
+    await act(async () => root.render(<Router />));
+    await act(async () => {
+      await router!.push('/start');
+    });
+    let first: Promise<void> | undefined;
+    await act(async () => {
+      first = router!.push('/old', { unstable_instant: true });
+    });
+    await act(async () => {
+      next.resolve({
+        ...routePayload(
+          '/new',
+          destination,
+          {
+            clock: <Slot id="details" />,
+            details: 'redirected details',
+            [ETAGS_ID]: {
+              clock: IMMUTABLE_ETAG,
+              details: IMMUTABLE_ETAG,
+            },
+          },
+          'page=2',
+        ),
+        [IS_STATIC_ID]: true,
+      });
+      await first;
+      await router!.push('/new?page=2#section');
+    });
+    expect(errors).not.toHaveBeenCalled();
+    expect(container.textContent).toBe('newredirected details');
+    expect(
+      window.location.pathname + window.location.search + window.location.hash,
+    ).toBe('/new?page=2#section');
+    expect(getDefaultRootStore()?.etags.details).toBe(IMMUTABLE_ETAG);
+  } finally {
+    await act(async () => {
+      root.unmount();
+      next.resolve({});
+    });
+  }
+});
+
 test('an instant response can introduce a slot named constructor', async () => {
   window.history.replaceState({}, '', '/next');
   const shell = nextPage();

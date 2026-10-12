@@ -285,10 +285,6 @@ export const useNavigation = (
         if (!canCommit()) {
           return;
         }
-        request.target = {
-          path: state.requested[0],
-          query: state.requested[1],
-        };
         request.queuedState = state;
         const getPreviousPatches = request.getPatches;
         request.getPatches = (current) => [
@@ -376,6 +372,7 @@ export const useNavigation = (
           ? 'replace'
           : options.history;
       if (outcome.type === 'reused') {
+        request.target = outcome.route;
         startTransition(() => {
           queueCommit(makeStateForAttempt(outcome, historyIntent), () => ({
             [ROUTE_ID]: [outcome.route.path, outcome.route.query],
@@ -414,16 +411,17 @@ export const useNavigation = (
         setNavigationError({ error });
         throw error;
       }
-      if (instantResponse && outcome.follows === initialFollows) {
-        cache.learnStaticFromElements(outcome.elements);
-        startTransition(() => queueCommit({ ...instantState }, () => ({})));
-        return;
-      }
       const destination = resolveServerRedirect(
         outcome.elements,
         makeStateForAttempt(outcome, historyIntent),
         outcome.route.path,
       );
+      request.target = destination.route;
+      if (instantResponse && outcome.follows === initialFollows) {
+        cache.learnStaticFromElements(outcome.elements);
+        startTransition(() => queueCommit({ ...instantState }, () => ({})));
+        return;
+      }
       const finalState = makeStateForAttempt(
         { ...destination, follows: outcome.follows },
         historyIntent,
