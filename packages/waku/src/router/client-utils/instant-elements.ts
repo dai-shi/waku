@@ -13,7 +13,7 @@ export const useMergeInstantElements = () => {
   return useCallback(
     (
       data: Promise<Elements>,
-      isCurrent: () => boolean,
+      canCommit: () => boolean,
       pin: (key: string | symbol) => boolean,
       base?: Elements,
       overlay?: Elements,
@@ -21,11 +21,11 @@ export const useMergeInstantElements = () => {
       let patch = overlay ?? {};
       const mergeResults = new WeakMap<Promise<Elements>, Elements>();
       const incoming = mergeElements(data, (prev, recovered) => {
-        if (!isCurrent()) {
+        if (!canCommit()) {
           return prev;
         }
         const merged = Promise.resolve(prev).then((current) => {
-          if (!isCurrent()) {
+          if (!canCommit()) {
             return current;
           }
           const available = base
@@ -64,7 +64,7 @@ export const useMergeInstantElements = () => {
       const response = incoming.then((resolved) => {
         startTransition(() => {
           void mergeElements(resolved, (prev) => {
-            if (!isCurrent()) {
+            if (!canCommit()) {
               return prev;
             }
             const shouldMerge = (current: Elements, key: string) =>
@@ -82,7 +82,7 @@ export const useMergeInstantElements = () => {
               return prev;
             }
             return prev.then((current) => {
-              if (!isCurrent()) {
+              if (!canCommit()) {
                 return current;
               }
               const added = combineElements({}, resolved, {

@@ -29,6 +29,7 @@ import {
 } from '../src/router/client-utils/router-state.js';
 import { Router, useRouter } from '../src/router/client.js';
 import {
+  HAS404_ID,
   IS_STATIC_ID,
   ROUTE_ID,
 } from '../src/router/isomorphic-utils/router-protocol.js';
@@ -492,6 +493,186 @@ test('a superseded instant response cannot add slots while its replacement is pe
     act(() => root.unmount());
     next.resolve({});
     replacement.resolve({});
+  }
+});
+
+test.each([307, 404])(
+  'a batched instant follow replaces its own provisional slots (%s)',
+  async (status) => {
+    window.history.replaceState({}, '', '/next');
+    respond(
+      '/next',
+      routePayload('/next', nextPage(), {
+        clock: 'before',
+        [HAS404_ID]: true,
+        [ETAGS_ID]: { clock: 'before-v1' },
+      }),
+    );
+    respond('/start', startPayload());
+    const next = Promise.withResolvers<Payload>();
+    respond('/next', next.promise);
+    const target = status === 404 ? '/404' : '/target';
+    respond(
+      target,
+      routePayload(target, <Slot id="clock" />, {
+        clock: 'followed-clock',
+        [ETAGS_ID]: { clock: 'followed-v2' },
+      }),
+    );
+    const container = document.createElement('div');
+    const root = createRoot(container);
+    try {
+      await act(async () => root.render(<Router />));
+      await act(async () => {
+        await router!.push('/start');
+      });
+      await act(async () => {
+        const navigated = router!.push('/next', { unstable_instant: true });
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        expect(container.textContent).toBe('start');
+        next.reject(
+          createCustomError('follow', {
+            status,
+            ...(status === 307 ? { location: target } : {}),
+          }),
+        );
+        await navigated;
+      });
+      expect(container.textContent).toBe('followed-clock');
+      expect(getDefaultRootStore()?.etags.clock).toBe('followed-v2');
+      expect(window.location.pathname).toBe(status === 404 ? '/next' : target);
+    } finally {
+      await act(async () => {
+        root.unmount();
+        next.resolve({});
+      });
+    }
+  },
+);
+
+test('an instant follow preserves an identical action write while replacing its own holes', async () => {
+  const rootElement = (
+    <>
+      <CaptureRouter />
+      <Suspense fallback="counter-waiting">
+        <Slot id="counter" />
+      </Suspense>
+      <Children />
+    </>
+  );
+  window.history.replaceState({}, '', '/next');
+  respond(
+    '/next',
+    routePayload('/next', nextPage(), {
+      root: rootElement,
+      clock: 'before',
+      counter: 'counter-before',
+      [ETAGS_ID]: { clock: 'before-v1', counter: 'counter-v1' },
+    }),
+  );
+  respond('/start', startPayload());
+  const next = Promise.withResolvers<Payload>();
+  const target = Promise.withResolvers<Payload>();
+  respond('/next', next.promise);
+  respond('/target', target.promise);
+  testHoisted.responses.set('/RSC/F/action/update.txt', [
+    {
+      clock: 'before',
+      [ETAGS_ID]: { clock: 'before-v1' },
+      _value: 'updated',
+    },
+  ]);
+  const container = document.createElement('div');
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(<Router />));
+    await act(async () => {
+      await router!.push('/start');
+    });
+    await act(async () => {
+      const navigated = router!.push('/next', { unstable_instant: true });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      next.reject(
+        createCustomError('redirect', { status: 307, location: '/target' }),
+      );
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(await callServerRsc('action#update', [])).toBe('updated');
+      target.resolve(
+        routePayload('/target', <Slot id="clock" />, {
+          root: rootElement,
+          clock: 'followed-clock',
+          counter: 'counter-after',
+          [ETAGS_ID]: { clock: 'followed-v2', counter: 'counter-v2' },
+        }),
+      );
+      await navigated;
+    });
+    expect(container.textContent).toBe('counter-afterbefore');
+    expect(getDefaultRootStore()?.etags).toMatchObject({
+      clock: 'before-v1',
+      counter: 'counter-v2',
+    });
+    expect(window.location.pathname).toBe('/target');
+  } finally {
+    await act(async () => {
+      root.unmount();
+      next.resolve({});
+      target.resolve({});
+    });
+  }
+});
+
+test('an instant follow replaces an uncommitted prefetched immutable slot', async () => {
+  window.history.replaceState({}, '', '/start');
+  respond('/start', routePayload('/start', 'start'));
+  const next = Promise.withResolvers<Payload>();
+  respond('/next', next.promise, 'q=1');
+  respond(
+    '/next',
+    routePayload(
+      '/next',
+      <Slot id="clock" />,
+      {
+        clock: 'prefetched-clock',
+        [ETAGS_ID]: { clock: IMMUTABLE_ETAG },
+      },
+      'q=2',
+    ),
+    'q=2',
+  );
+  respond(
+    '/target',
+    routePayload('/target', <Slot id="clock" />, {
+      clock: 'followed-clock',
+      [ETAGS_ID]: { clock: 'followed-v2' },
+    }),
+  );
+  const container = document.createElement('div');
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(<Router />));
+    await act(async () => {
+      router!.prefetch('/next?q=1');
+      router!.prefetch('/next?q=2');
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    await act(async () => {
+      const navigated = router!.push('/next?q=1', { unstable_instant: true });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(container.textContent).toBe('start');
+      next.reject(
+        createCustomError('redirect', { status: 307, location: '/target' }),
+      );
+      await navigated;
+    });
+    expect(container.textContent).toBe('followed-clock');
+    expect(getDefaultRootStore()?.etags.clock).toBe('followed-v2');
+    expect(window.location.pathname).toBe('/target');
+  } finally {
+    await act(async () => {
+      root.unmount();
+      next.resolve({});
+    });
   }
 });
 

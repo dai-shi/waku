@@ -51,7 +51,7 @@ export const useStartInstantPaint = (
       attempt: InstantAttempt,
       state: RouterState,
       signal: AbortSignal,
-      isCurrent: () => boolean,
+      canCommit: () => boolean,
     ) => {
       if (
         !canPaintInstantOverlay(
@@ -85,7 +85,7 @@ export const useStartInstantPaint = (
           );
       return mergeInstantElements(
         abortable(response, signal),
-        isCurrent,
+        canCommit,
         pinForSwr(getElements),
         prefetchedElements,
         overlay,

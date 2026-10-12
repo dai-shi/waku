@@ -239,7 +239,9 @@ An instant request remains cancellable until its settlement commits, even after
 its navigation promise resolves. Completion queues a distinct snapshot carrying
 the same intent, so a render of the eager shell cannot release that ownership.
 After loading, cancellation invalidates queued work without aborting the
-response's remaining streamed values.
+response's remaining streamed values. Once committed, a navigation's updates
+remain replayable when React rebases the queue; releasing the pending request
+does not cancel those updates.
 
 Cached and same-RSC-route commits queue before the first `await`, retaining the
 caller's React priority. Transition callbacks run immediately, so wrapping an
@@ -253,7 +255,9 @@ any required response slots to the replacement navigation. The state symbol is
 restored even when its value
 is `undefined`: an initial snapshot has no navigation intent to retain. Ordinary
 response conflicts are checked against the latest queued elements, not only the
-last rendered snapshot.
+last rendered snapshot. Redirect and 404 follows exclude their own instant
+holes and prefetched writes from these checks, while preserving independent
+action writes even when their values and validators match.
 
 Snapshots of one intent retain their requested-route tuple by reference. The
 layout effect recognizes that identity and does not repeat its scroll or history
