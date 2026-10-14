@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 
-import { Suspense, act, use, useLayoutEffect } from 'react';
+import { Suspense, act, startTransition, use, useLayoutEffect } from 'react';
 import type { ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
@@ -233,6 +233,123 @@ test('partial actions survive the pending normal-navigation queue', async () => 
     expect(view.textContent).toContain('page two');
     expect(view.querySelector('[data-sidebar]')?.textContent).toBe('action');
     expect(window.location.pathname).toBe('/two');
+  } finally {
+    await act(async () => {
+      response.resolve({});
+      await pushed;
+      await flush();
+    });
+  }
+});
+
+test('a replacement preserves client updates queued before it starts', async () => {
+  const state = Symbol('client state');
+  const ClientState = () => {
+    const elements = use(useElementsPromise());
+    return <output data-client-state>{String(elements[state] ?? '')}</output>;
+  };
+  mocks.queue.push({
+    ...payload('/one', <p>page one</p>),
+    root: (
+      <>
+        <Probe id="a" />
+        <ClientState />
+        <Children />
+      </>
+    ),
+    sidebar: 'before',
+    _etags: { root: 1, sidebar: 'v1' },
+  });
+  const view = await mount(
+    <Router initialRoute={{ path: '/one', query: '', hash: '' }} />,
+  );
+  await act(async () => {
+    await controls.get('a')!.merge({ [state]: 'before' });
+    await flush();
+  });
+  const first = defer<Elements>();
+  const second = defer<Elements>();
+  mocks.queue.push(first.promise, second.promise);
+  let pushed: Promise<void> | undefined;
+  let replacement: Promise<void> | undefined;
+  try {
+    await act(async () => {
+      pushed = controls.get('a')!.router.push('/two');
+      await flush();
+    });
+    await act(async () => {
+      startTransition(() => {
+        void controls.get('a')!.merge({ sidebar: 'client', [state]: 'client' });
+        replacement = controls.get('a')!.router.push('/three');
+      });
+      await flush();
+    });
+    await act(async () => {
+      second.resolve({
+        [ROUTE_ID]: ['/three', ''],
+        [IS_STATIC_ID]: false,
+        [getRouteSlotId('/three')]: <p>page three</p>,
+      });
+      await replacement;
+      await flush();
+    });
+    expect(view.textContent).toContain('page three');
+    expect(view.querySelector('[data-sidebar]')?.textContent).toBe('client');
+    expect(view.querySelector('[data-client-state]')?.textContent).toBe(
+      'client',
+    );
+    expect(window.location.pathname).toBe('/three');
+  } finally {
+    await act(async () => {
+      first.resolve({});
+      second.resolve({});
+      await Promise.all([pushed, replacement]);
+      await flush();
+    });
+  }
+});
+
+test('a query navigation preserves action data without taking its old composition', async () => {
+  mocks.queue.push({
+    ...payload('/one', <p>initial page</p>),
+    sidebar: 'before',
+  });
+  const view = await mount(
+    <Router initialRoute={{ path: '/one', query: '', hash: '' }} />,
+  );
+  const response = defer<Elements>();
+  mocks.queue.push(response.promise);
+  let pushed: Promise<void> | undefined;
+  try {
+    await act(async () => {
+      pushed = controls.get('a')!.router.push('/one?q=next');
+      await flush();
+    });
+    mocks.queue.push({
+      [getRouteSlotId('/one')]: <p>old query action page</p>,
+      sidebar: 'action',
+      _value: 'updated',
+    });
+    await act(async () => {
+      expect(await unstable_callServerRsc('actions#update', [])).toBe(
+        'updated',
+      );
+      await flush();
+    });
+    await act(async () => {
+      response.resolve({
+        ...payload('/one', <p>destination page</p>),
+        [ROUTE_ID]: ['/one', 'q=next'],
+        sidebar: 'navigation',
+      });
+      await pushed;
+      await flush();
+    });
+    expect(view.textContent).toContain('destination page');
+    expect(view.textContent).not.toContain('old query action page');
+    expect(view.querySelector('[data-sidebar]')?.textContent).toBe('action');
+    expect(controls.get('a')!.router.query).toBe('q=next');
+    expect(window.location.search).toBe('?q=next');
   } finally {
     await act(async () => {
       response.resolve({});

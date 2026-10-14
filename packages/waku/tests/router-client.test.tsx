@@ -349,7 +349,6 @@ vi.mock('../src/minimal/client-runtime.js', async () => {
       storeRef.current = {
         applyCustom: (update) => {
           testHoisted.onMerge?.();
-          testHoisted.mergeTypes.push('sync');
           const results = new WeakMap<
             Promise<ElementsMap>,
             Promise<ElementsMap>
@@ -411,6 +410,9 @@ vi.mock('../src/minimal/client-runtime.js', async () => {
       fn = (data, merge) => {
         const dataPromise = Promise.resolve(data);
         if (merge) {
+          testHoisted.mergeTypes.push(
+            data instanceof Promise || 'then' in data ? 'async' : 'sync',
+          );
           store?.applyCustom((prev) =>
             merge(
               prev,

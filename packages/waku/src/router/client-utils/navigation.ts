@@ -28,6 +28,8 @@ import type { RouteProps } from '../isomorphic-utils/route-path.js';
 import {
   IS_STATIC_ID,
   ROUTE_ID,
+  getRouteFromElements,
+  getRouteSlotId,
   has404FromElements,
 } from '../isomorphic-utils/router-protocol.js';
 import {
@@ -252,26 +254,16 @@ export const useNavigation = (
             requestedPathChanged || attempt.route.path !== settledRoute.path,
           follows: attempt.follows,
         });
-      const queueCommit = (
-        state: RouterState,
-        getPatch: (current: Elements) => Elements,
-      ) => {
+      const createCommit = (state: RouterState, patch: Elements): Elements => {
         if (requestRef.current !== request) {
-          return;
+          return {};
         }
         request.target = {
           path: state.requested[0],
           query: state.requested[1],
         };
         request.queuedState = state;
-        void mergeElements({}, (prev) =>
-          prev.then((current) =>
-            combineElements(
-              current,
-              combineElements(getPatch(current), { [ROUTER_STATE_ID]: state }),
-            ),
-          ),
-        );
+        return combineElements(patch, { [ROUTER_STATE_ID]: state });
       };
       if (
         cache.canReuseStaticRoute(nextRoute, getElements()) ||
@@ -280,9 +272,11 @@ export const useNavigation = (
         const routePatch = {
           [ROUTE_ID]: [nextRoute.path, nextRoute.query],
         };
-        queueCommit(
-          makeStateForAttempt(initialAttempt, options.history),
-          () => routePatch,
+        void mergeElements(
+          createCommit(
+            makeStateForAttempt(initialAttempt, options.history),
+            routePatch,
+          ),
         );
         return;
       }
@@ -295,106 +289,139 @@ export const useNavigation = (
             controller.signal,
           )
         : undefined;
-      const loading = cache.load(nextRoute, {
-        signal: controller.signal,
-        refetch: shouldRefetch,
-        has404,
-        settled: settledRoute,
-        base,
-        url: routeUrl,
-        follows: initialFollows,
-        onBuildIdMismatch: reloadWithUrl,
-        onInvalidate: (url) => {
-          if (!controller.signal.aborted) {
-            reloadWithUrl(url);
-          }
-        },
-        ...(instantResponse ? { adopt: instantResponse } : {}),
-      });
-      if (!instantResponse) {
-        void mergeElements(loading.then(() => ({})));
-      }
-      const outcome = await loading;
-      if (outcome.type === 'aborted' || requestRef.current !== request) {
-        return;
-      }
-      const historyIntent =
-        instantResponse &&
-        outcome.follows > initialFollows &&
-        options.history !== null
-          ? 'replace'
-          : options.history;
-      if (outcome.type === 'reused') {
-        const routePatch = {
-          [ROUTE_ID]: [outcome.route.path, outcome.route.query],
-        };
-        startTransition(() => {
-          queueCommit(
+      const loadElements = async (): Promise<Elements> => {
+        const outcome = await cache.load(nextRoute, {
+          signal: controller.signal,
+          refetch: shouldRefetch,
+          has404,
+          settled: settledRoute,
+          base,
+          url: routeUrl,
+          follows: initialFollows,
+          onBuildIdMismatch: reloadWithUrl,
+          onInvalidate: (url) => {
+            if (!controller.signal.aborted) {
+              reloadWithUrl(url);
+            }
+          },
+          ...(instantResponse ? { adopt: instantResponse } : {}),
+        });
+        if (outcome.type === 'aborted' || requestRef.current !== request) {
+          return {};
+        }
+        const historyIntent =
+          instantResponse &&
+          outcome.follows > initialFollows &&
+          options.history !== null
+            ? 'replace'
+            : options.history;
+        if (outcome.type === 'reused') {
+          const routePatch = {
+            [ROUTE_ID]: [outcome.route.path, outcome.route.query],
+          };
+          return createCommit(
             makeStateForAttempt(outcome, historyIntent),
-            () => routePatch,
+            routePatch,
           );
-        });
-        return;
-      }
-      if (outcome.type === 'external') {
-        commitHistory(outcome.from, historyIntent);
-        finishRequest();
-        window.location.replace(outcome.url.href);
-        throw outcome.error;
-      }
-      if (outcome.type === 'failed') {
-        const { error } = outcome;
-        commitHistory(outcome.url, historyIntent);
-        const failureState: RouterState = {
-          ...makeRouterState(outcome.route, outcome.url, {
-            history: null,
-            scroll: false,
-            pathChanged: false,
-            follows: outcome.follows,
-          }),
-          failedFrom: settledRoute,
-        };
-        void mergeElements({
-          ...(instantResponse
-            ? {
-                [ROUTE_ID]: base[ROUTE_ID],
-                [IS_STATIC_ID]: base[IS_STATIC_ID],
-              }
-            : {}),
-          [ROUTER_STATE_ID]: failureState,
-        });
-        finishRequest();
-        setNavigationError({ error });
-        throw error;
-      }
-      if (instantResponse && outcome.follows === initialFollows) {
-        cache.learnStaticFromElements(outcome.elements);
-        finishRequest();
-        return;
-      }
-      const destination = resolveServerRedirect(
-        outcome.elements,
-        makeStateForAttempt(outcome, historyIntent),
-        outcome.route.path,
-      );
-      const finalState = makeStateForAttempt(
-        { ...destination, follows: outcome.follows },
-        historyIntent,
-      );
-      startTransition(() => {
+        }
+        if (outcome.type === 'external') {
+          commitHistory(outcome.from, historyIntent);
+          finishRequest();
+          window.location.replace(outcome.url.href);
+          throw outcome.error;
+        }
+        if (outcome.type === 'failed') {
+          const { error } = outcome;
+          commitHistory(outcome.url, historyIntent);
+          const failureState: RouterState = {
+            ...makeRouterState(outcome.route, outcome.url, {
+              history: null,
+              scroll: false,
+              pathChanged: false,
+              follows: outcome.follows,
+            }),
+            failedFrom: settledRoute,
+          };
+          void mergeElements({
+            ...(instantResponse
+              ? {
+                  [ROUTE_ID]: base[ROUTE_ID],
+                  [IS_STATIC_ID]: base[IS_STATIC_ID],
+                }
+              : {}),
+            [ROUTER_STATE_ID]: failureState,
+          });
+          finishRequest();
+          setNavigationError({ error });
+          throw error;
+        }
+        if (instantResponse && outcome.follows === initialFollows) {
+          cache.learnStaticFromElements(outcome.elements);
+          finishRequest();
+          return {};
+        }
+        const destination = resolveServerRedirect(
+          outcome.elements,
+          makeStateForAttempt(outcome, historyIntent),
+          outcome.route.path,
+        );
+        const finalState = makeStateForAttempt(
+          { ...destination, follows: outcome.follows },
+          historyIntent,
+        );
         if (instantResponse) {
           const patch = buildMergePatch(outcome, getElements(), base, {
             settled: settledRoute,
           });
-          queueCommit(finalState, () => patch);
-        } else {
-          queueCommit(finalState, (current) =>
-            buildMergePatch(outcome, current, base, {
-              settled: settledRoute,
-            }),
-          );
+          return createCommit(finalState, patch);
         }
-      });
+        return createCommit(finalState, outcome.elements);
+      };
+      const incoming = loadElements();
+      if (instantResponse) {
+        const data = await incoming;
+        if (requestRef.current === request && getRouterState(data)) {
+          startTransition(() => {
+            void mergeElements(data);
+          });
+        }
+        return;
+      }
+      const data = await mergeElements(incoming, (prev, incoming) =>
+        Promise.all([prev, incoming]).then(([current, data]) => {
+          const state = getRouterState(data);
+          if (!state) {
+            return current;
+          }
+          const patch = buildMergePatch(
+            { route: nextRoute, elements: data },
+            current,
+            base,
+            { settled: settledRoute },
+          );
+          return combineElements(
+            current,
+            combineElements(patch, { [ROUTER_STATE_ID]: state }),
+          );
+        }),
+      );
+      const responseRoute = getRouteFromElements(data);
+      if (
+        requestRef.current === request &&
+        responseRoute &&
+        !isSameRscRoute(responseRoute, settledRoute)
+      ) {
+        const slotId = getRouteSlotId(responseRoute.path);
+        if (!Object.hasOwn(data, slotId)) {
+          return;
+        }
+        const routePatch = combineElements({}, data, {
+          filter: (key) => key === slotId,
+        });
+        startTransition(() => {
+          void mergeElements(routePatch);
+        });
+      }
     },
     [
       cache,

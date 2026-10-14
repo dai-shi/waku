@@ -215,10 +215,12 @@ interpreting it.
 | Applied snapshot identity and destination  | Router's layout effect     | Write history and scroll once for each committed intent.       |
 | Fetch error                                | Router's React state       | Render the failure and clear it when another request starts.   |
 
-An uncached ordinary navigation queues a pending element merge when loading
-starts, so Root remains pending during the fetch. The response is reconciled
-against the latest queued elements, preserving partial action and client merges
-received while waiting.
+An ordinary navigation queues its pending response when loading starts. Later
+partial action and client merges follow that response in Root's queue. Router
+reconciles values retained from the request base against the queued elements,
+preserving independent updates. On completion, navigation finalizes its
+destination's route composition, so an update for the previous query cannot
+replace it; shared action slots are kept.
 
 Fetching and committing are different boundaries. An ordinary fetch can finish
 while a client component is suspended; its navigation promise does not wait for
