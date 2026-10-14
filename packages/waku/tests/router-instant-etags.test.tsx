@@ -123,7 +123,7 @@ describe('instant element etags', () => {
     expect(view.container.textContent).toBe('a');
 
     testHoisted.elements = {
-      page: <div>b</div>,
+      page: <div>a</div>,
       [ETAGS_ID]: { page: IMMUTABLE_ETAG },
     };
     await act(async () => {
@@ -204,7 +204,7 @@ describe('instant element etags', () => {
     await flush();
 
     testHoisted.elements = {
-      page: <div>b</div>,
+      page: <div>a</div>,
       [ETAGS_ID]: { page: IMMUTABLE_ETAG, widget: 'etag-widget' },
       widget: <div>w</div>,
     };

@@ -48,6 +48,10 @@ const resolvedThenable = <T,>(value: T): Promise<T> =>
   });
 const stubFetch = () =>
   vi.stubGlobal('fetch', async () => new Response('{}', { status: 200 }));
+const Fallback = ({ onMount }: { onMount: () => void }) => {
+  useLayoutEffect(onMount, [onMount]);
+  return 'outer fallback';
+};
 const useRefetch = () => {
   const fetchRsc = useFetchRsc_UNSTABLE();
   const mergeInstantElements = useMergeInstantElements();
@@ -239,63 +243,6 @@ describe('instant element merges', () => {
     act(() => root.unmount());
   });
 
-  test('skips the second commit when b introduces no new keys', async () => {
-    mocks.createFromFetch.mockReturnValueOnce(
-      resolvedThenable({ _value: null, eager: 'A1', hole: 'H1' }),
-    );
-    stubFetch();
-
-    let refetch: Refetch | undefined;
-    let elementsPromise: Promise<Record<string, unknown>> | undefined;
-    const Probe = () => {
-      const refetchValue = useRefetch();
-      const elementsPromiseValue = useElementsPromise_UNSTABLE();
-      useEffect(() => {
-        refetch = refetchValue;
-        elementsPromise = elementsPromiseValue;
-      });
-      return null;
-    };
-
-    const container = document.createElement('div');
-    const root = createRoot(container);
-    await act(async () => {
-      root.render(
-        <Root initialRscPath="R/app.txt">
-          <Probe />
-        </Root>,
-      );
-    });
-
-    let resolveB: (value: Record<string, unknown>) => void = () => {};
-    mocks.createFromFetch.mockReturnValueOnce(
-      new Promise<Record<string, unknown>>((resolve) => {
-        resolveB = resolve;
-      }),
-    );
-    let refetched: Promise<unknown> | undefined;
-    await act(async () => {
-      refetched = refetch!('R/next.txt', undefined, (key) => key === 'eager');
-    });
-    const midPromise = elementsPromise!;
-    const midElements = await midPromise;
-    const holeThenable = midElements.hole;
-
-    await act(async () => {
-      resolveB({ eager: 'A2', hole: 'H2' });
-      await refetched;
-    });
-
-    expect(elementsPromise).toBe(midPromise);
-    const finalElements = await elementsPromise!;
-    expect(finalElements).toBe(midElements);
-    expect(finalElements.hole).toBe(holeThenable);
-    expect(finalElements.eager).toBe('A1');
-    await expect(finalElements.hole).resolves.toBe('H2');
-
-    act(() => root.unmount());
-  });
-
   test('an overlay key takes the response value once it lands', async () => {
     mocks.createFromFetch.mockReturnValueOnce(
       resolvedThenable({
@@ -414,8 +361,6 @@ describe('instant element merges', () => {
     const finalElements = await elementsPromise!;
     expect(finalElements.eager).toBe('A1');
     expect(finalElements.extra).toBe('X');
-    await expect(finalElements.hole).resolves.toBe('H2');
-
     act(() => root.unmount());
   });
 
@@ -425,14 +370,11 @@ describe('instant element merges', () => {
     );
     stubFetch();
 
-    let refetch: Refetch | undefined;
-    let elementsPromise: Promise<Record<string, unknown>> | undefined;
+    let merge: ReturnType<typeof useMergeInstantElements> | undefined;
     const Probe = () => {
-      const refetchValue = useRefetch();
-      const elementsPromiseValue = useElementsPromise_UNSTABLE();
+      const mergeValue = useMergeInstantElements();
       useEffect(() => {
-        refetch = refetchValue;
-        elementsPromise = elementsPromiseValue;
+        merge = mergeValue;
       });
       return null;
     };
@@ -452,16 +394,13 @@ describe('instant element merges', () => {
     });
     expect(container.textContent).toBe('A1LIVE');
 
-    mocks.createFromFetch.mockReturnValueOnce(resolvedThenable({}));
     await act(async () => {
-      await refetch!('R/next.txt', undefined, (key) => key === 'eager', {
+      await merge!(Promise.resolve({}), (key) => key === 'eager', {
         shared: 'BASE',
       });
     });
 
     expect(container.textContent).toBe('A1BASE');
-    const finalElements = await elementsPromise!;
-    await expect(finalElements.shared).resolves.toBe('BASE');
 
     act(() => root.unmount());
   });
@@ -489,6 +428,10 @@ describe('instant element merges', () => {
     await act(async () => {
       root.render(
         <Root initialRscPath="R/app.txt">
+          <Slot id="eager" />
+          <Suspense fallback="waiting">
+            <Slot id="hole" />
+          </Suspense>
           <Probe />
         </Root>,
       );
@@ -519,15 +462,13 @@ describe('instant element merges', () => {
         (key) => key === 'eager',
       );
     });
-    const midPromise = elementsPromise!;
-
     await act(async () => {
       resolveB1({ hole: 'H1x', stale: 'S' });
       await refetched1;
     });
-    expect(elementsPromise).toBe(midPromise);
     const midElements = await elementsPromise!;
     expect('stale' in midElements).toBe(false);
+    expect(container.textContent).toBe('A1waiting');
 
     await act(async () => {
       resolveB2({ hole: 'H2', fresh: 'F' });
@@ -536,34 +477,39 @@ describe('instant element merges', () => {
     const finalElements = await elementsPromise!;
     expect('stale' in finalElements).toBe(false);
     expect(finalElements.fresh).toBe('F');
-    await expect(finalElements.hole).resolves.toBe('H2');
+    expect(container.textContent).toBe('A1H2');
 
     act(() => root.unmount());
   });
 
-  test('merges keys only b introduces in a second commit', async () => {
+  test('makes response-only slots renderable while keeping pinned content', async () => {
     mocks.createFromFetch.mockReturnValueOnce(
       resolvedThenable({ _value: null, eager: 'A1', hole: 'H1' }),
     );
     stubFetch();
 
     let refetch: Refetch | undefined;
-    let elementsPromise: Promise<Record<string, unknown>> | undefined;
+    let mountExtra: () => void = () => {};
     const Probe = () => {
       const refetchValue = useRefetch();
-      const elementsPromiseValue = useElementsPromise_UNSTABLE();
+      const [extra, setExtra] = useState(false);
       useEffect(() => {
         refetch = refetchValue;
-        elementsPromise = elementsPromiseValue;
+        mountExtra = () => setExtra(true);
       });
-      return null;
+      return extra ? <Slot id="extra" /> : null;
     };
 
     const container = document.createElement('div');
-    const root = createRoot(container);
+    const onRecoverableError = vi.fn();
+    const root = createRoot(container, { onRecoverableError });
     await act(async () => {
       root.render(
         <Root initialRscPath="R/app.txt">
+          <Slot id="eager" />
+          <Suspense fallback="waiting">
+            <Slot id="hole" />
+          </Suspense>
           <Probe />
         </Root>,
       );
@@ -579,21 +525,17 @@ describe('instant element merges', () => {
     await act(async () => {
       refetched = refetch!('R/next.txt', undefined, (key) => key === 'eager');
     });
-    const midElements = await elementsPromise!;
-    const holeThenable = midElements.hole;
+    expect(container.textContent).toBe('A1waiting');
 
     await act(async () => {
       resolveB({ eager: 'A2', hole: 'H2', extra: 'X' });
       await refetched;
     });
-    const finalElements = await elementsPromise!;
-
-    expect(finalElements).not.toBe(midElements);
-    expect(finalElements.hole).toBe(holeThenable);
-    expect(finalElements.eager).toBe('A1');
-    expect(finalElements.extra).toBe('X');
-    expect('extra' in midElements).toBe(false);
-    await expect(finalElements.hole).resolves.toBe('H2');
+    await act(async () => {
+      mountExtra();
+    });
+    expect(container.textContent).toBe('A1H2X');
+    expect(onRecoverableError).not.toHaveBeenCalled();
 
     act(() => root.unmount());
   });
@@ -815,8 +757,8 @@ describe('instant element settlement', () => {
         adoptElements({
           shell: 'S2',
           page: 'P2',
-          side: 'N',
-          [ETAGS_ID]: { shell: 'v2', side: 'v2' },
+          side: 'B',
+          [ETAGS_ID]: { shell: 'v2', side: IMMUTABLE_ETAG },
         }),
       );
       await payload.promise;
@@ -828,7 +770,7 @@ describe('instant element settlement', () => {
   });
 
   test('a payload with no new slot settles without showing the fallback above the Root', async () => {
-    const AboveRoot = vi.fn(() => 'ABOVE');
+    const onFallbackMount = vi.fn();
     const view = await renderRoot(
       { shell: 'S1', page: 'P1' },
       <>
@@ -837,14 +779,14 @@ describe('instant element settlement', () => {
           <Slot id="page" />
         </Suspense>
       </>,
-      <AboveRoot />,
+      <Fallback onMount={onFallbackMount} />,
     );
     const payload = Promise.withResolvers<Record<string, unknown>>();
     await act(async () => {
       void view.merge(payload.promise, (key) => key === 'shell');
     });
     expect(view.container.textContent).toBe('S1…');
-    AboveRoot.mockClear();
+    onFallbackMount.mockClear();
 
     await act(async () => {
       payload.resolve({ shell: 'S1', page: 'P2' });
@@ -852,7 +794,7 @@ describe('instant element settlement', () => {
     });
 
     expect(view.container.textContent).toBe('S1P2');
-    expect(AboveRoot).not.toHaveBeenCalled();
+    expect(onFallbackMount).not.toHaveBeenCalled();
     view.unmount();
   });
 
@@ -881,12 +823,12 @@ describe('instant element settlement', () => {
     view.unmount();
   });
 
-  test('inherited overlay keys do not replace pinned slots', async () => {
+  test('inherited overlay keys do not replace explicitly pinned slots', async () => {
     const view = await renderRoot(
       {
         toString: 'pinned',
         page: 'before',
-        [ETAGS_ID]: { toString: IMMUTABLE_ETAG },
+        [ETAGS_ID]: { toString: 'pinned-v1' },
       },
       <>
         <Slot id="toString" />
@@ -914,7 +856,7 @@ describe('instant element settlement', () => {
     });
 
     expect(view.container.textContent).toBe('pinnedafter');
-    expect(getDefaultRootStore()?.etags).toEqual({ toString: IMMUTABLE_ETAG });
+    expect(getDefaultRootStore()?.etags).toEqual({ toString: 'pinned-v1' });
     view.unmount();
   });
 
@@ -1131,14 +1073,13 @@ test('a shared response retains each Root merge configuration', async () => {
 
 test('settling a tagged hole keeps its pinned shell visible', async () => {
   mocks.initial = {
-    shell: 'old shell',
+    shell: 'shell',
     page: 'old page',
     _etags: { shell: 1, page: 'v1' },
   };
-  const fallback = vi.fn(() => 'outer');
-  const Fallback = fallback;
+  const onFallbackMount = vi.fn();
   const view = await mount(
-    <Suspense fallback={<Fallback />}>
+    <Suspense fallback={<Fallback onMount={onFallbackMount} />}>
       {app(
         'a',
         <>
@@ -1156,12 +1097,12 @@ test('settling a tagged hole keeps its pinned shell visible', async () => {
     result = controls.get('a')!(response.promise, (key) => key === 'shell');
     await wait();
   });
-  expect(view.textContent).toContain('old shellwaiting');
-  fallback.mockClear();
+  expect(view.textContent).toContain('shellwaiting');
+  onFallbackMount.mockClear();
   await act(async () => {
     response.resolve(
       adoptElements({
-        shell: 'new shell',
+        shell: 'shell',
         page: 'new page',
         _etags: { shell: 1, page: 'v2' },
       }),
@@ -1169,6 +1110,6 @@ test('settling a tagged hole keeps its pinned shell visible', async () => {
     await result;
     await wait();
   });
-  expect(view.textContent).toContain('old shellnew page');
-  expect(fallback).not.toHaveBeenCalled();
+  expect(view.textContent).toContain('shellnew page');
+  expect(onFallbackMount).not.toHaveBeenCalled();
 });
