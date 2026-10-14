@@ -14,8 +14,14 @@ import {
 } from '../src/minimal/client.js';
 import { unstable_createCustomError as createCustomError } from '../src/minimal/server.js';
 import * as loader from '../src/router/client-core-utils/load.js';
-import { ErrorBoundary, Router, useRouter } from '../src/router/client.js';
 import {
+  ErrorBoundary,
+  Router,
+  Slice,
+  useRouter,
+} from '../src/router/client.js';
+import {
+  HAS404_ID,
   IS_ORIGIN_ID,
   IS_STATIC_ID,
   ROUTE_ID,
@@ -174,7 +180,9 @@ test('normal navigation queues its pending elements before the response arrives'
     });
     const inspect = vi.fn((prev: Promise<Elements>) => prev);
     await act(async () => {
-      await controls.get('a')!.merge({}, inspect);
+      startTransition(() => {
+        void controls.get('a')!.merge({}, inspect);
+      });
       await flush();
     });
     const queued = inspect.mock.calls.at(-1)![0];
@@ -235,6 +243,149 @@ test('partial actions survive the pending normal-navigation queue', async () => 
     expect(window.location.pathname).toBe('/two');
   } finally {
     await act(async () => {
+      response.resolve({});
+      await pushed;
+      await flush();
+    });
+  }
+});
+
+test('an origin action cannot restore route metadata over a reload rewrite', async () => {
+  const Destination = () => {
+    const elements = use(useElementsPromise());
+    return (
+      <p
+        data-static={String(elements[IS_STATIC_ID])}
+        data-has404={String(elements[HAS404_ID])}
+      >
+        rewritten page
+      </p>
+    );
+  };
+  mocks.queue.push({ ...payload('/one', <p>page one</p>), sidebar: 'before' });
+  const view = await mount(
+    <Router initialRoute={{ path: '/one', query: '', hash: '' }} />,
+  );
+  const response = defer<Elements>();
+  mocks.queue.push(response.promise);
+  let reloaded: Promise<void> | undefined;
+  try {
+    await act(async () => {
+      reloaded = controls.get('a')!.router.reload();
+      await flush();
+    });
+    mocks.queue.push({
+      ...payload('/one', <p>origin action page</p>),
+      [HAS404_ID]: true,
+      [IS_ORIGIN_ID]: true,
+      sidebar: 'action',
+      _value: 'updated',
+    });
+    await act(async () => {
+      expect(await unstable_callServerRsc('actions#update', [])).toBe(
+        'updated',
+      );
+      await flush();
+    });
+    await act(async () => {
+      response.resolve({
+        ...payload('/two', <Destination />),
+        [IS_STATIC_ID]: true,
+        [HAS404_ID]: false,
+        _etags: { root: 1, [getRouteSlotId('/two')]: 1 },
+      });
+      await reloaded;
+      await flush();
+    });
+    expect(view.textContent).toContain('rewritten page');
+    expect(view.textContent).not.toContain('origin action page');
+    expect(view.querySelector('[data-sidebar]')?.textContent).toBe('action');
+    expect(
+      view.querySelector('[data-static]')?.getAttribute('data-static'),
+    ).toBe('true');
+    expect(
+      view.querySelector('[data-has404]')?.getAttribute('data-has404'),
+    ).toBe('false');
+    expect(controls.get('a')!.router.path).toBe('/two');
+    expect(window.location.pathname).toBe('/two');
+  } finally {
+    await act(async () => {
+      response.resolve({});
+      await reloaded;
+      await flush();
+    });
+  }
+});
+
+test('a lazy slice settling during normal navigation keeps the shell visible', async () => {
+  const fallbackMounted = vi.fn();
+  const Fallback = () => {
+    useLayoutEffect(fallbackMounted, []);
+    return <p>outer fallback</p>;
+  };
+  const slice = defer<Elements>();
+  const response = defer<Elements>();
+  mocks.queue.push(
+    {
+      ...payload('/one', <p>page one</p>),
+      root: (
+        <>
+          <Probe id="a" />
+          <Slice id="aside" lazy fallback={<p>slice fallback</p>} />
+          <Children />
+        </>
+      ),
+      _etags: { root: 1 },
+    },
+    slice.promise,
+  );
+  const view = await mount(
+    <Suspense fallback={<Fallback />}>
+      <Router initialRoute={{ path: '/one', query: '', hash: '' }} />
+    </Suspense>,
+  );
+  fallbackMounted.mockClear();
+  mocks.queue.push(response.promise);
+  let pushed: Promise<void> | undefined;
+  try {
+    await act(async () => {
+      pushed = controls.get('a')!.router.push('/two');
+      await flush();
+    });
+    await act(async () => {
+      startTransition(() => {
+        void controls.get('a')!.merge({ sidebar: 'client' });
+      });
+      await flush();
+    });
+    expect(fallbackMounted).not.toHaveBeenCalled();
+    await act(async () => {
+      slice.resolve({
+        'slice:aside': <aside>loaded slice</aside>,
+        _etags: { 'slice:aside': 1 },
+      });
+      await flush();
+    });
+    expect(fallbackMounted).not.toHaveBeenCalled();
+    expect(view.textContent).toContain('page one');
+    expect(window.location.pathname).toBe('/one');
+    await act(async () => {
+      response.resolve({
+        [ROUTE_ID]: ['/two', ''],
+        [IS_STATIC_ID]: false,
+        [getRouteSlotId('/two')]: <p>page two</p>,
+      });
+      await pushed;
+      await flush();
+    });
+    expect(view.textContent).toContain('page two');
+    expect(view.textContent).toContain('loaded slice');
+    expect(view.querySelector('[data-sidebar]')?.textContent).toBe('client');
+    expect(fallbackMounted).not.toHaveBeenCalled();
+    expect(window.location.pathname).toBe('/two');
+  } finally {
+    await act(async () => {
+      slice.resolve({});
       response.resolve({});
       await pushed;
       await flush();

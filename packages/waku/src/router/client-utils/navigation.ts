@@ -31,6 +31,7 @@ import {
   getRouteFromElements,
   getRouteSlotId,
   has404FromElements,
+  isMetaKey,
 } from '../isomorphic-utils/router-protocol.js';
 import {
   canPaintInstantOverlay,
@@ -416,7 +417,8 @@ export const useNavigation = (
           return;
         }
         const routePatch = combineElements({}, data, {
-          filter: (key) => key === slotId,
+          filter: (key) =>
+            typeof key === 'string' && (key === slotId || isMetaKey(key)),
         });
         startTransition(() => {
           void mergeElements(routePatch);

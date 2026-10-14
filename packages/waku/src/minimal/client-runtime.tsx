@@ -375,6 +375,8 @@ const ElementsContext = createContext<Promise<Elements> | null>(null);
  * promise with rejected payloads recovered to an empty record. It returns the
  * replacement promise, or the previous promise to leave the Root unchanged.
  * The callback must be pure; results are memoized for React's updater replay.
+ * Merges use the caller's React priority. Use `startTransition` to keep visible
+ * content when this merge or an earlier queued merge is pending.
  */
 export const useMergeElements_UNSTABLE = () => {
   const store = useRootStore();

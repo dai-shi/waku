@@ -1,3 +1,4 @@
+import { startTransition } from 'react';
 import type { useMergeElements_UNSTABLE as useMergeElements } from 'waku/minimal/client';
 import { encodeSliceId } from '../isomorphic-utils/router-protocol.js';
 import type { FetchRsc } from './caches.js';
@@ -30,7 +31,9 @@ export const createSliceCache = (fetchRsc: FetchRsc) => {
       current[0]
         .then((result) => {
           if (fetchingSlices.get(id) === current) {
-            return mergeElements(result);
+            startTransition(() => {
+              void mergeElements(result);
+            });
           }
         })
         .catch((e) => {

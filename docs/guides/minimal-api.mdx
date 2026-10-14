@@ -644,6 +644,12 @@ Important behavior:
 - If you return only `InnerApp`, previously rendered elements such as `App` stay mounted.
 - If the refetch fails, the existing element map stays in place.
 
+Merges use the caller's React update priority. Wrap background merges in
+`startTransition` to keep the current UI visible while payloads are pending.
+This includes merges after an `await` or in a promise callback, which need their
+own `startTransition`. An urgent merge can show the nearest Suspense fallback
+if an earlier queued merge is pending, even when its own payload is ready.
+
 #### Custom Merges
 
 The optional second argument to `mergeElements` chooses the Root's next element
