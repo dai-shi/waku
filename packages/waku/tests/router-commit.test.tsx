@@ -159,6 +159,89 @@ test('client suspension and urgent unrelated merges do not advance the route', a
   expect(push).toHaveBeenCalledTimes(1);
 });
 
+test('normal navigation queues its pending elements before the response arrives', async () => {
+  mocks.queue.push(payload('/one', <p>page one</p>));
+  const view = await mount(
+    <Router initialRoute={{ path: '/one', query: '', hash: '' }} />,
+  );
+  const settings = defer<Elements>();
+  mocks.queue.push(settings.promise);
+  let pushed: Promise<void> | undefined;
+  try {
+    await act(async () => {
+      pushed = controls.get('a')!.router.push('/settings');
+      await flush();
+    });
+    const inspect = vi.fn((prev: Promise<Elements>) => prev);
+    await act(async () => {
+      await controls.get('a')!.merge({}, inspect);
+      await flush();
+    });
+    const queued = inspect.mock.calls.at(-1)![0];
+    expect(
+      await Promise.race([
+        queued.then(() => 'settled'),
+        flush().then(() => 'pending'),
+      ]),
+    ).toBe('pending');
+    expect(view.textContent).toContain('page one');
+    expect(window.location.pathname).toBe('/one');
+    await act(async () => {
+      settings.resolve(payload('/settings', <p>settings</p>));
+      await pushed;
+      await flush();
+    });
+    expect(view.textContent).toContain('settings');
+    expect(window.location.pathname).toBe('/settings');
+  } finally {
+    await act(async () => {
+      settings.resolve(payload('/settings', <p>settings</p>));
+      await pushed;
+      await flush();
+    });
+  }
+});
+
+test('partial actions survive the pending normal-navigation queue', async () => {
+  mocks.queue.push({ ...payload('/one', <p>page one</p>), sidebar: 'before' });
+  const view = await mount(
+    <Router initialRoute={{ path: '/one', query: '', hash: '' }} />,
+  );
+  const response = defer<Elements>();
+  mocks.queue.push(response.promise);
+  let pushed: Promise<void> | undefined;
+  try {
+    await act(async () => {
+      pushed = controls.get('a')!.router.push('/two');
+      await flush();
+    });
+    mocks.queue.push({ sidebar: 'action', _value: 'updated' });
+    await act(async () => {
+      expect(await unstable_callServerRsc('actions#update', [])).toBe(
+        'updated',
+      );
+      await flush();
+    });
+    await act(async () => {
+      response.resolve({
+        ...payload('/two', <p>page two</p>),
+        sidebar: 'navigation',
+      });
+      await pushed;
+      await flush();
+    });
+    expect(view.textContent).toContain('page two');
+    expect(view.querySelector('[data-sidebar]')?.textContent).toBe('action');
+    expect(window.location.pathname).toBe('/two');
+  } finally {
+    await act(async () => {
+      response.resolve({});
+      await pushed;
+      await flush();
+    });
+  }
+});
+
 test.each([false, true])(
   'an instant response is adopted once, while a redirect follow commits its destination (redirect: %s)',
   async (redirect) => {

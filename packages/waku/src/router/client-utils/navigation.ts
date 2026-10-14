@@ -252,7 +252,10 @@ export const useNavigation = (
             requestedPathChanged || attempt.route.path !== settledRoute.path,
           follows: attempt.follows,
         });
-      const queueCommit = (state: RouterState, patch: Elements) => {
+      const queueCommit = (
+        state: RouterState,
+        getPatch: (current: Elements) => Elements,
+      ) => {
         if (requestRef.current !== request) {
           return;
         }
@@ -261,17 +264,26 @@ export const useNavigation = (
           query: state.requested[1],
         };
         request.queuedState = state;
-        void mergeElements(
-          combineElements(patch, { [ROUTER_STATE_ID]: state }),
+        void mergeElements({}, (prev) =>
+          prev.then((current) =>
+            combineElements(
+              current,
+              combineElements(getPatch(current), { [ROUTER_STATE_ID]: state }),
+            ),
+          ),
         );
       };
       if (
         cache.canReuseStaticRoute(nextRoute, getElements()) ||
         !shouldRefetch
       ) {
-        queueCommit(makeStateForAttempt(initialAttempt, options.history), {
+        const routePatch = {
           [ROUTE_ID]: [nextRoute.path, nextRoute.query],
-        });
+        };
+        queueCommit(
+          makeStateForAttempt(initialAttempt, options.history),
+          () => routePatch,
+        );
         return;
       }
       const base = getElements();
@@ -283,7 +295,7 @@ export const useNavigation = (
             controller.signal,
           )
         : undefined;
-      const outcome = await cache.load(nextRoute, {
+      const loading = cache.load(nextRoute, {
         signal: controller.signal,
         refetch: shouldRefetch,
         has404,
@@ -299,6 +311,10 @@ export const useNavigation = (
         },
         ...(instantResponse ? { adopt: instantResponse } : {}),
       });
+      if (!instantResponse) {
+        void mergeElements(loading.then(() => ({})));
+      }
+      const outcome = await loading;
       if (outcome.type === 'aborted' || requestRef.current !== request) {
         return;
       }
@@ -309,10 +325,14 @@ export const useNavigation = (
           ? 'replace'
           : options.history;
       if (outcome.type === 'reused') {
+        const routePatch = {
+          [ROUTE_ID]: [outcome.route.path, outcome.route.query],
+        };
         startTransition(() => {
-          queueCommit(makeStateForAttempt(outcome, historyIntent), {
-            [ROUTE_ID]: [outcome.route.path, outcome.route.query],
-          });
+          queueCommit(
+            makeStateForAttempt(outcome, historyIntent),
+            () => routePatch,
+          );
         });
         return;
       }
@@ -362,12 +382,18 @@ export const useNavigation = (
         historyIntent,
       );
       startTransition(() => {
-        queueCommit(
-          finalState,
-          buildMergePatch(outcome, getElements(), base, {
+        if (instantResponse) {
+          const patch = buildMergePatch(outcome, getElements(), base, {
             settled: settledRoute,
-          }),
-        );
+          });
+          queueCommit(finalState, () => patch);
+        } else {
+          queueCommit(finalState, (current) =>
+            buildMergePatch(outcome, current, base, {
+              settled: settledRoute,
+            }),
+          );
+        }
       });
     },
     [
