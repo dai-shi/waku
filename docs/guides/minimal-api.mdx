@@ -60,6 +60,9 @@ Advanced composition APIs remain available to any Minimal-based framework:
   while preserving their validators.
 - `unstable_isImmutableElement(elements, slotId)` inspects a slot's immutable
   status without exposing its validator.
+- `unstable_isSameElement(a, b, slotId)` checks whether two records retain the
+  same slot source and value, including its validator. Independent writes are
+  distinct even with equal values and validators; two absent slots are equal.
 - `useMergeElements_UNSTABLE` accepts a merge callback for custom updates to
   the Root's queued element promise.
 - `unstable_buildElements`, `Unstable_ElementSource`, and
@@ -595,7 +598,8 @@ const ElementIds = () => {
 ```
 
 The record is read-only. Use `combineElements` to construct a new map while
-preserving its etags, then pass it to `mergeElements` to update the Root.
+preserving its slot sources and etags, then pass it to `mergeElements` to update
+the Root. A spread or `Object.assign` introduces new sources without etags.
 
 #### Refetching
 

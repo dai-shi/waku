@@ -9,6 +9,7 @@ import {
 } from 'react';
 import {
   unstable_combineElements as combineElements,
+  unstable_isSameElement as isSameElement,
   useMergeElements_UNSTABLE as useMergeElements,
   useRegisterRscReloadListener_UNSTABLE as useRegisterRscReloadListener,
 } from 'waku/minimal/client';
@@ -65,6 +66,7 @@ type NavigationRequest = {
   controller: AbortController;
   target: Pick<RouteProps, 'path' | 'query'>;
   queuedState?: RouterState;
+  acceptedElements?: Elements;
 };
 
 type Navigation = {
@@ -161,10 +163,20 @@ export const useNavigation = (
       requestRef.current = next;
       if (superseded?.queuedState) {
         const committed = getElements();
+        const accepted = superseded.acceptedElements ?? {};
         void mergeElements(
           combineElements(committed, {
             [ROUTER_STATE_ID]: getRouterState(committed),
           }),
+          (prev, incoming) =>
+            Promise.all([prev, incoming]).then(([current, committed]) =>
+              combineElements(
+                combineElements({}, current, {
+                  filter: (key) => !isSameElement(current, accepted, key),
+                }),
+                committed,
+              ),
+            ),
         );
       }
       superseded?.controller.abort();
@@ -264,6 +276,7 @@ export const useNavigation = (
           query: state.requested[1],
         };
         request.queuedState = state;
+        request.acceptedElements = patch;
         return combineElements(patch, { [ROUTER_STATE_ID]: state });
       };
       if (
@@ -343,14 +356,16 @@ export const useNavigation = (
             }),
             failedFrom: settledRoute,
           };
-          void mergeElements({
-            ...(instantResponse
-              ? {
-                  [ROUTE_ID]: base[ROUTE_ID],
-                  [IS_STATIC_ID]: base[IS_STATIC_ID],
-                }
-              : {}),
-            [ROUTER_STATE_ID]: failureState,
+          startTransition(() => {
+            void mergeElements({
+              ...(instantResponse
+                ? {
+                    [ROUTE_ID]: base[ROUTE_ID],
+                    [IS_STATIC_ID]: base[IS_STATIC_ID],
+                  }
+                : {}),
+              [ROUTER_STATE_ID]: failureState,
+            });
           });
           finishRequest();
           setNavigationError({ error });

@@ -4,6 +4,7 @@ import { Suspense, act, startTransition, use, useLayoutEffect } from 'react';
 import type { ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
+import { ETAGS_HEADER } from '../src/lib/utils-isomorphic/etags.js';
 import { unstable_callServerRsc } from '../src/minimal/client-runtime.js';
 import { clearInitialRscEntries } from '../src/minimal/client-utils/initial-rsc-store.js';
 import {
@@ -459,6 +460,145 @@ test('a replacement preserves client updates queued before it starts', async () 
     });
   }
 });
+
+test.each(['none', 'client', 'action'] as const)(
+  'a replacement replaces response-only slots but keeps independent writes (write: %s)',
+  async (write) => {
+    const ready = defer<void>();
+    const replacement = defer<Elements>();
+    let pushed: Promise<void> | undefined;
+    const Page = () => {
+      use(ready.promise);
+      return <p>superseded page</p>;
+    };
+    const fetch = vi.spyOn(globalThis, 'fetch');
+    mocks.queue.push(payload('/one', <p>page one</p>));
+    const view = await mount(
+      <Router initialRoute={{ path: '/one', query: '', hash: '' }} />,
+    );
+    mocks.queue.push({
+      ...payload('/two', <Page />),
+      sidebar: 'two',
+      _etags: { sidebar: 'two-v1' },
+    });
+    try {
+      await act(async () => {
+        await controls.get('a')!.router.push('/two');
+        await flush();
+      });
+      expect(view.textContent).toContain('page one');
+      if (write === 'action') {
+        mocks.queue.push({
+          sidebar: 'two',
+          _etags: { sidebar: 'two-v1' },
+          _value: 'updated',
+        });
+        await act(async () => {
+          expect(await unstable_callServerRsc('actions#update', [])).toBe(
+            'updated',
+          );
+          await flush();
+        });
+      }
+      mocks.queue.push(replacement.promise);
+      await act(async () => {
+        startTransition(() => {
+          if (write === 'client') {
+            void controls.get('a')!.merge({ sidebar: 'client' });
+          }
+          pushed = controls.get('a')!.router.push('/three');
+        });
+        await flush();
+      });
+      await act(async () => {
+        replacement.resolve({
+          ...payload('/three', <p>page three</p>),
+          sidebar: 'three',
+          _etags: { sidebar: 'three-v1' },
+        });
+        await pushed;
+        await flush();
+      });
+      expect(view.textContent).toContain('page three');
+      expect(view.querySelector('[data-sidebar]')?.textContent).toBe(
+        write === 'none' ? 'three' : write === 'action' ? 'two' : 'client',
+      );
+      expect(window.location.pathname).toBe('/three');
+      mocks.queue.push(payload('/three', <p>page three</p>));
+      await act(async () => {
+        await controls.get('a')!.router.reload();
+        await flush();
+      });
+      const headers = new Headers(fetch.mock.lastCall![1]?.headers);
+      expect(JSON.parse(headers.get(ETAGS_HEADER) ?? '{}').sidebar).toBe(
+        write === 'none'
+          ? 'three-v1'
+          : write === 'action'
+            ? 'two-v1'
+            : undefined,
+      );
+    } finally {
+      await act(async () => {
+        ready.resolve();
+        replacement.resolve({});
+        await pushed;
+        await flush();
+      });
+    }
+  },
+);
+
+test.each(['pending', 'failed'] as const)(
+  'a replacement recognizes response-only slots across a %s intermediate request',
+  async (intermediate) => {
+    const ready = defer<void>();
+    const middle = defer<Elements>();
+    const Page = () => {
+      use(ready.promise);
+      return <p>superseded page</p>;
+    };
+    mocks.queue.push(payload('/one', <p>page one</p>));
+    const view = await mount(
+      <Router initialRoute={{ path: '/one', query: '', hash: '' }} />,
+    );
+    mocks.queue.push({ ...payload('/two', <Page />), sidebar: 'two' });
+    let pushed: Promise<void> | undefined;
+    try {
+      await act(async () => {
+        await controls.get('a')!.router.push('/two');
+        await flush();
+      });
+      mocks.queue.push(middle.promise);
+      await act(async () => {
+        pushed = controls.get('a')!.router.push('/middle');
+        void pushed.catch(() => {});
+        await flush();
+      });
+      mocks.queue.push({
+        ...payload('/three', <p>page three</p>),
+        sidebar: 'three',
+      });
+      await act(async () => {
+        if (intermediate === 'failed') {
+          middle.reject(new Error('offline'));
+          await expect(pushed).rejects.toThrow('offline');
+        }
+        await controls.get('a')!.router.push('/three');
+        await flush();
+      });
+      expect(view.textContent).toContain('page three');
+      expect(view.querySelector('[data-sidebar]')?.textContent).toBe('three');
+      expect(window.location.pathname).toBe('/three');
+    } finally {
+      await act(async () => {
+        ready.resolve();
+        middle.resolve({});
+        await pushed?.catch(() => {});
+        await flush();
+      });
+    }
+  },
+);
 
 test('a query navigation preserves action data without taking its old composition', async () => {
   mocks.queue.push({

@@ -30,6 +30,7 @@ const clientExports = [
   'unstable_combineElements',
   'unstable_getErrorInfo',
   'unstable_isImmutableElement',
+  'unstable_isSameElement',
   'useElementsPromise_UNSTABLE',
   'useFetchRsc_UNSTABLE',
   'useMergeElements_UNSTABLE',
