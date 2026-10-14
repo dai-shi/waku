@@ -4,6 +4,7 @@ import {
   adoptElements,
   collectEtags,
 } from '../src/minimal/client-utils/element-etags.js';
+import { unstable_combineElements as combineElements } from '../src/minimal/client.js';
 import { buildMergePatch } from '../src/router/client-core-utils/merge-patch.js';
 import { ROUTER_STATE_ID } from '../src/router/client-utils/router-state.js';
 import {
@@ -24,7 +25,7 @@ describe('buildMergePatch', () => {
   it('copies a key still identical in current and base', () => {
     const slot = getRouteSlotId('/next');
     const base = { shared: 'old', [slot]: 'start' };
-    const current = { ...base };
+    const current = combineElements({}, base);
     const patch = buildMergePatch(
       loaded('/next', { shared: 'new', [slot]: 'next' }),
       current,
@@ -45,6 +46,27 @@ describe('buildMergePatch', () => {
     );
     expect(patch.shared).toBeUndefined();
   });
+
+  it.each(['v2', undefined])(
+    'keeps a concurrent validator change to %s for an equal-valued slot',
+    (etag) => {
+      const base = adoptElements({
+        shared: 'same',
+        [ETAGS_ID]: { shared: 'v1' },
+      });
+      const action = adoptElements({
+        shared: 'same',
+        [ETAGS_ID]: { shared: etag },
+      });
+      const current = combineElements(base, action);
+      const patch = buildMergePatch(loaded('/next', base), current, base, {
+        settled: route('/start'),
+      });
+      const merged = combineElements(current, patch);
+      expect(Object.hasOwn(patch, 'shared')).toBe(false);
+      expect(collectEtags(merged)).toEqual(etag ? { shared: etag } : {});
+    },
+  );
 
   it('skips a key that appeared or disappeared in current vs base', () => {
     const patchAdded = buildMergePatch(

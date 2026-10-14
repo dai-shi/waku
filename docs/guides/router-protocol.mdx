@@ -224,10 +224,10 @@ previous route or query cannot replace them; shared action slots are kept.
 Background slice responses merge in a transition to keep the rendered shell
 visible while a navigation response is pending.
 
-Rolling back an ordinary navigation removes its response-owned additions
-before the replacement reconciles its payload. Slot-source comparison preserves
-separate client or action writes even when they carry the same value and
-validator.
+Rolling back an ordinary navigation restores committed values only for entries
+the navigation still owns, removing its response-only additions and resetting
+its router state. Separate client or action writes and removals are preserved,
+including writes with the same value and validator as the canceled response.
 
 Fetching and committing are different boundaries. An ordinary fetch can finish
 while a client component is suspended; its navigation promise does not wait for

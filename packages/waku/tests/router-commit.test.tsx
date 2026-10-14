@@ -10,6 +10,7 @@ import { clearInitialRscEntries } from '../src/minimal/client-utils/initial-rsc-
 import {
   Children_UNSTABLE as Children,
   Slot_UNSTABLE as Slot,
+  unstable_combineElements as combineElements,
   useElementsPromise_UNSTABLE as useElementsPromise,
   useMergeElements_UNSTABLE as useMergeElements,
 } from '../src/minimal/client.js';
@@ -547,6 +548,216 @@ test.each(['none', 'client', 'action'] as const)(
     }
   },
 );
+
+test.each([
+  ['client', 'client', undefined],
+  ['action', 'two', 'two-v1'],
+  ['baseline-action', 'before', 'action-v2'],
+  ['remove', '', undefined],
+] as const)(
+  'rollback preserves independent changes to committed slots (write: %s)',
+  async (write, expectedSidebar, expectedEtag) => {
+    const state = Symbol('client state');
+    const ClientState = () => {
+      const elements = use(useElementsPromise());
+      return (
+        <output
+          data-client-state
+          data-sidebar-present={Object.hasOwn(elements, 'sidebar')}
+        >
+          {Object.hasOwn(elements, state) ? String(elements[state]) : 'absent'}
+        </output>
+      );
+    };
+    const ready = defer<void>();
+    const replacement = defer<Elements>();
+    let pushed: Promise<void> | undefined;
+    const Page = () => {
+      use(ready.promise);
+      return <p>superseded page</p>;
+    };
+    const fetch = vi.spyOn(globalThis, 'fetch');
+    mocks.queue.push({
+      ...payload('/one', <p>page one</p>),
+      root: (
+        <>
+          <Probe id="a" />
+          <ClientState />
+          <Children />
+        </>
+      ),
+      sidebar: 'before',
+      _etags: { root: 1, sidebar: 'before-v1' },
+    });
+    const view = await mount(
+      <Router initialRoute={{ path: '/one', query: '', hash: '' }} />,
+    );
+    await act(async () => {
+      await controls.get('a')!.merge({ [state]: 'before' });
+      await flush();
+    });
+    mocks.queue.push({
+      [ROUTE_ID]: ['/two', ''],
+      [IS_STATIC_ID]: false,
+      [getRouteSlotId('/two')]: <Page />,
+      sidebar: 'two',
+      _etags: { sidebar: 'two-v1' },
+    });
+    try {
+      await act(async () => {
+        await controls.get('a')!.router.push('/two');
+        await flush();
+      });
+      if (write === 'action' || write === 'baseline-action') {
+        mocks.queue.push({
+          sidebar: expectedSidebar,
+          _etags: { sidebar: expectedEtag },
+          _value: 'updated',
+        });
+        await act(async () => {
+          expect(await unstable_callServerRsc('actions#update', [])).toBe(
+            'updated',
+          );
+          await flush();
+        });
+      }
+      mocks.queue.push(replacement.promise);
+      await act(async () => {
+        startTransition(() => {
+          if (write === 'remove') {
+            void controls.get('a')!.merge({}, (prev) =>
+              prev.then((elements) =>
+                combineElements({}, elements, {
+                  filter: (key) => key !== 'sidebar' && key !== state,
+                }),
+              ),
+            );
+          } else {
+            void controls.get('a')!.merge({
+              ...(write === 'client' ? { sidebar: 'client' } : {}),
+              [state]: 'client',
+            });
+          }
+          pushed = controls.get('a')!.router.push('/three');
+        });
+        await flush();
+      });
+      await act(async () => {
+        replacement.resolve({
+          [ROUTE_ID]: ['/three', ''],
+          [IS_STATIC_ID]: false,
+          [getRouteSlotId('/three')]: <p>page three</p>,
+        });
+        await pushed;
+        ready.resolve();
+        await flush();
+      });
+      expect(view.textContent).toContain('page three');
+      expect(view.querySelector('[data-sidebar]')?.textContent).toBe(
+        expectedSidebar,
+      );
+      expect(view.querySelector('[data-client-state]')?.textContent).toBe(
+        write === 'remove' ? 'absent' : 'client',
+      );
+      expect(
+        view
+          .querySelector('[data-sidebar-present]')
+          ?.getAttribute('data-sidebar-present'),
+      ).toBe(String(write !== 'remove'));
+      expect(window.location.pathname).toBe('/three');
+      mocks.queue.push({
+        [ROUTE_ID]: ['/three', ''],
+        [IS_STATIC_ID]: false,
+        [getRouteSlotId('/three')]: <p>page three</p>,
+        sidebar: 'reloaded',
+        _etags: { sidebar: 'reload-v1' },
+      });
+      await act(async () => {
+        await controls.get('a')!.router.reload();
+        await flush();
+      });
+      const headers = new Headers(fetch.mock.lastCall![1]?.headers);
+      expect(JSON.parse(headers.get(ETAGS_HEADER) ?? '{}').sidebar).toBe(
+        expectedEtag,
+      );
+    } finally {
+      await act(async () => {
+        ready.resolve();
+        replacement.resolve({});
+        await pushed;
+        await flush();
+      });
+    }
+  },
+);
+
+test('rollback preserves a removal not represented in the accepted prefetch', async () => {
+  const ready = defer<void>();
+  const replacement = defer<Elements>();
+  let pushed: Promise<void> | undefined;
+  const Page = () => {
+    use(ready.promise);
+    return <p>superseded page</p>;
+  };
+  const initial: Elements = {
+    ...payload('/one', <p>page one</p>),
+    sidebar: 'before',
+    _etags: { root: 1, sidebar: 'before-v1' },
+  };
+  mocks.queue.push(initial);
+  const view = await mount(
+    <Router initialRoute={{ path: '/one', query: '', hash: '' }} />,
+  );
+  mocks.queue.push({
+    root: initial.root,
+    [ROUTE_ID]: ['/two', ''],
+    [IS_STATIC_ID]: false,
+    [getRouteSlotId('/two')]: <Page />,
+    _etags: { root: 1 },
+  });
+  try {
+    await act(async () => {
+      controls.get('a')!.router.prefetch('/two');
+      await flush();
+      await controls.get('a')!.router.push('/two');
+      await flush();
+    });
+    mocks.queue.push(replacement.promise);
+    await act(async () => {
+      startTransition(() => {
+        void controls.get('a')!.merge({}, (prev) =>
+          prev.then((elements) =>
+            combineElements({}, elements, {
+              filter: (key) => key !== 'sidebar',
+            }),
+          ),
+        );
+        pushed = controls.get('a')!.router.push('/three');
+      });
+      await flush();
+    });
+    await act(async () => {
+      replacement.resolve({
+        [ROUTE_ID]: ['/three', ''],
+        [IS_STATIC_ID]: false,
+        [getRouteSlotId('/three')]: <p>page three</p>,
+      });
+      await pushed;
+      ready.resolve();
+      await flush();
+    });
+    expect(view.textContent).toContain('page three');
+    expect(view.querySelector('[data-sidebar]')?.textContent).toBe('');
+    expect(window.location.pathname).toBe('/three');
+  } finally {
+    await act(async () => {
+      ready.resolve();
+      replacement.resolve({});
+      await pushed;
+      await flush();
+    });
+  }
+});
 
 test.each(['pending', 'failed'] as const)(
   'a replacement recognizes response-only slots across a %s intermediate request',

@@ -169,14 +169,19 @@ export const useNavigation = (
             [ROUTER_STATE_ID]: getRouterState(committed),
           }),
           (prev, incoming) =>
-            Promise.all([prev, incoming]).then(([current, committed]) =>
-              combineElements(
+            Promise.all([prev, incoming]).then(([current, committed]) => {
+              const isOwned = (key: string | symbol) =>
+                key === ROUTER_STATE_ID ||
+                (Object.hasOwn(accepted, key) &&
+                  isSameElement(current, accepted, key));
+              return combineElements(
                 combineElements({}, current, {
-                  filter: (key) => !isSameElement(current, accepted, key),
+                  filter: (key) => !isOwned(key),
                 }),
                 committed,
-              ),
-            ),
+                { filter: isOwned },
+              );
+            }),
         );
       }
       superseded?.controller.abort();

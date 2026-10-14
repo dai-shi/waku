@@ -1,4 +1,7 @@
-import { unstable_combineElements as combineElements } from 'waku/minimal/client';
+import {
+  unstable_combineElements as combineElements,
+  unstable_isSameElement as isSameElement,
+} from 'waku/minimal/client';
 import type { RouteProps } from '../isomorphic-utils/route-path.js';
 import {
   HAS404_ID,
@@ -12,6 +15,12 @@ import { isSameRscRoute } from './route-url.js';
 
 type Elements = Readonly<Record<string | symbol, unknown>>;
 
+/**
+ * Selects response entries without replacing writes since the request-time
+ * `base`. Preserve slot sources with Minimal's `combineElements` when deriving
+ * `base` or `current`. Route metadata always wins; the destination slot also
+ * wins when its path/query differs from `opts.settled`. Client symbols are excluded.
+ */
 export const buildMergePatch = (
   outcome: Pick<Loaded, 'route' | 'elements'>,
   current: Elements,
@@ -22,7 +31,6 @@ export const buildMergePatch = (
   const responseRoute = getRouteFromElements(elements) ?? outcome.route;
   const routeSlotId = getRouteSlotId(responseRoute.path);
   const rscRouteChanged = !isSameRscRoute(responseRoute, opts.settled);
-  // A server action can merge newer values while this request waits.
   return combineElements({}, elements, {
     filter: (key) =>
       key === ROUTE_ID ||
@@ -30,7 +38,6 @@ export const buildMergePatch = (
       key === IS_STATIC_ID ||
       (typeof key === 'string' &&
         ((rscRouteChanged && key === routeSlotId) ||
-          (Object.hasOwn(current, key) === Object.hasOwn(base, key) &&
-            current[key] === base[key]))),
+          isSameElement(current, base, key))),
   });
 };
