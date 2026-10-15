@@ -319,6 +319,62 @@ test('an origin action cannot restore route metadata over a reload rewrite', asy
   }
 });
 
+test('an origin action cannot undo a reload redirect to a reused static route', async () => {
+  window.history.replaceState({}, '', '/cached');
+  mocks.queue.push({
+    ...payload('/cached', <p>cached page</p>),
+    [IS_STATIC_ID]: true,
+    _etags: { root: 1, [getRouteSlotId('/cached')]: 1 },
+  });
+  const view = await mount(
+    <Router initialRoute={{ path: '/cached', query: '', hash: '' }} />,
+  );
+  mocks.queue.push(payload('/one', <p>page one</p>));
+  await act(async () => {
+    await controls.get('a')!.router.push('/one');
+    await flush();
+  });
+  expect(view.textContent).toContain('page one');
+  expect(window.location.pathname).toBe('/one');
+  const response = defer<Elements>();
+  mocks.queue.push(response.promise);
+  let reloaded: Promise<void> | undefined;
+  try {
+    await act(async () => {
+      reloaded = controls.get('a')!.router.reload();
+      await flush();
+    });
+    mocks.queue.push({
+      ...payload('/one', <p>origin action page</p>),
+      [IS_ORIGIN_ID]: true,
+      sidebar: 'action',
+      _value: 'updated',
+    });
+    await act(async () => {
+      expect(await unstable_callServerRsc('actions#update', [])).toBe(
+        'updated',
+      );
+      await flush();
+    });
+    await act(async () => {
+      response.reject(createCustomError('moved', { location: '/cached' }));
+      await reloaded;
+      await flush();
+    });
+    expect(view.textContent).toContain('cached page');
+    expect(view.textContent).not.toContain('origin action page');
+    expect(view.querySelector('[data-sidebar]')?.textContent).toBe('action');
+    expect(controls.get('a')!.router.path).toBe('/cached');
+    expect(window.location.pathname).toBe('/cached');
+  } finally {
+    await act(async () => {
+      response.resolve({});
+      await reloaded;
+      await flush();
+    });
+  }
+});
+
 test('a lazy slice settling during normal navigation keeps the shell visible', async () => {
   const fallbackMounted = vi.fn();
   const Fallback = () => {

@@ -433,9 +433,6 @@ export const useNavigation = (
         !isSameRscRoute(responseRoute, settledRoute)
       ) {
         const slotId = getRouteSlotId(responseRoute.path);
-        if (!Object.hasOwn(data, slotId)) {
-          return;
-        }
         const routePatch = combineElements({}, data, {
           filter: (key) =>
             typeof key === 'string' && (key === slotId || isMetaKey(key)),
